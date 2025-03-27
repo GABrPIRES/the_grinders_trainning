@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  role      Role
+  createdAt DateTime  @default(now())
+
+  // Relacionamentos
+  personal  Personal?
+  aluno     Aluno?
+}
+
+model Personal {
+  id              String   @id
+  bio             String?
+  phoneNumber     Int?
+  instagram       String?
+
+  user      User     @relation(fields: [id], references: [id])
+  alunos    Aluno[]  @relation("PersonalAlunos")
+  treinos   Treino[]
+  planos    Plano[]
+  pagamentos Pagamento[] 
+}
+
+model Aluno {
+  id                String       @id
+  birthDate         DateTime?
+  weight            Float?
+  height            Float?
+  lesao             String?
+  phoneNumber       Int
+  restricaoMedica   String?
+  objetivo          String?
+  treinosSemana     Int?
+  tempoTreino       Int?
+  horarioTreino     Int?
+  prSupino          Int?
+  prTerra           Int?
+  prAgachamento     Int?
+  newPrSupino       Int?
+  newPrTerra        Int?
+  newPrAgachamento  Int?
+
+
+  user            User         @relation(fields: [id], references: [id])
+  personal        Personal?    @relation("PersonalAlunos", fields: [personalId], references: [id])
+  personalId      String?
+
+  treinos         Treino[]
+  pagamentos      Pagamento[]
+  assinaturas     Assinatura[]
+}
+
+model Treino {
+  id            String     @id @default(uuid())
+  name          String
+  createdAt     DateTime   @default(now())
+  durationTime  Int
+  day           DateTime   
+
+  aluno       Aluno      @relation(fields: [alunoId], references: [id])
+  alunoId     String
+  personal    Personal   @relation(fields: [personalId], references: [id])
+  personalId  String
+
+  exercicios  Exercicio[]
+}
+
+model Exercicio {
+  id         String   @id @default(uuid())
+  name       String
+
+  treino     Treino   @relation(fields: [treinoId], references: [id])
+  treinoId   String
+
+  sections   Sections[]
+}
+
+model Sections{
+  id      String  @id @default(uuid())
+  carga   Float?
+  series  Int
+  equip   String?
+  rpe     Float?
+  pr      Float?
+  feito   Boolean?
+
+  exercicio  Exercicio  @relation(fields: [exercicioId], references: [id])
+  exercicioId  String
+}
+
+model Plano {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  duration    Int        // dias
+
+  personal    Personal   @relation(fields: [personalId], references: [id])
+  personalId  String
+
+  assinaturas Assinatura[]
+}
+
+model Assinatura {
+  id         String     @id @default(uuid())
+  startDate  DateTime
+  endDate    DateTime
+  status     StatusAssinatura
+
+  aluno      Aluno      @relation(fields: [alunoId], references: [id])
+  alunoId    String
+
+  plano      Plano      @relation(fields: [planoId], references: [id])
+  planoId    String
+}
+
+model Pagamento {
+  id         String     @id @default(uuid())
+  amount     Float
+  status     StatusPagamento
+  dueDate    DateTime
+  paidAt     DateTime?
+  createdAt  DateTime   @default(now())
+
+  aluno      Aluno      @relation(fields: [alunoId], references: [id])
+  alunoId    String
+
+  personal   Personal   @relation(fields: [personalId], references: [id])
+  personalId String
+}
+
+enum Role {
+  admin
+  personal
+  aluno
+}
+
+enum StatusPagamento {
+  pendente
+  pago
+  atrasado
+}
+
+enum StatusAssinatura {
+  ativo
+  expirado
+  cancelado
+}
