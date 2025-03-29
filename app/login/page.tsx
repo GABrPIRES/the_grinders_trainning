@@ -16,12 +16,13 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const user = await login(form);
-      
-      // Redireciona com base na role do usuário
-      if (user.role === "admin") router.push("/admin");
-      if (user.role === "personal") router.push("/coach");
-      if (user.role === "aluno") router.push("/aluno");
+      const res = await login(form); // chama API de login
+      const role = res.user?.role;
+  
+      if (role === "admin") router.push("/admin");
+      else if (role === "personal") router.push("/coach");
+      else if (role === "aluno") router.push("/aluno");
+      else setErro("Role inválida. Contate o suporte.");
     } catch (err: any) {
       setErro(err.message);
     }

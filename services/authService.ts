@@ -13,3 +13,12 @@ export async function login({ email, password }: { email: string; password: stri
     return res.json(); // dados do usuário
   }
   
+  export async function logout() {
+    const res = await fetch("/api/auth/logout", {
+      method: "POST"
+    });
+  
+    if (!res.ok) {
+      throw new Error("Erro ao fazer logout");
+    }
+  }
