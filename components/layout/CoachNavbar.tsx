@@ -77,7 +77,7 @@ export default function CoachSidebar() {
       <div className="px-4 pb-6">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 text-gray-400 hover:text-red-600 w-full"
+          className="flex items-center gap-3 text-gray-400 cursor-pointer hover:text-red-600 w-full"
         >
           <LogOut size={18} />
           <span>Log out</span>
