@@ -18,6 +18,8 @@ export default function LoginPage() {
     try {
       const res = await login(form); // chama API de login
       const role = res.user?.role;
+
+      router.refresh();
   
       if (role === "admin") router.push("/admin");
       else if (role === "personal") router.push("/coach");
