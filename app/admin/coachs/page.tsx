@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Edit } from 'lucide-react'; // Ícone de lápis
+import { Edit } from 'lucide-react';
 
 type Coach = {
   id: string;
@@ -11,38 +11,81 @@ type Coach = {
 };
 
 export default function AdminCoachListPage() {
-  const [coachs, setCoachs] = useState<Coach[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchCoachs = async () => {
-      try {
-        const res = await fetch('/api/admin/coachs');
-        const data = await res.json();
-        setCoachs(data.coachs);
-      } catch (error) {
-        console.error('Erro ao carregar coachs:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [coachs, setCoachs] = useState<Coach[]>([]);
+  const [search, setSearch] = useState('');
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
+  const fetchCoachs = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      const res = await fetch(`/api/admin/coachs?${params}`);
+      const data = await res.json();
+
+      setCoachs(data.coachs);
+      setTotal(data.total);
+    } catch (error) {
+      console.error('Erro ao carregar coachs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCoachs();
-  }, []);
+  }, [search, page, limit]);
+
+  const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow p-6 rounded-md">
+    <div className="max-w-5xl mx-auto bg-white shadow p-6 rounded-md">
       <h2 className="text-1xl font-bold mb-4 text-neutral-800 flex justify-between items-center">
         Coachs cadastrados
-        {/* Botão de editar na parte superior direita */}
         <button
-          onClick={() => router.push(`/admin/coachs/create`)} // Ajuste para criar um coach, caso deseje
-          className="text-red-600 hover:text-red-800 p-2 rounded-md cursor-pointer border border-red-600"
+          onClick={() => router.push(`/admin/coachs/create`)}
+          className="text-red-600 hover:text-red-800 p-2 rounded-md border border-red-600"
         >
           Adicionar Coach
         </button>
       </h2>
+
+      <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4 text-neutral-500">
+        <input
+          type="text"
+          placeholder="Buscar por nome ou e-mail"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="border p-2 rounded w-full md:w-1/2"
+        />
+
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(parseInt(e.target.value));
+            setPage(1);
+          }}
+          className="p-2 border rounded w-full md:w-auto"
+        >
+          {[10, 20, 50].map((num) => (
+            <option key={num} value={num}>
+              {num} por página
+            </option>
+          ))}
+        </select>
+      </div>
 
       {loading ? (
         <p>Carregando...</p>
@@ -53,20 +96,19 @@ export default function AdminCoachListPage() {
               <th className="p-2 border">Nome</th>
               <th className="p-2 border">E-mail</th>
               <th className="p-2 border">ID</th>
-              <th className="p-2 border">Ações</th>
+              <th className="p-2 border text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {coachs.map((coach) => (
-              <tr key={coach.id} className="text-neutral-800 hover:bg-gray-100">
+              <tr key={coach.id} className="text-neutral-800 hover:bg-gray-100 text-sm">
                 <td className="p-2 border border-neutral-100">{coach.name}</td>
                 <td className="p-2 border border-neutral-100">{coach.email}</td>
                 <td className="p-2 border border-neutral-100 text-xs">{coach.id}</td>
                 <td className="p-2 border border-neutral-100 text-center">
-                  {/* Botão de editar */}
                   <button
                     onClick={() => router.push(`/admin/coachs/${coach.id}/edit`)}
-                    className="text-red-600 cursor-pointer hover:text-red-800"
+                    className="text-red-600 hover:text-red-800 cursor-pointer"
                   >
                     <Edit size={18} />
                   </button>
@@ -76,6 +118,29 @@ export default function AdminCoachListPage() {
           </tbody>
         </table>
       )}
+
+      <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
+        <button
+          onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+          disabled={page === 1}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+
+        <span>
+          Página {page} de {totalPages || 1}
+        </span>
+
+        <button
+          onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
+          disabled={page >= totalPages}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+        >
+          Próxima
+        </button>
+      </div>
     </div>
   );
 }
+

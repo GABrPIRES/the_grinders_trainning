@@ -1,21 +1,42 @@
 import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/db';
 import bcrypt from "bcrypt"
+import { Prisma } from '@prisma/client';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+
+    const search = searchParams.get('search')?.toLowerCase() || '';
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.UserWhereInput = {
+      role: 'personal',
+    };
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const total = await prisma.user.count({ where });
+
     const coachs = await prisma.user.findMany({
-      where: { role: 'personal' },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
+      where,
+      skip,
+      take: limit,
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, email: true },
     });
 
-    return NextResponse.json({ coachs });
+    return NextResponse.json({ coachs, total });
   } catch (error) {
-    return NextResponse.json({ message: 'Erro ao buscar coachs' }, { status: 500 });
+    console.error('Erro ao buscar coachs:', error);
+    return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 });
   }
 }
 
