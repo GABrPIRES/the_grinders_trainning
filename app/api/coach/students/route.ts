@@ -2,11 +2,23 @@ import { NextResponse, NextRequest } from 'next/server';
 import prisma from '@/lib/db';
 import bcrypt from 'bcrypt'
 import { Prisma } from '@prisma/client';
+import { verifyToken } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
+    const token = req.cookies.get('token')?.value;
 
+    if (!token) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    const user = await verifyToken(token);
+
+    if (!user || user.role !== 'personal') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
     const search = searchParams.get('search')?.toLowerCase() || '';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -14,6 +26,9 @@ export async function GET(req: NextRequest) {
 
     const where: Prisma.UserWhereInput = {
       role: 'aluno',
+      aluno: {
+        personalId: user.id,
+      }
     };
     
     if (search) {
@@ -42,37 +57,36 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, phoneNumber, password, personalId } = await req.json();
+    const { name, email, phoneNumber, password, coachId } = await req.json();
 
-    // Verificar se todos os dados necessários foram passados
-    if (!name || !email || !phoneNumber || !password || !personalId) {
-      return NextResponse.json({ error: 'Nome, email e senha são obrigatórios.' }, { status: 400 });
+    if (!name || !email || !phoneNumber || !password || !coachId) {
+      return NextResponse.json(
+        { error: 'Todos os campos são obrigatórios.' },
+        { status: 400 }
+      );
     }
 
-    // Verificar se o e-mail já está cadastrado
     const existingStudent = await prisma.user.findUnique({ where: { email } });
     if (existingStudent) {
       return NextResponse.json({ error: 'Este e-mail já está cadastrado.' }, { status: 400 });
     }
 
-    // Criptografar a senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar um novo Student
     const newStudent = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: 'aluno',  // Definindo a role como 'aluno' para este exemplo
+        role: 'aluno',
         aluno: {
           create: {
-            phoneNumber,
+            phoneNumber: phoneNumber, // valor default obrigatório no schema
             personal: {
-              connect: { id: personalId }, // vincula com o coach escolhido
+              connect: { id: coachId },
             },
           },
-        }
+        },
       },
       include: {
         aluno: true,

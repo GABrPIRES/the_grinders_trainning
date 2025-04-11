@@ -21,6 +21,7 @@ const navItems = [
   { label: 'Home', href: '/coach', icon: <Home size={18} /> },
   { label: 'Profile', href: '/coach/profile', icon: <User size={18} /> },
   { label: 'Students', href: '/coach/students', icon: <Users size={18} /> },
+  { label: 'Treinos', href: '/coach/treinos', icon: <Dumbbell size={18} /> },
   { label: 'Payments', href: '/coach/payments', icon: <CreditCard size={18} /> },
   { label: 'Plans', href: '/coach/plans', icon: <ClipboardList size={18} /> },
   { label: 'Settings', href: '/coach/settings', icon: <Settings size={18} /> },

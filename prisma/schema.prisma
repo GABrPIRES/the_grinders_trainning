@@ -29,7 +29,7 @@ model User {
 model Personal {
   id              String   @id
   bio             String?
-  phoneNumber     Int?
+  phoneNumber     String?
   instagram       String?
 
   user      User     @relation(fields: [id], references: [id])
@@ -45,7 +45,7 @@ model Aluno {
   weight            Float?
   height            Float?
   lesao             String?
-  phoneNumber       Int
+  phoneNumber       String
   restricaoMedica   String?
   objetivo          String?
   treinosSemana     Int?

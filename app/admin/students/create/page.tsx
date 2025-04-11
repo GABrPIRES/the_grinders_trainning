@@ -1,19 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { emailValidator } from '@/lib/validators/emailValidator';
+import 'cleave.js/dist/addons/cleave-phone.br';
+import Cleave from 'cleave.js/react'
 
 export default function AddStudentPage() {
   const [student, setStudent] = useState({
     name: '',
     email: '',
+    phoneNumber: '',
     password: '',
+    personalId: '',
   });
+  const [coaches, setCoaches] = useState<{ id: string; name: string, email: string }[]>([]);
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setStudent({ ...student, [e.target.name]: e.target.value });
   };
 
@@ -50,6 +55,15 @@ export default function AddStudentPage() {
     }
   };
 
+  useEffect(() => {
+    const fetchCoaches = async () => {
+      const res = await fetch('/api/admin/coachs?limit=100'); // pode ajustar o limit
+      const data = await res.json();
+      setCoaches(data.coachs); // 👈 use o nome correto vindo da API (Preciso terminar isso)
+    };
+    fetchCoaches();
+  }, []);
+
   return (
     <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-4">Adicionar Student</h1>
@@ -73,6 +87,17 @@ export default function AddStudentPage() {
           className="w-full border p-2 rounded"
           placeholder="Email"
         />
+        <Cleave
+          name="phoneNumber"
+          value={student.phoneNumber}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          placeholder="(11) 98888-7777"
+          options={{
+            phone: true,
+            phoneRegionCode: 'BR',
+          }}
+        />
         <input
           type="password"
           name="password"
@@ -81,6 +106,20 @@ export default function AddStudentPage() {
           className="w-full border p-2 rounded"
           placeholder="Senha"
         />
+        <select
+          name="personalId"
+          value={student.personalId}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          required
+        >
+          <option value="">Selecione um Coach</option>
+          {coaches.map((coach) => (
+            <option key={coach.id} value={coach.id}>
+              {coach.name} ({coach.email})
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           className="w-full bg-red-700 text-white p-2 rounded cursor-pointer hover:bg-red-800"

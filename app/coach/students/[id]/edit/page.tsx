@@ -17,7 +17,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     const fetchStudentData = async () => {
-      const res = await fetch(`/api/admin/students/${id}`);
+      const res = await fetch(`/api/coach/students/${id}`);
       const data = await res.json();
       if (res.ok) {
         setStudent({ name: data.name, email: data.email, password: '' });
@@ -47,7 +47,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
         return;
       }
       // Enviar a requisição de atualização
-      const res = await fetch(`/api/admin/students/${id}`, {
+      const res = await fetch(`/api/coach/students/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(student),
@@ -56,7 +56,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
       // Se a requisição for bem-sucedida
       if (res.ok) {
         alert('Dados atualizados com sucesso!');
-        router.push('/admin/students');
+        router.push('/coach/students');
       } else {
         const data = await res.json();
         console.log('Erro na API PUT:', data);  // Logando o erro da API

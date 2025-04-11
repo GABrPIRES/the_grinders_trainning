@@ -2,10 +2,12 @@ import CoachSidebar from '@/components/layout/CoachNavbar';
 import Footer from '@/components/layout/Footer';
 import HeaderBar from '@/components/layout/HeaderBar';
 import SidebarWrapper from '@/components/layout/SidebarWrapper';
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
+      <AuthProvider>
       <SidebarWrapper>
         <CoachSidebar />
       </SidebarWrapper>
@@ -18,6 +20,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
           <Footer />
         </div>
       </div>
+      </AuthProvider>
     </div>
   );
 }

@@ -65,6 +65,12 @@ export async function POST(req: NextRequest) {
         email,
         password: hashedPassword,
         role: 'personal',  // Definindo a role como 'personal' para este exemplo
+        personal: {
+          create: {}, // 👈 cria o Personal com id igual ao user.id
+        },
+      },
+      include: {
+        personal: true,
       },
     });
 
