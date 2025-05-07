@@ -96,7 +96,8 @@ model Exercicio {
 model Sections{
   id      String  @id @default(uuid())
   carga   Float?
-  series  Int
+  series  Int?
+  reps    Int?
   equip   String?
   rpe     Float?
   pr      Float?

@@ -12,18 +12,37 @@ interface Treino {
 }
 
 export default function StudentWorkoutsPage() {
-  const { id } = useParams();
+  const { id } = useParams(); // alunoId
   const router = useRouter();
   const [workouts, setWorkouts] = useState<Treino[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Substituir depois por fetch real da API
-    setLoading(true);
-    setTimeout(() => {
-      setWorkouts([]); // simular sem treinos
-      setLoading(false);
-    }, 500);
+    const fetchTreinos = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/coach/treinos?alunoId=${id}`);
+        const data = await res.json();
+
+        const treinos = data.treinos.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          durationTime: t.durationTime,
+          day: new Date(t.day).toLocaleDateString("pt-BR"),
+          exerciciosCount: t.exercicios.length,
+        }));
+
+        setWorkouts(treinos);
+      } catch (err) {
+        console.error("Erro ao carregar treinos:", err);
+        setWorkouts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTreinos();
   }, [id]);
 
   return (
@@ -32,7 +51,7 @@ export default function StudentWorkoutsPage() {
         <h1 className="text-2xl font-bold">Treinos do Aluno</h1>
         <button
           onClick={() => router.push(`/coach/treinos/${id}/create`)}
-          className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
+          className="bg-red-700 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-800"
         >
           Criar treino
         </button>
@@ -70,7 +89,10 @@ export default function StudentWorkoutsPage() {
                     {treino.day} - {treino.durationTime} min - {treino.exerciciosCount} exercícios
                   </p>
                 </div>
-                <button className="text-sm text-red-700 hover:text-red-800">
+                <button
+                  onClick={() => router.push(`/coach/treinos/${id}/${treino.id}`)}
+                  className="text-sm text-red-700 cursor-pointer hover:text-red-800"
+                >
                   Ver treino
                 </button>
               </div>
