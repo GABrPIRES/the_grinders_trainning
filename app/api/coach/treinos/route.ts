@@ -54,6 +54,47 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PUT(req: NextRequest) {
+  try {
+    const token = req.cookies.get('token')?.value;
+    if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    const user = await verifyToken(token);
+    if (!user || user.role !== 'personal') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { id, exercicios } = body;
+
+    if (!id || !exercicios) {
+      return NextResponse.json({ error: 'Missing treino ID or exercises' }, { status: 400 });
+    }
+
+    for (const ex of exercicios) {
+      for (const sec of ex.sections) {
+        await prisma.sections.update({
+          where: { id: sec.id },
+          data: {
+            carga: parseFloat(sec.carga) || 0,
+            series: parseInt(sec.series) || 0,
+            reps: parseInt(sec.reps) || 0,
+            equip: sec.equip || '',
+            rpe: parseFloat(sec.rpe) || 0,
+            pr: parseFloat(sec.pr) || 0,
+            feito: !!sec.feito,
+          },
+        });
+      }
+    }
+
+    return NextResponse.json({ message: 'Treino atualizado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao atualizar treino:', error);
+    return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 });
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('token')?.value;

@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { v4 as uuid } from "uuid";
+import { calculatePR } from "@/lib/calculatePR";
 
 interface Section {
   id: string;
@@ -94,8 +95,15 @@ export default function CreateWorkoutPage() {
       section[field] = value;
     }
   
-    if (section.carga && section.series && section.rpe) {
-      section.pr = parseFloat((section.carga * section.series * section.rpe).toFixed(2));
+    if (section.carga && section.reps && section.rpe) {
+      const pr = calculatePR({
+        carga: section.carga!,
+        reps: section.reps!,
+        rpe: section.rpe!
+      });
+      if (pr !== null) {
+        section.pr = parseFloat(pr.toFixed(2));
+      }
     }
   
     setExercises(updated);
