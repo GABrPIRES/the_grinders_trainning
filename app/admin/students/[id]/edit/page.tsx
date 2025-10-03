@@ -2,73 +2,88 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { emailValidator } from '@/lib/validators/emailValidator';
+import { fetchWithAuth } from '@/lib/api'; // Importamos nosso helper
 
-export default function EditStudentPage({ params }: { params: { id: string } }) {
+export default function EditStudentPage() {
   const router = useRouter();
-  const { id } = useParams()
-  const [student, setStudent] = useState({
+  const { id } = useParams(); // O id do aluno vem da URL
+  
+  const [studentData, setStudentData] = useState({
     name: '',
     email: '',
-    password: '',
+    password: '', // Apenas para a nova senha
+    personal_id: '', // Para o dropdown de coaches
+    phone_number: '',
+    // Adicione outros campos do perfil do aluno aqui se quiser editá-los
   });
+
+  const [coaches, setCoaches] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchStudentData = async () => {
-      const res = await fetch(`/api/admin/students/${id}`);
-      const data = await res.json();
-      if (res.ok) {
-        setStudent({ name: data.name, email: data.email, password: '' });
+    if (!id) return;
+
+    const fetchData = async () => {
+      try {
+        // Busca os dados do aluno específico e a lista de todos os coaches em paralelo
+        const [studentResult, coachesResult] = await Promise.all([
+          fetchWithAuth(`admin/alunos/${id}`),
+          fetchWithAuth('admin/coaches')
+        ]);
+        
+        // Preenche o formulário com os dados do aluno
+        setStudentData({
+          name: studentResult.user.name,
+          email: studentResult.user.email,
+          password: '',
+          personal_id: studentResult.personal_id,
+          phone_number: studentResult.phone_number,
+        });
+
+        setCoaches(coachesResult);
+      } catch (err: any) {
+        setError('Erro ao carregar os dados');
+      } finally {
         setLoading(false);
-      } else {
-        setError('Erro ao carregar os dados do coach');
       }
     };
-    fetchStudentData();
+    fetchData();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStudent({ ...student, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setStudentData({ ...studentData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Limpar erro anterior
     setError('');
   
     try {
-      // Validar e-mail
-      const erroEmail = await emailValidator(student.email);
-      if (erroEmail) {
-        setError(erroEmail); // Exibe erro no UI
-        return;
-      }
-      // Enviar a requisição de atualização
-      const res = await fetch(`/api/admin/students/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(student),
+      // Cria um objeto apenas com os dados a serem enviados,
+      // incluindo a conversão para snake_case se necessário
+      const payload = {
+        aluno: {
+          name: studentData.name,
+          email: studentData.email,
+          password: studentData.password,
+          personal_id: studentData.personal_id,
+          phone_number: studentData.phone_number
+        }
+      };
+
+      await fetchWithAuth(`admin/alunos/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
       });
   
-      // Se a requisição for bem-sucedida
-      if (res.ok) {
-        alert('Dados atualizados com sucesso!');
-        router.push('/admin/students');
-      } else {
-        const data = await res.json();
-        console.log('Erro na API PUT:', data);  // Logando o erro da API
-        setError(data.error || 'Erro ao atualizar os dados');
-      }
-    } catch (err) {
-        console.error('Erro na requisição:', err);  // Logando o erro real
-      setError('Erro na conexão');
+      alert('Dados atualizados com sucesso!');
+      router.push('/admin/students');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar os dados');
     }
   };
   
-
   if (loading) return <p>Carregando...</p>;
 
   return (
@@ -81,7 +96,7 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
         <input
           type="text"
           name="name"
-          value={student.name}
+          value={studentData.name}
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Nome"
@@ -89,19 +104,41 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
         <input
           type="email"
           name="email"
-          value={student.email}
+          value={studentData.email}
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Email"
         />
         <input
+          type="text"
+          name="phone_number"
+          value={studentData.phone_number}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          placeholder="Telefone"
+        />
+        <input
           type="password"
           name="password"
-          value={student.password}
+          value={studentData.password}
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Nova senha (deixe em branco para não alterar)"
         />
+        <select
+          name="personal_id"
+          value={studentData.personal_id}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          required
+        >
+          <option value="">Selecione um Coach</option>
+          {coaches.map((coach) => (
+            <option key={coach.id} value={coach.id}>
+              {coach.name} ({coach.email})
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           className="w-full bg-red-700 text-white p-2 rounded hover:bg-red-800"

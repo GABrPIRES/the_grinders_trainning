@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Edit } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/api';
 
 type Coach = {
   id: string;
@@ -23,19 +24,19 @@ export default function AdminCoachListPage() {
   const fetchCoachs = async () => {
     setLoading(true);
     try {
+      // A API Rails ainda não suporta paginação, então vamos ignorar 'page' e 'limit' por enquanto
       const params = new URLSearchParams({
+        role: 'personal', // Filtro para trazer apenas coaches
         search,
-        page: page.toString(),
-        limit: limit.toString(),
       });
 
-      const res = await fetch(`/api/admin/coachs?${params}`);
-      const data = await res.json();
+      // Usamos o fetchWithAuth para chamar o endpoint de usuários do Rails
+      const data = await fetchWithAuth(`users?${params}`);
 
-      setCoachs(data.coachs);
-      setTotal(data.total);
+      setCoachs(data);
+      // setTotal(data.total); // A API Rails ainda não retorna o total
     } catch (error) {
-      console.error('Erro ao carregar coachs:', error);
+      console.error('Erro ao carregar coaches:', error);
     } finally {
       setLoading(false);
     }
@@ -43,16 +44,16 @@ export default function AdminCoachListPage() {
 
   useEffect(() => {
     fetchCoachs();
-  }, [search, page, limit]);
+  }, [search]); // Removido page e limit por enquanto
 
-  const totalPages = Math.ceil(total / limit);
+  // const totalPages = Math.ceil(total / limit); // Desativado temporariamente
 
   return (
     <div className="max-w-5xl mx-auto bg-white shadow p-6 rounded-md">
       <h2 className="text-1xl font-bold mb-4 text-neutral-800 flex justify-between items-center">
         Coachs cadastrados
         <button
-          onClick={() => router.push(`/admin/coachs/create`)}
+          onClick={() => router.push(`/admin/coachs/create`)} // URL mais genérica
           className="text-red-600 hover:text-red-800 p-2 rounded-md border cursor-pointer border-red-600"
         >
           Adicionar Coach
@@ -64,27 +65,9 @@ export default function AdminCoachListPage() {
           type="text"
           placeholder="Buscar por nome ou e-mail"
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => setSearch(e.target.value)}
           className="border p-2 rounded w-full md:w-1/2"
         />
-
-        <select
-          value={limit}
-          onChange={(e) => {
-            setLimit(parseInt(e.target.value));
-            setPage(1);
-          }}
-          className="p-2 border rounded w-full md:w-auto"
-        >
-          {[10, 20, 50].map((num) => (
-            <option key={num} value={num}>
-              {num} por página
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
@@ -107,7 +90,7 @@ export default function AdminCoachListPage() {
                 <td className="p-2 border border-neutral-100 text-xs">{coach.id}</td>
                 <td className="p-2 border border-neutral-100 text-center">
                   <button
-                    onClick={() => router.push(`/admin/coachs/${coach.id}/edit`)}
+                    onClick={() => router.push(`/admin/coachs/${coach.id}/edit`)} // URL mais genérica
                     className="text-red-600 hover:text-red-800 cursor-pointer"
                   >
                     <Edit size={18} />
@@ -119,28 +102,7 @@ export default function AdminCoachListPage() {
         </table>
       )}
 
-      <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
-        <button
-          onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-          disabled={page === 1}
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-        >
-          Anterior
-        </button>
-
-        <span>
-          Página {page} de {totalPages || 1}
-        </span>
-
-        <button
-          onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
-          disabled={page >= totalPages}
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-        >
-          Próxima
-        </button>
-      </div>
+      {/* Paginação removida temporariamente */}
     </div>
   );
 }
-

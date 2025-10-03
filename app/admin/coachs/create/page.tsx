@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { emailValidator } from '@/lib/validators/emailValidator';
+import { fetchWithAuth } from '@/lib/api'; // 1. Importamos nosso helper
 
 export default function AddCoachPage() {
   const [coach, setCoach] = useState({
@@ -19,34 +19,25 @@ export default function AddCoachPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Limpar erro anterior
     setError('');
 
     try {
-      // Validar e-mail
-      const erroEmail = await emailValidator(coach.email);
-      if (erroEmail) {
-        setError(erroEmail); // Exibe erro no UI
-        return;
-      }
-
-      // Enviar a requisição de criação
-      const res = await fetch('/api/admin/coachs', {
+      // 2. Usamos o fetchWithAuth para a chamada de API
+      await fetchWithAuth('users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(coach),
+        body: JSON.stringify({
+          // 3. Enviamos os dados aninhados dentro de um objeto 'user'
+          user: {
+            ...coach,
+            role: 'personal', // Definimos a role aqui
+          },
+        }),
       });
 
-      if (res.ok) {
-        alert('Coach adicionado com sucesso!');
-        router.push('/admin/coachs');
-      } else {
-        const data = await res.json();
-        setError(data.error || 'Erro ao adicionar coach');
-      }
-    } catch (err) {
-      setError('Erro na conexão');
+      alert('Coach adicionado com sucesso!');
+      router.push('/admin/coachs');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao adicionar coach');
     }
   };
 
@@ -56,6 +47,7 @@ export default function AddCoachPage() {
 
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
+      {/* O formulário JSX permanece o mesmo */}
       <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
         <input
           type="text"
@@ -64,6 +56,7 @@ export default function AddCoachPage() {
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Nome"
+          required
         />
         <input
           type="email"
@@ -72,6 +65,7 @@ export default function AddCoachPage() {
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Email"
+          required
         />
         <input
           type="password"
@@ -80,6 +74,7 @@ export default function AddCoachPage() {
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Senha"
+          required
         />
         <button
           type="submit"

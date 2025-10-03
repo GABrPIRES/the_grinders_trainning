@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { emailValidator } from '@/lib/validators/emailValidator';
+import { fetchWithAuth } from '@/lib/api';
 
-export default function EditCoachPage({ params }: { params: { id: string } }) {
+export default function EditCoachPage() {
   const router = useRouter();
-  const { id } = useParams()
+  const { id } = useParams();
   const [coach, setCoach] = useState({
     name: '',
     email: '',
@@ -16,14 +16,15 @@ export default function EditCoachPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!id) return;
     const fetchCoachData = async () => {
-      const res = await fetch(`/api/admin/coachs/${id}`);
-      const data = await res.json();
-      if (res.ok) {
+      try {
+        const data = await fetchWithAuth(`users/${id}`); // Busca na API Rails
         setCoach({ name: data.name, email: data.email, password: '' });
-        setLoading(false);
-      } else {
+      } catch (err: any) {
         setError('Erro ao carregar os dados do coach');
+      } finally {
+        setLoading(false);
       }
     };
     fetchCoachData();
@@ -35,48 +36,28 @@ export default function EditCoachPage({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Limpar erro anterior
     setError('');
   
     try {
-      // Validar e-mail
-      const erroEmail = await emailValidator(coach.email);
-      if (erroEmail) {
-        setError(erroEmail); // Exibe erro no UI
-        return;
-      }
-      // Enviar a requisição de atualização
-      const res = await fetch(`/api/admin/coachs/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(coach),
+      await fetchWithAuth(`users/${id}`, {
+        method: 'PATCH', // Usamos PATCH para atualização
+        body: JSON.stringify({ user: coach }), // Aninhado em 'user'
       });
   
-      // Se a requisição for bem-sucedida
-      if (res.ok) {
-        alert('Dados atualizados com sucesso!');
-        router.push('/admin/coachs');
-      } else {
-        const data = await res.json();
-        console.log('Erro na API PUT:', data);  // Logando o erro da API
-        setError(data.error || 'Erro ao atualizar os dados');
-      }
-    } catch (err) {
-        console.error('Erro na requisição:', err);  // Logando o erro real
-      setError('Erro na conexão');
+      alert('Dados atualizados com sucesso!');
+      router.push('/admin/coachs');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar os dados');
     }
   };
   
-
   if (loading) return <p>Carregando...</p>;
 
+  // O formulário JSX permanece o mesmo
   return (
     <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-4">Editar Coach</h1>
-
       {error && <p className="text-red-600 mb-4">{error}</p>}
-
       <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
         <input
           type="text"

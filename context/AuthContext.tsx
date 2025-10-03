@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { fetchWithAuth } from '@/lib/api'; // Usamos nosso helper de API
 
 type User = {
   id: string;
@@ -25,19 +26,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me', {
-          credentials: 'include', // 👈 ESSENCIAL para enviar o cookie!
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
+      // 1. Verifica se existe um token no localStorage
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
         setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // 2. Usa nosso helper para buscar o perfil na API Rails
+        const userData = await fetchWithAuth('profile'); // Faz a chamada para GET /api/v1/profile
+        setUser(userData); // 3. Define o usuário com os dados recebidos da API
+      } catch (error) {
+        console.error("Falha ao buscar usuário, limpando token:", error);
+        setUser(null);
+        localStorage.removeItem('jwt_token'); // Limpa o token inválido
       } finally {
         setLoading(false);
       }
