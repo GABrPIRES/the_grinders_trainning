@@ -2,28 +2,44 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { emailValidator } from '@/lib/validators/emailValidator';
+import { fetchWithAuth } from '@/lib/api'; // Importamos nosso helper
 
-export default function EditStudentPage({ params }: { params: { id: string } }) {
+export default function EditStudentPage() {
   const router = useRouter();
-  const { id } = useParams()
+  const { id } = useParams(); // ID do perfil do aluno (vem da URL)
+  
   const [student, setStudent] = useState({
     name: '',
     email: '',
     password: '',
+    // Adicione aqui outros campos do Aluno que o coach pode editar
+    phone_number: '',
+    weight: '',
+    objetivo: ''
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!id) return;
     const fetchStudentData = async () => {
-      const res = await fetch(`/api/coach/students/${id}`);
-      const data = await res.json();
-      if (res.ok) {
-        setStudent({ name: data.name, email: data.email, password: '' });
+      try {
+        // Busca os dados do aluno específico do coach logado
+        const data = await fetchWithAuth(`alunos/${id}`);
+        
+        // Preenche o formulário com os dados recebidos
+        setStudent({
+          name: data.user.name,
+          email: data.user.email,
+          password: '', // Senha fica em branco por padrão
+          phone_number: data.phone_number || '',
+          weight: data.weight || '',
+          objetivo: data.objetivo || ''
+        });
+      } catch (err: any) {
+        setError('Erro ao carregar os dados do aluno');
+      } finally {
         setLoading(false);
-      } else {
-        setError('Erro ao carregar os dados do coach');
       }
     };
     fetchStudentData();
@@ -35,45 +51,27 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Limpar erro anterior
     setError('');
   
     try {
-      // Validar e-mail
-      const erroEmail = await emailValidator(student.email);
-      if (erroEmail) {
-        setError(erroEmail); // Exibe erro no UI
-        return;
-      }
-      // Enviar a requisição de atualização
-      const res = await fetch(`/api/coach/students/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(student),
+      // Envia a requisição de atualização para a API Rails
+      await fetchWithAuth(`alunos/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ aluno: student }), // Enviamos o objeto aninhado
       });
   
-      // Se a requisição for bem-sucedida
-      if (res.ok) {
-        alert('Dados atualizados com sucesso!');
-        router.push('/coach/students');
-      } else {
-        const data = await res.json();
-        console.log('Erro na API PUT:', data);  // Logando o erro da API
-        setError(data.error || 'Erro ao atualizar os dados');
-      }
-    } catch (err) {
-        console.error('Erro na requisição:', err);  // Logando o erro real
-      setError('Erro na conexão');
+      alert('Dados atualizados com sucesso!');
+      router.push('/coach/students');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar os dados');
     }
   };
   
-
   if (loading) return <p>Carregando...</p>;
 
   return (
     <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Editar Student</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">Editar Aluno</h1>
 
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
@@ -93,6 +91,30 @@ export default function EditStudentPage({ params }: { params: { id: string } }) 
           onChange={handleChange}
           className="w-full border p-2 rounded"
           placeholder="Email"
+        />
+        <input
+          type="text"
+          name="phone_number"
+          value={student.phone_number}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          placeholder="Telefone"
+        />
+        <input
+          type="text"
+          name="weight"
+          value={student.weight}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          placeholder="Peso (kg)"
+        />
+        <input
+          type="text"
+          name="objetivo"
+          value={student.objetivo}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          placeholder="Objetivo"
         />
         <input
           type="password"

@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { fetchWithAuth } from "@/lib/api"; // 1. Importamos nosso helper
 
+// A API Rails retorna o Aluno com o User aninhado
 interface Student {
-  id: string;
-  name: string;
-  email: string;
+  id: string; // ID do perfil Aluno
+  user: {
+    name: string;
+    email: string;
+  };
 }
 
-export default function CoachStudentsPage() {
-  const { user } = useAuth();
+export default function CoachStudentsForWorkoutsPage() {
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
@@ -25,17 +27,11 @@ export default function CoachStudentsPage() {
     const fetchStudents = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
-          search,
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-
-        const res = await fetch(`/api/coach/students?${params}`);
-        const data = await res.json();
-
-        setStudents(data.students);
-        setTotal(data.total);
+        // 2. Chamamos a API Rails para buscar os alunos do coach
+        const data = await fetchWithAuth(`alunos?search=${search}`);
+        
+        setStudents(data);
+        setTotal(data.length); // Paginação será ajustada no futuro
       } catch (error) {
         console.error("Erro ao buscar alunos:", error);
       } finally {
@@ -50,7 +46,7 @@ export default function CoachStudentsPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 text-neutral-800">
-      <h1 className="text-2xl font-bold mb-6">Alunos</h1>
+      <h1 className="text-2xl font-bold mb-6">Selecionar Aluno para Gerenciar Treinos</h1>
 
       <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
         <input
@@ -63,21 +59,6 @@ export default function CoachStudentsPage() {
           }}
           className="border border-neutral-300 p-2 rounded w-full md:w-1/2"
         />
-
-        <select
-          value={limit}
-          onChange={(e) => {
-            setLimit(parseInt(e.target.value));
-            setPage(1);
-          }}
-          className="border border-neutral-300 p-2 rounded w-full md:w-auto"
-        >
-          {[10, 25, 50].map((n) => (
-            <option key={n} value={n}>
-              {n} por página
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
@@ -92,35 +73,37 @@ export default function CoachStudentsPage() {
             >
               <div className="flex justify-between items-center">
                 <p className="font-semibold">
-                  {index + 1} - {student.name}
+                  {index + 1} - {student.user.name}
                 </p>
-                <span className="text-sm text-neutral-500">{student.email}</span>
+                <span className="text-sm text-neutral-500">{student.user.email}</span>
               </div>
 
               {selectedId === student.id && (
                 <div className="mt-4 border-t pt-4 text-sm space-y-2">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Dados estáticos por enquanto */}
                     <div>
-                      <span className="font-semibold">Pagamento:</span> Pago
+                      <span className="font-semibold">Pagamento:</span> -
                     </div>
                     <div>
-                      <span className="font-semibold">Vencimento:</span> 22/03/2025
+                      <span className="font-semibold">Vencimento:</span> -
                     </div>
                     <div>
-                      <span className="font-semibold">Plano:</span> Mensal - Plus
+                      <span className="font-semibold">Plano:</span> -
                     </div>
                   </div>
                   <div>
-                    <span className="font-semibold">Treino - Última atualização:</span> 22/02/2025
+                    <span className="font-semibold">Treino - Última atualização:</span> -
                   </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      // 3. A rota para ver os treinos do aluno já está correta
                       router.push(`/coach/treinos/${student.id}`);
                     }}
                     className="mt-3 bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
                   >
-                    Editar treino
+                    Gerenciar treinos
                   </button>
                 </div>
               )}
@@ -129,27 +112,7 @@ export default function CoachStudentsPage() {
         </ul>
       )}
 
-      <div className="flex justify-between items-center mt-6 text-sm">
-        <button
-          onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-          disabled={page === 1}
-          className="px-4 py-2 border rounded hover:bg-neutral-100 disabled:opacity-50"
-        >
-          Anterior
-        </button>
-
-        <span>
-          Página {page} de {totalPages || 1}
-        </span>
-
-        <button
-          onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
-          disabled={page >= totalPages}
-          className="px-4 py-2 border rounded hover:bg-neutral-100 disabled:opacity-50"
-        >
-          Próxima
-        </button>
-      </div>
+      {/* Paginação removida temporariamente */}
     </div>
   );
 }

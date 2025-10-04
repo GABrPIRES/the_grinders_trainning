@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/api'; // Importamos nosso helper
 
 export default function AdminSettingsPage() {
     const router = useRouter();
     const { user, loading } = useAuth();
 
     const [form, setForm] = useState({ name: '', email: '' });
-
     const [senhaForm, setSenhaForm] = useState({
-        atual: '',
-        nova: '',
-        confirmar: '',
+        current_password: '',
+        new_password: '',
+        password_confirmation: '',
     });
 
     useEffect(() => {
@@ -39,54 +39,35 @@ export default function AdminSettingsPage() {
   async function atualizarPerfil(e: React.FormEvent) {
     e.preventDefault();
     try {
-        const res = await fetch('/api/users/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(form),
+        await fetchWithAuth('profile', {
+          method: 'PATCH',
+          body: JSON.stringify({ profile: form }),
         });
-    
-        if (!res.ok) {
-          const erro = await res.json();
-          alert(erro.error || 'Erro ao atualizar perfil');
-          return;
-        }
     
         alert('Perfil atualizado com sucesso!');
         router.refresh();
-      } catch (error) {
-        alert('Erro ao atualizar perfil');
-        console.error(error);
+      } catch (err: any) {
+        alert(err.message || 'Erro ao atualizar perfil');
       }
   }
 
   async function alterarSenha(e: React.FormEvent) {
     e.preventDefault();
-    if (senhaForm.nova !== senhaForm.confirmar) {
-      alert('Senhas não conferem!');
+    if (senhaForm.new_password !== senhaForm.password_confirmation) {
+      alert('As novas senhas não conferem!');
       return;
     }
     try{
-        const res = await fetch('/api/users/change-password', {
+        await fetchWithAuth('profile/change_password', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              atual: senhaForm.atual,
-              nova: senhaForm.nova,
-            }),
+            body: JSON.stringify(senhaForm),
           });
 
-        if (!res.ok) {
-            const erro = await res.json();
-            alert(erro.error || 'Erro ao atualizar senha');
-            return;
-        }
-        alert('Senha atualizado com sucesso!');
+        alert('Senha atualizada com sucesso!');
+        setSenhaForm({ current_password: '', new_password: '', password_confirmation: '' }); // Limpa o formulário
         router.refresh();
-    }catch (error) {
-        alert('Erro ao atualizar senha');
-        console.error(error);
+    } catch (err: any) {
+        alert(err.message || 'Erro ao atualizar senha');
     }
   }
 
@@ -94,7 +75,6 @@ export default function AdminSettingsPage() {
     <div className="max-w-3xl mx-auto bg-white p-6 shadow rounded space-y-8">
       <h1 className="text-2xl font-bold text-gray-800 mb-4">Configurações da Conta</h1>
 
-      {/* Editar perfil */}
       <section>
         <h2 className="text-xl text-orange-700 font-semibold mb-2">Editar Perfil</h2>
         <form onSubmit={atualizarPerfil} className="text-neutral-300 space-y-4">
@@ -122,31 +102,30 @@ export default function AdminSettingsPage() {
 
       <hr />
 
-      {/* Alterar senha */}
       <section>
         <h2 className="text-xl text-orange-700 font-semibold mb-2">Alterar Senha</h2>
         <form onSubmit={alterarSenha} className="text-neutral-300 space-y-4">
           <input
             type="password"
-            name="atual"
+            name="current_password"
             placeholder="Senha atual"
-            value={senhaForm.atual}
+            value={senhaForm.current_password}
             onChange={handleSenhaChange}
             className="w-full border p-2 rounded"
           />
           <input
             type="password"
-            name="nova"
+            name="new_password"
             placeholder="Nova senha"
-            value={senhaForm.nova}
+            value={senhaForm.new_password}
             onChange={handleSenhaChange}
             className="w-full border p-2 rounded"
           />
           <input
             type="password"
-            name="confirmar"
+            name="password_confirmation"
             placeholder="Confirmar nova senha"
-            value={senhaForm.confirmar}
+            value={senhaForm.password_confirmation}
             onChange={handleSenhaChange}
             className="w-full border p-2 rounded"
           />

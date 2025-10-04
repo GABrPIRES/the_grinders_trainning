@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { v4 as uuid } from "uuid";
 import { calculatePR } from "@/lib/calculatePR";
+import { fetchWithAuth } from "@/lib/api"; // Importamos nosso helper de API
 
 interface Section {
   id: string;
@@ -18,12 +19,13 @@ interface Section {
 }
 
 export default function CreateWorkoutPage() {
-  const { id } = useParams(); // alunoId
+  const { id } = useParams(); // id do aluno (alunoId)
   const router = useRouter();
 
   const [title, setTitle] = useState("");
   const [duration, setDuration] = useState("");
   const [date, setDate] = useState("");
+  const [error, setError] = useState("");
 
   const [exercises, setExercises] = useState([
     {
@@ -111,28 +113,39 @@ export default function CreateWorkoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     try {
-      const res = await fetch("/api/coach/treinos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          alunoId: id,
+      const payload = {
+        treino: {
+          aluno_id: id,
           name: title,
-          durationTime: parseInt(duration),
+          duration_time: parseInt(duration),
           day: date,
-          exercicios: exercises.map((ex) => ({
+          exercicios_attributes: exercises.map((ex) => ({
             name: ex.name,
-            sections: ex.sections,
+            sections_attributes: ex.sections.map(sec => ({
+              carga: sec.carga,
+              series: sec.series,
+              reps: sec.reps,
+              equip: sec.equip,
+              rpe: sec.rpe,
+              pr: sec.pr,
+              feito: sec.feito
+            })),
           })),
-        }),
+        },
+      };
+
+      await fetchWithAuth("treinos", {
+        method: "POST",
+        body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
-        router.push(`/coach/treinos/${id}`);
-      } else {
-        console.error("Erro ao salvar treino");
-      }
-    } catch (err) {
+      alert("Treino criado com sucesso!");
+      router.push(`/coach/treinos/${id}`);
+    } catch (err: any) {
+      setError(err.message || "Erro ao criar o treino.");
       console.error("Erro na requisição:", err);
     }
   };
@@ -140,6 +153,8 @@ export default function CreateWorkoutPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-neutral-800 mb-6">Criar Treino</h1>
+      {error && <p className="text-red-600 mb-4">{error}</p>}
+      
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid md:grid-cols-3 gap-4">
           <input
@@ -180,83 +195,23 @@ export default function CreateWorkoutPage() {
 
             {exercise.sections.map((section, secIndex) => (
               <div key={section.id} className="grid md:grid-cols-7 gap-2 mb-2 text-sm">
-                <input
-                  type="number"
-                  placeholder="Carga"
-                  className="text-neutral-600 border p-1 rounded"
-                  value={section.carga !== undefined ? section.carga.toString() : ""}
-                  onChange={(e) => handleSectionChange(exIndex, secIndex, "carga", e.target.value)}
-                />
-                <input
-                  type="number"
-                  placeholder="Séries"
-                  className="text-neutral-600 border p-1 rounded"
-                  value={section.series !== undefined ? section.series.toString() : ""}
-                  onChange={(e) => handleSectionChange(exIndex, secIndex, "series", e.target.value)}
-                />
-                <input
-                  type="number"
-                  placeholder="Repetições"
-                  className="text-neutral-600 border p-1 rounded"
-                  value={section.reps !== undefined ? section.reps.toString() : ""}
-                  onChange={(e) => handleSectionChange(exIndex, secIndex, "reps", e.target.value)}
-                />
-                <input
-                  type="text"
-                  placeholder="Equip."
-                  className="text-neutral-600 border p-1 rounded"
-                  value={section.equip}
-                  onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)}
-                />
-                <input
-                  type="number"
-                  placeholder="RPE"
-                  className="text-neutral-600 border p-1 rounded"
-                  value={section.rpe !== undefined ? section.rpe.toString() : ""}
-                  onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)}
-                />
-                <input
-                  type="number"
-                  placeholder="PR (auto)"
-                  className="text-neutral-600 border p-1 rounded bg-gray-100"
-                  value={section.pr !== undefined ? section.pr.toString() : ""}
-                  readOnly
-                />
-                <label className="flex items-center gap-2">
-                  <span className="text-neutral-600 text-xs">Feito</span>
-                  <input
-                    type="checkbox"
-                    checked={section.feito}
-                    onChange={(e) => handleSectionChange(exIndex, secIndex, "feito", e.target.checked)}
-                  />
-                </label>
+                <input type="number" placeholder="Carga" className="text-neutral-600 border p-1 rounded" value={section.carga !== undefined ? section.carga.toString() : ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
+                <input type="number" placeholder="Séries" className="text-neutral-600 border p-1 rounded" value={section.series !== undefined ? section.series.toString() : ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "series", e.target.value)} />
+                <input type="number" placeholder="Reps" className="text-neutral-600 border p-1 rounded" value={section.reps !== undefined ? section.reps.toString() : ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} />
+                <input type="text" placeholder="Equip." className="text-neutral-600 border p-1 rounded" value={section.equip} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} />
+                <input type="number" placeholder="RPE" className="text-neutral-600 border p-1 rounded" value={section.rpe !== undefined ? section.rpe.toString() : ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} />
+                <input type="number" placeholder="PR (auto)" className="text-neutral-600 border p-1 rounded bg-gray-100" value={section.pr !== undefined ? section.pr.toString() : ""} readOnly />
+                <label className="flex items-center gap-2"><span className="text-neutral-600 text-xs">Feito</span><input type="checkbox" checked={!!section.feito} onChange={(e) => handleSectionChange(exIndex, secIndex, "feito", e.target.checked)} /></label>
               </div>
             ))}
 
-            <button
-              type="button"
-              onClick={() => handleAddSection(exercise.id)}
-              className="text-sm text-blue-600 hover:underline mt-2"
-            >
-              + Adicionar série
-            </button>
+            <button type="button" onClick={() => handleAddSection(exercise.id)} className="text-sm text-blue-600 hover:underline mt-2">+ Adicionar série</button>
           </div>
         ))}
 
-        <button
-          type="button"
-          onClick={handleAddExercise}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          + Adicionar exercício
-        </button>
+        <button type="button" onClick={handleAddExercise} className="text-sm text-blue-600 hover:underline">+ Adicionar exercício</button>
 
-        <button
-          type="submit"
-          className="w-full bg-red-700 text-white py-2 rounded hover:bg-red-800"
-        >
-          Finalizar Treino
-        </button>
+        <button type="submit" className="w-full bg-red-700 text-white py-2 rounded hover:bg-red-800">Finalizar Treino</button>
       </form>
     </div>
   );

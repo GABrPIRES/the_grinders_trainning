@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { fetchWithAuth } from "@/lib/api"; // 1. Importamos nosso helper
 
 interface Treino {
   id: string;
@@ -12,7 +13,7 @@ interface Treino {
 }
 
 export default function StudentWorkoutsPage() {
-  const { id } = useParams(); // alunoId
+  const { id } = useParams(); // id do aluno (alunoId)
   const router = useRouter();
   const [workouts, setWorkouts] = useState<Treino[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,10 +23,11 @@ export default function StudentWorkoutsPage() {
       if (!id) return;
       setLoading(true);
       try {
-        const res = await fetch(`/api/coach/treinos?alunoId=${id}`);
-        const data = await res.json();
-
-        const treinos = data.treinos.map((t: any) => ({
+        // 2. Chamamos o endpoint de treinos da API Rails, filtrando pelo alunoId
+        const data = await fetchWithAuth(`treinos?aluno_id=${id}`);
+        
+        // Mapeamos os dados para o formato que o componente espera
+        const treinosFormatados = data.map((t: any) => ({
           id: t.id,
           name: t.name,
           durationTime: t.durationTime,
@@ -33,7 +35,7 @@ export default function StudentWorkoutsPage() {
           exerciciosCount: t.exercicios.length,
         }));
 
-        setWorkouts(treinos);
+        setWorkouts(treinosFormatados);
       } catch (err) {
         console.error("Erro ao carregar treinos:", err);
         setWorkouts([]);
@@ -57,27 +59,20 @@ export default function StudentWorkoutsPage() {
         </button>
       </div>
 
+      {/* A seção de detalhes do aluno pode ser preenchida dinamicamente no futuro */}
       <div className="mb-4 bg-white p-4 rounded border">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="font-semibold">Pagamento:</span> Pago
-          </div>
-          <div>
-            <span className="font-semibold">Vencimento:</span> 22/03/2025
-          </div>
-          <div>
-            <span className="font-semibold">Plano:</span> Mensal - Plus
-          </div>
-          <div>
-            <span className="font-semibold">Último treino:</span> 22/02/2025
-          </div>
+          <div><span className="font-semibold">Pagamento:</span> -</div>
+          <div><span className="font-semibold">Vencimento:</span> -</div>
+          <div><span className="font-semibold">Plano:</span> -</div>
+          <div><span className="font-semibold">Último treino:</span> -</div>
         </div>
       </div>
 
       {loading ? (
         <p>Carregando treinos...</p>
       ) : workouts.length === 0 ? (
-        <p className="text-sm text-neutral-500">Nenhum treino encontrado.</p>
+        <p className="text-sm text-neutral-500">Nenhum treino encontrado para este aluno.</p>
       ) : (
         <ul className="space-y-3">
           {workouts.map((treino) => (
@@ -89,6 +84,7 @@ export default function StudentWorkoutsPage() {
                     {treino.day} - {treino.durationTime} min - {treino.exerciciosCount} exercícios
                   </p>
                 </div>
+                {/* 3. A rota para ver os detalhes do treino está correta */}
                 <button
                   onClick={() => router.push(`/coach/treinos/${id}/${treino.id}`)}
                   className="text-sm text-red-700 cursor-pointer hover:text-red-800"
