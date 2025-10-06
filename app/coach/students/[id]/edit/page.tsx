@@ -2,64 +2,70 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api'; // Importamos nosso helper
+import { fetchWithAuth } from '@/lib/api';
+
+// Tipos para os dados da API
+interface Plan { id: string; name: string; }
+interface Assinatura { plano_id: string; status: string; }
 
 export default function EditStudentPage() {
   const router = useRouter();
-  const { id } = useParams(); // ID do perfil do aluno (vem da URL)
+  const { id } = useParams();
   
-  const [student, setStudent] = useState({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    // Adicione aqui outros campos do Aluno que o coach pode editar
     phone_number: '',
-    weight: '',
-    objetivo: ''
+    plano_id: '',
+    status: 'ativo',
   });
+
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!id) return;
-    const fetchStudentData = async () => {
+    const fetchData = async () => {
       try {
-        // Busca os dados do aluno específico do coach logado
-        const data = await fetchWithAuth(`alunos/${id}`);
+        const [studentData, plansData] = await Promise.all([
+          fetchWithAuth(`alunos/${id}`),
+          fetchWithAuth('planos') // Busca os planos do coach logado
+        ]);
         
-        // Preenche o formulário com os dados recebidos
-        setStudent({
-          name: data.user.name,
-          email: data.user.email,
-          password: '', // Senha fica em branco por padrão
-          phone_number: data.phone_number || '',
-          weight: data.weight || '',
-          objetivo: data.objetivo || ''
+        const activeSubscription = studentData.assinaturas?.find((a: Assinatura) => a.status === 'ativo');
+
+        setFormData({
+          name: studentData.user.name,
+          email: studentData.user.email,
+          password: '',
+          phone_number: studentData.phone_number || '',
+          plano_id: activeSubscription?.plano_id || '',
+          status: studentData.user.status || 'ativo',
         });
-      } catch (err: any) {
-        setError('Erro ao carregar os dados do aluno');
+        setPlans(plansData);
+      } catch (err) {
+        setError('Erro ao carregar os dados');
       } finally {
         setLoading(false);
       }
     };
-    fetchStudentData();
+    fetchData();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStudent({ ...student, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-  
     try {
-      // Envia a requisição de atualização para a API Rails
       await fetchWithAuth(`alunos/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ aluno: student }), // Enviamos o objeto aninhado
+        body: JSON.stringify({ aluno: formData }),
       });
-  
       alert('Dados atualizados com sucesso!');
       router.push('/coach/students');
     } catch (err: any) {
@@ -76,59 +82,23 @@ export default function EditStudentPage() {
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
-        <input
-          type="text"
-          name="name"
-          value={student.name}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Nome"
-        />
-        <input
-          type="email"
-          name="email"
-          value={student.email}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Email"
-        />
-        <input
-          type="text"
-          name="phone_number"
-          value={student.phone_number}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Telefone"
-        />
-        <input
-          type="text"
-          name="weight"
-          value={student.weight}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Peso (kg)"
-        />
-        <input
-          type="text"
-          name="objetivo"
-          value={student.objetivo}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Objetivo"
-        />
-        <input
-          type="password"
-          name="password"
-          value={student.password}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Nova senha (deixe em branco para não alterar)"
-        />
-        <button
-          type="submit"
-          className="w-full bg-red-700 text-white p-2 rounded hover:bg-red-800"
-        >
-          Atualizar
+        <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nome"/>
+        <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Email"/>
+        <input type="text" name="phone_number" value={formData.phone_number} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Telefone"/>
+        <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nova senha (deixe em branco)"/>
+        
+        <select name="plano_id" value={formData.plano_id} onChange={handleChange} className="w-full border p-2 rounded">
+          <option value="">Nenhum plano</option>
+          {plans.map((plan) => (<option key={plan.id} value={plan.id}>{plan.name}</option>))}
+        </select>
+        
+        <select name="status" value={formData.status} onChange={handleChange} className="w-full border p-2 rounded">
+          <option value="ativo">Ativo</option>
+          <option value="inativo">Inativo</option>
+        </select>
+
+        <button type="submit" className="w-full bg-red-700 text-white p-2 rounded hover:bg-red-800">
+          Atualizar Aluno
         </button>
       </form>
     </div>

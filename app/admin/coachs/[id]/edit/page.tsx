@@ -7,11 +7,15 @@ import { fetchWithAuth } from '@/lib/api';
 export default function EditCoachPage() {
   const router = useRouter();
   const { id } = useParams();
+  
+  // 1. Adicionamos 'status' ao estado do formulário
   const [coach, setCoach] = useState({
     name: '',
     email: '',
     password: '',
+    status: 'ativo', // Valor padrão
   });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -19,8 +23,14 @@ export default function EditCoachPage() {
     if (!id) return;
     const fetchCoachData = async () => {
       try {
-        const data = await fetchWithAuth(`users/${id}`); // Busca na API Rails
-        setCoach({ name: data.name, email: data.email, password: '' });
+        const data = await fetchWithAuth(`users/${id}`);
+        // 2. Preenchemos o estado com o status vindo da API
+        setCoach({
+          name: data.name,
+          email: data.email,
+          password: '',
+          status: data.status,
+        });
       } catch (err: any) {
         setError('Erro ao carregar os dados do coach');
       } finally {
@@ -30,7 +40,7 @@ export default function EditCoachPage() {
     fetchCoachData();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setCoach({ ...coach, [e.target.name]: e.target.value });
   };
 
@@ -39,9 +49,10 @@ export default function EditCoachPage() {
     setError('');
   
     try {
+      // 3. O 'status' já está no objeto 'coach', então ele será enviado automaticamente
       await fetchWithAuth(`users/${id}`, {
-        method: 'PATCH', // Usamos PATCH para atualização
-        body: JSON.stringify({ user: coach }), // Aninhado em 'user'
+        method: 'PATCH',
+        body: JSON.stringify({ user: coach }),
       });
   
       alert('Dados atualizados com sucesso!');
@@ -53,7 +64,6 @@ export default function EditCoachPage() {
   
   if (loading) return <p>Carregando...</p>;
 
-  // O formulário JSX permanece o mesmo
   return (
     <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
       <h1 className="text-2xl font-bold text-gray-800 mb-4">Editar Coach</h1>
@@ -83,6 +93,21 @@ export default function EditCoachPage() {
           className="w-full border p-2 rounded"
           placeholder="Nova senha (deixe em branco para não alterar)"
         />
+        
+        {/* 4. Adicionamos o dropdown de status */}
+        <div>
+          <select
+            id="status"
+            name="status"
+            value={coach.status}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          >
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+          </select>
+        </div>
+
         <button
           type="submit"
           className="w-full bg-red-700 text-white p-2 rounded hover:bg-red-800"

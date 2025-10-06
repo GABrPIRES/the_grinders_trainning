@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api'; // 1. Importamos nosso helper
+import { fetchWithAuth } from '@/lib/api';
 import Cleave from 'cleave.js/react';
 import 'cleave.js/dist/addons/cleave-phone.br';
+
+interface Plan {
+  id: string;
+  name: string;
+}
 
 export default function AddStudentPage() {
   const [student, setStudent] = useState({
@@ -12,11 +17,26 @@ export default function AddStudentPage() {
     email: '',
     phoneNumber: '',
     password: '',
+    planoId: '', // Novo campo para o ID do plano
   });
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Busca os planos do coach logado para preencher o dropdown
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await fetchWithAuth('planos');
+        setPlans(data);
+      } catch (err) {
+        console.error("Falha ao carregar planos:", err);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setStudent({ ...student, [e.target.name]: e.target.value });
   };
 
@@ -25,16 +45,15 @@ export default function AddStudentPage() {
     setError('');
 
     try {
-      // 2. Usamos o fetchWithAuth para chamar a API Rails
       await fetchWithAuth('alunos', {
         method: 'POST',
         body: JSON.stringify({
-          // 3. Enviamos os dados no formato que a API espera
           aluno: {
             name: student.name,
             email: student.email,
             password: student.password,
-            phone_number: student.phoneNumber, // Convertido para snake_case
+            phone_number: student.phoneNumber,
+            plano_id: student.planoId || null, // Envia null se nenhum plano for selecionado
           },
         }),
       });
@@ -52,46 +71,40 @@ export default function AddStudentPage() {
 
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
-      {/* O formulário JSX permanece o mesmo, mas com 'phoneNumber' */}
       <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
         <input
-          type="text"
-          name="name"
-          value={student.name}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Nome"
-          required
+          type="text" name="name" value={student.name} onChange={handleChange}
+          className="w-full border p-2 rounded" placeholder="Nome" required
         />
         <input
-          type="email"
-          name="email"
-          value={student.email}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Email"
-          required
+          type="email" name="email" value={student.email} onChange={handleChange}
+          className="w-full border p-2 rounded" placeholder="Email" required
         />
         <Cleave
-          name="phoneNumber"
-          value={student.phoneNumber}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="(11) 98888-7777"
-          options={{
-            phone: true,
-            phoneRegionCode: 'BR',
-          }}
+          name="phoneNumber" value={student.phoneNumber} onChange={handleChange}
+          className="w-full border p-2 rounded" placeholder="(11) 98888-7777"
+          options={{ phone: true, phoneRegionCode: 'BR' }}
         />
         <input
-          type="password"
-          name="password"
-          value={student.password}
+          type="password" name="password" value={student.password} onChange={handleChange}
+          className="w-full border p-2 rounded" placeholder="Senha" required
+        />
+        
+        {/* Novo campo para selecionar o plano */}
+        <select
+          name="planoId"
+          value={student.planoId}
           onChange={handleChange}
           className="w-full border p-2 rounded"
-          placeholder="Senha"
-          required
-        />
+        >
+          <option value="">Nenhum plano (apenas cadastro)</option>
+          {plans.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name}
+            </option>
+          ))}
+        </select>
+
         <button
           type="submit"
           className="w-full bg-red-700 text-white p-2 rounded cursor-pointer hover:bg-red-800"

@@ -2,18 +2,29 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, User, Home, Dumbbell, CreditCard, Settings, HelpCircle } from 'lucide-react';
+import {
+  LogOut,
+  User,
+  Home,
+  Dumbbell,
+  CreditCard,
+  Settings,
+  HelpCircle,
+  Shield, // Ícone para a página "Meu Coach"
+} from 'lucide-react';
 import { logout } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
+// Itens de navegação atualizados para o Aluno
 const navItems = [
-  { label: 'Home', href: '/coach', icon: <Home /> },
-  { label: 'Profile', href: '/coach/profile', icon: <User /> },
-  { label: 'Workouts', href: '/coach/workouts', icon: <Dumbbell /> },
-  { label: 'Payment', href: '/coach/payment', icon: <CreditCard /> },
-  { label: 'Settings', href: '/coach/settings', icon: <Settings /> },
-  { label: 'Help', href: '/coach/help', icon: <HelpCircle /> },
+  { label: 'Home', href: '/aluno', icon: <Home size={18} /> },
+  { label: 'Meus Treinos', href: '/aluno/treinos', icon: <Dumbbell size={18} /> },
+  { label: 'Meu Coach', href: '/aluno/coach', icon: <Shield size={18} /> },
+  { label: 'Pagamentos', href: '/aluno/payment', icon: <CreditCard size={18} /> },
+  { label: 'Meu Perfil', href: '/aluno/profile', icon: <User size={18} /> },
+  { label: 'Configurações', href: '/aluno/settings', icon: <Settings size={18} /> },
+  { label: 'Ajuda', href: '/aluno/help', icon: <HelpCircle size={18} /> },
 ];
 
 export default function AlunoSidebar() {
@@ -43,12 +54,12 @@ export default function AlunoSidebar() {
         {/* Menu */}
         <nav className="mt-6 space-y-2 px-4">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md transition ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-md transition font-medium ${
                   isActive ? 'bg-red-700 text-white' : 'hover:bg-gray-800 text-gray-300'
                 }`}
               >
@@ -66,7 +77,7 @@ export default function AlunoSidebar() {
           onClick={handleLogout}
           className="flex items-center gap-3 text-gray-400 cursor-pointer hover:text-red-600 w-full"
         >
-          <LogOut />
+          <LogOut size={18} />
           <span>Log out</span>
         </button>
       </div>

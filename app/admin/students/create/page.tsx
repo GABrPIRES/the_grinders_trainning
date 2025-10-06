@@ -2,15 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api'; // Importamos nosso helper
+import { fetchWithAuth } from '@/lib/api';
 import Cleave from 'cleave.js/react';
 import 'cleave.js/dist/addons/cleave-phone.br';
 
-// Tipagem para o Coach, como recebido da nossa API Rails
 interface Coach {
   id: string;
   name: string;
   email: string;
+}
+
+interface Plan {
+  id: string;
+  name: string;
 }
 
 export default function AddStudentPage() {
@@ -19,24 +23,52 @@ export default function AddStudentPage() {
     email: '',
     phoneNumber: '',
     password: '',
-    personalId: '', // ID do coach selecionado
+    personalId: '',
+    planoId: '',
   });
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
-  // Busca a lista de coaches da API Rails quando o componente monta
+  // 1. Busca apenas os coaches na inicialização
   useEffect(() => {
     const fetchCoaches = async () => {
       try {
-        const data = await fetchWithAuth('admin/coaches');
-        setCoaches(data);
+        const coachesData = await fetchWithAuth('admin/coaches');
+        setCoaches(coachesData);
       } catch (err) {
         setError('Falha ao carregar a lista de coaches.');
       }
     };
     fetchCoaches();
   }, []);
+
+  // 2. Novo useEffect: Observa a seleção do coach
+  useEffect(() => {
+    const fetchPlansForCoach = async () => {
+      // Se nenhum coach for selecionado, limpa a lista de planos
+      if (!student.personalId) {
+        setPlans([]);
+        setStudent(prev => ({ ...prev, planoId: '' })); // Reseta a seleção do plano
+        return;
+      }
+
+      setLoadingPlans(true);
+      try {
+        const plansData = await fetchWithAuth(`admin/planos?personal_id=${student.personalId}`);
+        setPlans(plansData);
+      } catch (err) {
+        console.error("Erro ao buscar planos do coach:", err);
+        setPlans([]);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    fetchPlansForCoach();
+  }, [student.personalId]); // 3. Dispara sempre que o coach selecionado mudar
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setStudent({ ...student, [e.target.name]: e.target.value });
@@ -45,9 +77,9 @@ export default function AddStudentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    console.log(student);
+
     try {
-      await fetchWithAuth('admin/alunos', { 
+      await fetchWithAuth('admin/alunos', {
         method: 'POST',
         body: JSON.stringify({
           aluno: {
@@ -56,6 +88,7 @@ export default function AddStudentPage() {
             password: student.password,
             phone_number: student.phoneNumber,
             personal_id: student.personalId,
+            plano_id: student.planoId || null,
           },
         }),
       });
@@ -67,59 +100,20 @@ export default function AddStudentPage() {
     }
   };
 
-
   return (
     <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Adicionar Student</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-4">Adicionar Aluno (Admin)</h1>
 
       {error && <p className="text-red-600 mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
-        <input
-          type="text"
-          name="name"
-          value={student.name}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Nome"
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          value={student.email}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Email"
-          required
-        />
-        <Cleave
-          name="phoneNumber"
-          value={student.phoneNumber}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="(11) 98888-7777"
-          options={{
-            phone: true,
-            phoneRegionCode: 'BR',
-          }}
-        />
-        <input
-          type="password"
-          name="password"
-          value={student.password}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Senha"
-          required
-        />
-        <select
-          name="personalId"
-          value={student.personalId}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          required
-        >
+        {/* ... (campos de nome, email, telefone, senha) ... */}
+        <input type="text" name="name" value={student.name} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nome" required />
+        <input type="email" name="email" value={student.email} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Email" required />
+        <Cleave name="phoneNumber" value={student.phoneNumber} onChange={handleChange} className="w-full border p-2 rounded" placeholder="(11) 98888-7777" options={{ phone: true, phoneRegionCode: 'BR' }} />
+        <input type="password" name="password" value={student.password} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Senha" required />
+
+        <select name="personalId" value={student.personalId} onChange={handleChange} className="w-full border p-2 rounded" required >
           <option value="">Selecione um Coach</option>
           {coaches.map((coach) => (
             <option key={coach.id} value={coach.id}>
@@ -127,11 +121,27 @@ export default function AddStudentPage() {
             </option>
           ))}
         </select>
-        <button
-          type="submit"
-          className="w-full bg-red-700 text-white p-2 rounded cursor-pointer hover:bg-red-800"
+
+        {/* 4. Dropdown de planos agora é condicional */}
+        <select
+          name="planoId"
+          value={student.planoId}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+          disabled={!student.personalId || loadingPlans} // Desabilitado se nenhum coach for selecionado ou se estiver carregando
         >
-          Adicionar Student
+          <option value="">
+            {loadingPlans ? "Carregando planos..." : "Nenhum plano (apenas cadastro)"}
+          </option>
+          {plans.map((plan) => (
+            <option key={plan.id} value={plan.id}>
+              {plan.name}
+            </option>
+          ))}
+        </select>
+
+        <button type="submit" className="w-full bg-red-700 text-white p-2 rounded cursor-pointer hover:bg-red-800">
+          Adicionar Aluno
         </button>
       </form>
     </div>
