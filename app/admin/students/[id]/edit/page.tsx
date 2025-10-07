@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { fetchWithAuth } from '@/lib/api';
+import { ArrowLeft } from 'lucide-react';
 
 interface Coach { id: string; name: string; email: string; }
 interface Plan { id: string; name: string; }
@@ -111,7 +112,14 @@ export default function EditStudentPage() {
 
   return (
     <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Editar Aluno (Admin)</h1>
+      <div className="border-b pb-4 mb-6">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
+          <ArrowLeft size={16} />
+          Voltar para a lista de alunos
+        </button>
+        <h1 className="text-2xl font-bold text-gray-800">Editar Aluno</h1>
+      </div>
+      
       {error && <p className="text-red-600 mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
         <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nome"/>

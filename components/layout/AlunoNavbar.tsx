@@ -10,13 +10,12 @@ import {
   CreditCard,
   Settings,
   HelpCircle,
-  Shield, // Ícone para a página "Meu Coach"
+  Shield,
 } from 'lucide-react';
 import { logout } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-// Itens de navegação atualizados para o Aluno
 const navItems = [
   { label: 'Home', href: '/aluno', icon: <Home size={18} /> },
   { label: 'Meus Treinos', href: '/aluno/treinos', icon: <Dumbbell size={18} /> },
@@ -39,7 +38,6 @@ export default function AlunoSidebar() {
   return (
     <div className="w-64 h-screen bg-black text-white flex flex-col justify-between">
       <div>
-        {/* Logo */}
         <div className="text-center py-6 border-b border-gray-700">
             <Image
                 src="/images/logo-the-grinders-2.png"
@@ -50,11 +48,14 @@ export default function AlunoSidebar() {
                 priority
             />
         </div>
-
-        {/* Menu */}
         <nav className="mt-6 space-y-2 px-4">
           {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            // --- AQUI ESTÁ A CORREÇÃO ---
+            // Para a Home, checamos a igualdade exata. Para os outros, usamos startsWith.
+            const isActive = item.href === '/aluno' 
+              ? pathname === item.href 
+              : pathname.startsWith(item.href);
+
             return (
               <Link
                 key={item.href}
@@ -70,8 +71,6 @@ export default function AlunoSidebar() {
           })}
         </nav>
       </div>
-
-      {/* Logout */}
       <div className="px-4 pb-6">
         <button
           onClick={handleLogout}

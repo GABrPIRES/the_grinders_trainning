@@ -3,14 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Edit } from 'lucide-react';
-import { fetchWithAuth } from '@/lib/api'; // 1. Importamos nosso helper
+import { fetchWithAuth } from '@/lib/api';
 
 type Student = {
   id: string;
-  name: string;
-  email: string;
-  user: { // 2. Adicionamos o objeto 'user' para corresponder à resposta da API Rails
-    id: string;
+  user: {
     name: string;
     email: string;
   }
@@ -19,23 +16,27 @@ type Student = {
 export default function AdminStudentListPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
-  // Paginação será implementada no futuro
-  // const [limit, setLimit] = useState(10);
-  // const [page, setPage] = useState(1);
-  // const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ search });
+      // 1. Enviamos os parâmetros de paginação e busca
+      const params = new URLSearchParams({
+        search,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
 
-      // 3. Chamamos o endpoint de admin da nossa API Rails
       const data = await fetchWithAuth(`admin/alunos?${params}`);
 
-      setStudents(data);
-      // setTotal(data.total); // Paginação futura
+      // 2. A resposta da API agora é um objeto com 'alunos' e 'total'
+      setStudents(data.alunos);
+      setTotal(data.total);
     } catch (error) {
       console.error('Erro ao carregar students:', error);
     } finally {
@@ -43,11 +44,12 @@ export default function AdminStudentListPage() {
     }
   };
 
+  // 3. O useEffect agora depende de 'page' e 'limit'
   useEffect(() => {
     fetchStudents();
-  }, [search]); // Dependência apenas da busca por enquanto
+  }, [search, page, limit]);
 
-  // const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="max-w-4xl mx-auto bg-white shadow p-6 rounded-md">
@@ -66,15 +68,34 @@ export default function AdminStudentListPage() {
           type="text"
           placeholder="Buscar por nome ou e-mail"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           className="border p-2 rounded w-full md:w-1/2"
         />
+
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(parseInt(e.target.value));
+            setPage(1);
+          }}
+          className="p-2 border rounded w-full md:w-auto"
+        >
+          {[10, 20, 50].map((num) => (
+            <option key={num} value={num}>
+              {num} por página
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
         <p>Carregando...</p>
       ) : (
         <table className="w-full table-auto border-collapse">
+          {/* ... (código da tabela, sem alterações) ... */}
           <thead>
             <tr className="bg-neutral-500 text-left">
               <th className="p-2 border">Nome</th>
@@ -86,7 +107,6 @@ export default function AdminStudentListPage() {
           <tbody>
             {students.map((student) => (
               <tr key={student.id} className="text-neutral-800 hover:bg-gray-100">
-                {/* 4. Acessamos os dados através de student.user */}
                 <td className="p-2 border border-neutral-100">{student.user.name}</td>
                 <td className="p-2 border border-neutral-100">{student.user.email}</td>
                 <td className="p-2 border border-neutral-100 text-xs">{student.id}</td>
@@ -103,7 +123,29 @@ export default function AdminStudentListPage() {
           </tbody>
         </table>
       )}
-      {/* Lógica de paginação removida temporariamente */}
+
+      {/* 4. Controles de paginação agora funcionarão corretamente */}
+      <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
+        <button
+          onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+          disabled={page === 1 || loading}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+
+        <span>
+          Página {page} de {totalPages || 1}
+        </span>
+
+        <button
+          onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
+          disabled={page >= totalPages || loading}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+        >
+          Próxima
+        </button>
+      </div>
     </div>
   );
 }
