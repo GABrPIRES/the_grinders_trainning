@@ -5,6 +5,7 @@ import { useState } from "react";
 import { v4 as uuid } from "uuid";
 import { calculatePR } from "@/lib/calculatePR";
 import { fetchWithAuth } from "@/lib/api"; // Importamos nosso helper de API
+import { ArrowLeft } from "lucide-react";
 
 interface Section {
   id: string;
@@ -152,7 +153,14 @@ export default function CreateWorkoutPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-neutral-800 mb-6">Criar Treino</h1>
+      <div className="border-b pb-4 mb-6">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
+          <ArrowLeft size={16} />
+          Voltar para os treinos do aluno
+        </button>
+        <h1 className="text-2xl font-bold text-gray-800">Criar Treino</h1>
+      </div>
+
       {error && <p className="text-red-600 mb-4">{error}</p>}
       
       <form onSubmit={handleSubmit} className="space-y-6">

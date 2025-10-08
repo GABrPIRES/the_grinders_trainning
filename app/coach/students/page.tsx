@@ -3,43 +3,53 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Edit } from 'lucide-react';
-import { fetchWithAuth } from '@/lib/api'; // 1. Importamos nosso helper
+import { fetchWithAuth } from '@/lib/api';
 
-// A API Rails retorna o Aluno com o User aninhado
 type Student = {
-  id: string; // ID do perfil Aluno
+  id: string;
   user: {
-    id: string; // ID do User
     name: string;
     email: string;
-  }
+  };
 };
 
 export default function CoachStudentListPage() {
+  const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      // 1. Enviamos os parâmetros de paginação e busca
+      const params = new URLSearchParams({
+        search,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      const data = await fetchWithAuth(`alunos?${params}`);
+
+      // 2. A resposta da API agora é um objeto com 'alunos' e 'total'
+      setStudents(data.alunos);
+      setTotal(data.total);
+    } catch (error) {
+      console.error('Erro ao carregar alunos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. O useEffect agora depende de 'page' e 'limit'
   useEffect(() => {
-    const fetchStudents = async () => {
-      setLoading(true);
-      try {
-        // 2. Chamamos o endpoint de alunos do Rails para o coach.
-        // A API já filtra e retorna apenas os alunos do coach logado.
-        // Adicionamos o parâmetro de busca que a API Rails espera.
-        const data = await fetchWithAuth(`alunos?search=${search}`);
-        
-        setStudents(data);
-      } catch (error) {
-        console.error('Erro ao carregar alunos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStudents();
-  }, [search]);
+  }, [search, page, limit]);
+
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="max-w-4xl mx-auto bg-white shadow p-6 rounded-md">
@@ -58,9 +68,26 @@ export default function CoachStudentListPage() {
           type="text"
           placeholder="Buscar por nome ou e-mail"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1); // Reseta para a primeira página ao buscar
+          }}
           className="border p-2 rounded w-full md:w-1/2"
         />
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(parseInt(e.target.value));
+            setPage(1); // Reseta para a primeira página ao mudar o limite
+          }}
+          className="p-2 border rounded w-full md:w-auto"
+        >
+          {[10, 20, 50].map((num) => (
+            <option key={num} value={num}>
+              {num} por página
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
@@ -71,17 +98,14 @@ export default function CoachStudentListPage() {
             <tr className="bg-neutral-500 text-left">
               <th className="p-2 border">Nome</th>
               <th className="p-2 border">E-mail</th>
-              <th className="p-2 border">ID do Aluno</th>
               <th className="p-2 border text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {students.map((student) => (
-              <tr key={student.id} className="text-neutral-800 hover:bg-gray-100">
-                {/* 3. Acessamos os dados através de student.user */}
+              <tr key={student.id} className="text-neutral-800 hover:bg-gray-100 text-sm">
                 <td className="p-2 border border-neutral-100">{student.user.name}</td>
                 <td className="p-2 border border-neutral-100">{student.user.email}</td>
-                <td className="p-2 border border-neutral-100 text-xs">{student.id}</td>
                 <td className="p-2 border border-neutral-100 text-center">
                   <button
                     onClick={() => router.push(`/coach/students/${student.id}/edit`)}
@@ -95,7 +119,27 @@ export default function CoachStudentListPage() {
           </tbody>
         </table>
       )}
-      {/* Paginação pode ser adicionada no futuro, adaptando a API Rails */}
+
+      {/* 4. Controles de paginação */}
+      <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
+        <button
+          onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+          disabled={page === 1 || loading}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <span>
+          Página {page} de {totalPages || 1}
+        </span>
+        <button
+          onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
+          disabled={page >= totalPages || loading}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+        >
+          Próxima
+        </button>
+      </div>
     </div>
   );
 }

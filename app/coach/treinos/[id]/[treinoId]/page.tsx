@@ -6,6 +6,7 @@ import { Pencil, Copy, Plus, Trash } from "lucide-react";
 import { calculatePR } from "@/lib/calculatePR";
 import { v4 as uuid } from "uuid";
 import { fetchWithAuth } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
 
 // Tipos atualizados para snake_case e com a flag 'isNew'
 interface Section {
@@ -199,6 +200,12 @@ export default function ViewTreinoPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 text-neutral-800">
+      <div className="border-b pb-4 mb-6">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
+          <ArrowLeft size={16} />
+          Voltar para a lista de treinos
+        </button>
+      </div>
       <div className="flex justify-between items-start mb-4">
         <div className="w-full">
           {editMode ? (
@@ -213,7 +220,7 @@ export default function ViewTreinoPage() {
             <>
               <h1 className="text-2xl font-bold mb-2">{treino.name}</h1>
               <p className="text-sm text-neutral-600">
-                {new Date(treino.day).toLocaleDateString("pt-BR")} - {treino.duration_time} min
+              {new Date(treino.day).toLocaleDateString("pt-BR", { timeZone: 'UTC' })} - {treino.duration_time} min
               </p>
             </>
           )}
