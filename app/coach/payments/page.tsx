@@ -2,21 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash, Banknote, KeyRound, Edit, PlusCircle, X } from 'lucide-react';
+import { Trash, Banknote, KeyRound } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 
 // --- Tipos para os dados da API ---
+interface Pagamento { amount: number; due_date: string; status: string; }
 interface User { id: string; name: string; }
-interface Aluno { id: string; user: User; }
-interface Pagamento {
-  id: string;
-  aluno_id: string;
-  aluno?: Aluno;
-  amount: number;
-  due_date: string;
-  paid_at: string | null;
-  status: 'pendente' | 'pago' | 'atrasado';
-}
+interface Aluno { id: string; user: User; next_payment: Pagamento | null; }
 interface PaymentMethod { id: string; method_type: 'pix' | 'bank_account'; details: any; }
 
 // --- Componente Principal da Página ---
@@ -25,22 +17,28 @@ export default function CoachPaymentsPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const router = useRouter(); // Inicialize o router
+  const router = useRouter();
+
+  // Estados para paginação
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
 
   // Formulários para adicionar métodos de pagamento
   const [pixForm, setPixForm] = useState({ key_type: 'cpf', key: '' });
   const [bankForm, setBankForm] = useState({ bank_name: '', agency: '', account_number: '', holder_name: '' });
 
-
   const fetchPageData = async () => {
     setLoading(true);
     try {
-      const [methodsData, alunosData] = await Promise.all([
+      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+      const [methodsData, alunosResponse] = await Promise.all([
         fetchWithAuth('payment_methods'),
-        fetchWithAuth('alunos')
+        fetchWithAuth(`alunos?${params}`)
       ]);
       setPaymentMethods(methodsData);
-      setAlunos(alunosData);
+      setAlunos(alunosResponse.alunos);
+      setTotal(alunosResponse.total);
     } catch (err: any) {
       setError('Erro ao carregar dados da página.');
     } finally {
@@ -48,7 +46,8 @@ export default function CoachPaymentsPage() {
     }
   };
 
-  useEffect(() => { fetchPageData(); }, []);
+  useEffect(() => { fetchPageData(); }, [page, limit]);
+
   
   const handleAddPix = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +58,7 @@ export default function CoachPaymentsPage() {
       });
       alert('Chave PIX adicionada!');
       setPixForm({ key_type: 'cpf', key: '' });
-      fetchPageData(); // Recarrega todos os dados da página
+      fetchPageData();
     } catch (err: any) { alert(err.message); }
   };
 
@@ -86,11 +85,11 @@ export default function CoachPaymentsPage() {
     }
   };
 
-
+  const totalPages = Math.ceil(total / limit);
   const pixKeys = paymentMethods.filter(p => p.method_type === 'pix');
   const bankAccount = paymentMethods.find(p => p.method_type === 'bank_account');
 
-  if (loading) return <p className="text-neutral-800 p-6">Carregando...</p>;
+  if (loading && page === 1) return <p className="text-neutral-800 p-6">Carregando...</p>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-12 p-6">
@@ -160,24 +159,45 @@ export default function CoachPaymentsPage() {
       <section className="bg-white p-6 shadow rounded-md">
         <h1 className="text-2xl font-bold text-neutral-800 mb-4 border-b pb-4">Pagamentos dos Alunos</h1>
         {error && <p className="text-red-600">{error}</p>}
-        <div className="space-y-3">
-          {alunos.length > 0 ? alunos.map(aluno => (
-            <div 
-              key={aluno.id} 
-              onClick={() => router.push(`/coach/payments/${aluno.id}`)}
-              className="border p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
-            >
-              <div>
-                <p className="font-bold text-lg">{aluno.user.name}</p>
-                {/* Lógica para exibir próximo pagamento será adicionada aqui */}
-                <p className="text-sm text-neutral-600">Próximo Vencimento: -</p>
+        {loading ? <p>Atualizando lista...</p> : (
+          <div className="space-y-3">
+            {alunos.length > 0 ? alunos.map(aluno => (
+              <div 
+                key={aluno.id} 
+                onClick={() => router.push(`/coach/payments/${aluno.id}`)}
+                className="border p-4 rounded-lg flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <div>
+                  <p className="font-bold text-lg">{aluno.user.name}</p>
+                  <p className="text-sm text-neutral-600">
+                    Próximo Vencimento: {aluno.next_payment ? new Date(aluno.next_payment.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">
+                    {aluno.next_payment ? `R$ ${aluno.next_payment.amount.toFixed(2).replace('.', ',')}` : '-'}
+                  </p>
+                  <p className={`text-sm font-bold ${
+                    aluno.next_payment?.status === 'atrasado' ? 'text-red-600 animate-pulse' : 
+                    aluno.next_payment?.status === 'pendente' ? 'text-orange-500' : 'text-gray-500'
+                  }`}>
+                    {aluno.next_payment?.status ? (aluno.next_payment.status.charAt(0).toUpperCase() + aluno.next_payment.status.slice(1)) : 'Em dia'}
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-semibold">-</p>
-                <p className="text-sm font-bold text-gray-500">Status: -</p>
-              </div>
-            </div>
-          )) : <p className="text-neutral-500">Nenhum aluno cadastrado para gerenciar pagamentos.</p>}
+            )) : <p className="text-neutral-500">Nenhum aluno cadastrado.</p>}
+          </div>
+        )}
+        
+        {/* Controles de Paginação */}
+        <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1 || loading} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50">
+            Anterior
+          </button>
+          <span>Página {page} de {totalPages || 1}</span>
+          <button onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages || loading} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50">
+            Próxima
+          </button>
         </div>
       </section>
     </div>
