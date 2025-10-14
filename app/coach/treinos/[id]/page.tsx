@@ -82,7 +82,7 @@ export default function StudentTrainingBlocksPage() {
             <li 
               key={block.id} 
               // Futuramente, esta rota levará para os detalhes do bloco
-              onClick={() => alert(`Navegar para o bloco ${block.id} em breve!`)}
+              onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${block.id}`)}
               className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             >
               <div className="flex justify-between items-center">
