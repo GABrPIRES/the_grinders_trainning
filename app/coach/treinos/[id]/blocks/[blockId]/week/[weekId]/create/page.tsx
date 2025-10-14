@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { v4 as uuid } from "uuid";
 import { calculatePR } from "@/lib/calculatePR";
-import { fetchWithAuth } from "@/lib/api"; // Importamos nosso helper de API
+import { fetchWithAuth } from "@/lib/api";
 import { ArrowLeft } from "lucide-react";
 
 interface Section {
@@ -20,7 +20,8 @@ interface Section {
 }
 
 export default function CreateWorkoutPage() {
-  const { id } = useParams(); // id do aluno (alunoId)
+  // ATUALIZADO: Pegamos todos os IDs da rota
+  const { id: alunoId, blockId, weekId } = useParams();
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -38,6 +39,8 @@ export default function CreateWorkoutPage() {
     },
   ]);
 
+  // Funções handleAddExercise, handleAddSection, handleExerciseChange, handleSectionChange
+  // permanecem EXATAMENTE IGUAIS às que você já tinha.
   const handleAddExercise = () => {
     setExercises((prev) => [
       ...prev,
@@ -119,7 +122,8 @@ export default function CreateWorkoutPage() {
     try {
       const payload = {
         treino: {
-          aluno_id: id,
+          // ATUALIZADO: Não enviamos mais o aluno_id
+          // aluno_id: id, (REMOVIDO)
           name: title,
           duration_time: parseInt(duration),
           day: date,
@@ -138,13 +142,15 @@ export default function CreateWorkoutPage() {
         },
       };
 
-      await fetchWithAuth("treinos", {
+      // ATUALIZADO: Usamos a nova rota da API aninhada em 'weeks'
+      await fetchWithAuth(`weeks/${weekId}/treinos`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
 
       alert("Treino criado com sucesso!");
-      router.push(`/coach/treinos/${id}`);
+      // ATUALIZADO: Volta para a página de detalhes da semana
+      router.push(`/coach/treinos/${alunoId}/blocks/${blockId}/week/${weekId}`);
     } catch (err: any) {
       setError(err.message || "Erro ao criar o treino.");
       console.error("Erro na requisição:", err);
@@ -154,15 +160,20 @@ export default function CreateWorkoutPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="border-b pb-4 mb-6">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
+        <button 
+          // ATUALIZADO: Botão "Voltar" agora aponta para a página da semana
+          onClick={() => router.back()} 
+          className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2"
+        >
           <ArrowLeft size={16} />
-          Voltar para os treinos do aluno
+          Voltar para a semana
         </button>
         <h1 className="text-2xl font-bold text-gray-800">Criar Treino</h1>
       </div>
 
       {error && <p className="text-red-600 mb-4">{error}</p>}
       
+      {/* O formulário abaixo é idêntico ao que você já tinha */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid md:grid-cols-3 gap-4">
           <input

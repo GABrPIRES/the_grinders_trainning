@@ -98,8 +98,7 @@ export default function BlockDetailsPage() {
         {block.weeks.map(week => (
           <li 
             key={week.id}
-            // Futuramente, isso levará para a lista de treinos da semana
-            onClick={() => alert(`Em breve: ver treinos da Semana ${week.week_number}`)}
+            onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${blockId}/week/${week.id}`)}
             className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           >
             <div className="flex justify-between items-center">
