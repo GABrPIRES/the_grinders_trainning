@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 
-// Interface atualizada para receber os novos dados da API
+// Interface atualizada (sem treino_info)
 interface Student {
   id: string;
   user: { name: string; email: string; };
   pagamento: { vencimento: string | null; status: string | null; };
   plano: { nome: string | null; };
-  treino_info: { proximo_treino: string | null; ultima_atualizacao: string | null; };
+  // A propriedade treino_info foi removida
 }
 
 export default function CoachStudentsForWorkoutsPage() {
@@ -42,7 +42,6 @@ export default function CoachStudentsForWorkoutsPage() {
 
   const totalPages = Math.ceil(total / limit);
 
-  // Função para formatar datas de forma segura
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -84,18 +83,19 @@ export default function CoachStudentsForWorkoutsPage() {
                     <div><span className="font-semibold">Status:</span> <span className={student.pagamento.status === 'ativo' ? 'text-green-600 font-bold' : 'text-orange-500 font-bold'}>{student.pagamento.status || '-'}</span></div>
                     <div><span className="font-semibold">Vencimento:</span> {formatDate(student.pagamento.vencimento)}</div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div><span className="font-semibold">Próximo Treino:</span> {formatDate(student.treino_info.proximo_treino)}</div>
-                    <div><span className="font-semibold">Última Atualização:</span> {formatDate(student.treino_info.ultima_atualizacao)}</div>
-                  </div>
+                  
+                  {/* AS LINHAS QUE CAUSAVAM O ERRO FORAM REMOVIDAS DAQUI
+                  */}
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      // Agora isso leva para a página de blocos do aluno
                       router.push(`/coach/treinos/${student.id}`);
                     }}
                     className="mt-3 bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
                   >
-                    Gerenciar treinos
+                    Gerenciar blocos de treino
                   </button>
                 </div>
               )}
