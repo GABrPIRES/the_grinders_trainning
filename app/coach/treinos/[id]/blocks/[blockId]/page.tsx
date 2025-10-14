@@ -85,7 +85,7 @@ export default function BlockDetailsPage() {
           </div>
         </div>
         <button 
-          onClick={() => alert('Em breve: Editar dados do bloco!')}
+          onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${blockId}/edit`)}
           className="p-2 border rounded cursor-pointer hover:bg-neutral-100"
           aria-label="Editar Bloco"
         >
