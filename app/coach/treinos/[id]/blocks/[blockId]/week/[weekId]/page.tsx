@@ -76,13 +76,6 @@ export default function WeekDetailsPage() {
             Período: {formatDate(week.start_date)} - {formatDate(week.end_date)}
           </p>
         </div>
-        <button 
-          onClick={() => alert('Em breve: Editar datas da semana!')}
-          className="p-2 border rounded cursor-pointer hover:bg-neutral-100"
-          aria-label="Editar Semana"
-        >
-          <Edit size={18} />
-        </button>
       </div>
 
       <div className="flex justify-between items-center mb-4">
