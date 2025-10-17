@@ -56,6 +56,24 @@ export default function BlockDetailsPage() {
     if (!dateString) return 'N/D';
     return new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
   };
+  
+  // --- NOVA LÓGICA ---
+  // Função para verificar se a data de hoje está no intervalo da semana
+  const isCurrentWeek = (week: Week): boolean => {
+    if (!week.start_date || !week.end_date) {
+      return false;
+    }
+    const today = new Date();
+    // Zera a hora para comparar apenas as datas
+    today.setHours(0, 0, 0, 0);
+
+    // Converte as datas da semana para objetos Date, considerando UTC
+    const startDate = new Date(week.start_date + 'T00:00:00');
+    const endDate = new Date(week.end_date + 'T00:00:00');
+
+    return today >= startDate && today <= endDate;
+  };
+  // --- FIM DA NOVA LÓGICA ---
 
   if (loading) return <p className="p-6">Carregando dados do bloco...</p>;
   if (error) return <p className="p-6 text-red-600">{error}</p>;
@@ -95,25 +113,39 @@ export default function BlockDetailsPage() {
 
       <h2 className="text-xl font-semibold mb-4">Semanas do Bloco</h2>
       <ul className="space-y-3">
-        {block.weeks.map(week => (
-          <li 
-            key={week.id}
-            onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${blockId}/week/${week.id}`)}
-            className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-          >
-            <div className="flex justify-between items-center">
-              <div className="flex flex-col">
-                <h3 className="font-semibold text-lg text-red-700">Semana {week.week_number}</h3>
-                <span className="text-xs text-neutral-500">
-                  {formatDate(week.start_date)} - {formatDate(week.end_date)}
+        {block.weeks.map(week => {
+          // --- NOVA LÓGICA ---
+          // Verifica se a semana atual é a vigente e define a classe CSS
+          const isCurrent = isCurrentWeek(week);
+          const weekClasses = isCurrent
+            ? "bg-red-50 border-2 border-red-700 shadow-lg" // Classes de destaque
+            : "bg-white border hover:shadow-md"; // Classes padrão
+          // --- FIM DA NOVA LÓGICA ---
+
+          return (
+            <li 
+              key={week.id}
+              onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${blockId}/week/${week.id}`)}
+              // A classe é aplicada dinamicamente aqui
+              className={`rounded-lg p-4 transition-shadow cursor-pointer ${weekClasses}`}
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-lg text-red-700">Semana {week.week_number}</h3>
+                    {isCurrent && <span className="text-xs font-bold text-white bg-red-700 px-2 py-0.5 rounded-full">AGORA</span>}
+                  </div>
+                  <span className="text-xs text-neutral-500">
+                    {formatDate(week.start_date)} - {formatDate(week.end_date)}
+                  </span>
+                </div>
+                <span className="text-sm text-blue-600 font-semibold hover:underline">
+                  Ver Treinos ({week.treinos.length})
                 </span>
               </div>
-              <span className="text-sm text-blue-600 font-semibold hover:underline">
-                Ver Treinos ({week.treinos.length})
-              </span>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
