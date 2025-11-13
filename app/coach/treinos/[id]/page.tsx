@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
-import { ArrowLeft, PlusCircle } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash } from "lucide-react";
 
 // Interfaces para os novos dados
 interface TrainingBlock {
@@ -54,6 +54,24 @@ export default function StudentTrainingBlocksPage() {
     return new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
   };
 
+  const handleDeleteBlock = async (blockId: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir este bloco? Todos os treinos dentro dele serão perdidos.")) {
+      return;
+    }
+    
+    try {
+      await fetchWithAuth(`training_blocks/${blockId}`, {
+        method: 'DELETE'
+      });
+      // Remove o bloco da lista no estado
+      setBlocks(prevBlocks => prevBlocks.filter(b => b.id !== blockId));
+      alert("Bloco excluído com sucesso.");
+    } catch (err: any) {
+      console.error("Erro ao excluir bloco:", err);
+      alert(`Erro ao excluir: ${err.message}`);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 text-neutral-800">
       <div className="border-b pb-4 mb-6">
@@ -81,12 +99,13 @@ export default function StudentTrainingBlocksPage() {
           {blocks.map(block => (
             <li 
               key={block.id} 
-              // Futuramente, esta rota levará para os detalhes do bloco
-              onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${block.id}`)}
-              className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow group"
             >
               <div className="flex justify-between items-center">
-                <div>
+                <div 
+                  onClick={() => router.push(`/coach/treinos/${alunoId}/blocks/${block.id}`)} 
+                  className="cursor-pointer flex-1"
+                >
                   <h2 className="font-semibold text-lg text-red-700">{block.title}</h2>
                   <p className="text-sm text-neutral-600 mt-1">
                     Duração: {block.weeks_duration} semanas
@@ -95,9 +114,18 @@ export default function StudentTrainingBlocksPage() {
                     Período: {formatDate(block.start_date)} - {formatDate(block.end_date)}
                   </p>
                 </div>
-                <span className="text-sm text-blue-600 font-semibold hover:underline">
-                  Gerenciar Semanas
-                </span>
+                
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Impede a navegação ao clicar no lixo
+                    handleDeleteBlock(block.id);
+                  }} 
+                  className="p-2 text-neutral-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Excluir bloco"
+                >
+                  <Trash size={18} />
+                </button>
+                
               </div>
             </li>
           ))}

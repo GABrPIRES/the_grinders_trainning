@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Users,
   ClipboardList,
+  Upload,
 } from 'lucide-react';
 import { logout } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,7 @@ const navItems = [
   { label: 'Treinos', href: '/coach/treinos', icon: <Dumbbell size={18} /> },
   { label: 'Payments', href: '/coach/payments', icon: <CreditCard size={18} /> },
   { label: 'Plans', href: '/coach/plans', icon: <ClipboardList size={18} /> },
+  { label: 'Importar Treino', href: '/coach/import', icon: <Upload size={18} /> }, // Ou FileUp, etc.
   { label: 'Settings', href: '/coach/settings', icon: <Settings size={18} /> },
   { label: 'Help', href: '/coach/help', icon: <HelpCircle size={18} /> },
 ];
