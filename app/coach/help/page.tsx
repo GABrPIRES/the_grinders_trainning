@@ -19,20 +19,20 @@ export default function CoachHelpPage() {
             <ul className="space-y-3 list-disc list-inside text-neutral-700">
               <li>
                 <strong>E-mail:</strong> 
-                <a href="mailto:seu-email@exemplo.com" className="text-blue-600 hover:underline ml-2">
-                  seu-email@exemplo.com
+                <a href="mailto:gabrielribeiropires@outlook.com" className="text-blue-600 hover:underline ml-2">
+                  gabrielribeiropires@outlook.com
                 </a>
               </li>
               <li>
                 <strong>WhatsApp:</strong> 
                 <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
-                  (11) 99999-9999
+                  (11) 97969-9898
                 </a>
               </li>
               <li>
                 <strong>Instagram:</strong> 
-                <a href="https://instagram.com/seu_perfil" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
-                  @seu_perfil
+                <a href="https://instagram.com/gabriel_r_pires" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
+                  @gabriel_r_pires
                 </a>
               </li>
             </ul>

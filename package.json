@@ -18,6 +18,7 @@
     "next": "15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^3.4.1",
     "the_grinders_trainning": "file:",
     "uuid": "^11.1.0"
   },

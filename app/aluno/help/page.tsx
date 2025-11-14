@@ -88,14 +88,14 @@ export default function AlunoHelpPage() {
           <ul className="space-y-3 list-disc list-inside text-neutral-700">
             <li>
               <strong>E-mail:</strong>
-              <a href="mailto:seu-email-de-suporte@exemplo.com" className="text-blue-600 hover:underline ml-2">
-                seu-email-de-suporte@exemplo.com
+              <a href="mailto:gabrielribeiropires@outlook.com" className="text-blue-600 hover:underline ml-2">
+                gabrielribeiropires@outlook.com
               </a>
             </li>
             <li>
               <strong>WhatsApp:</strong>
-              <a href="https://wa.me/5511988888888" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
-                (11) 98888-8888
+              <a href="https://wa.me/5511979699898" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-2">
+                (11) 97969-9898
               </a>
             </li>
           </ul>
