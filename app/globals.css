@@ -1,8 +1,40 @@
+/* app/globals.css */
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --background: 0 0% 8%; /* 0 0% 100% para light mode */
+  --foreground: 0 0% 98%; /* 0 0% 9% para light mode */
+
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 98%;
+
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 98%;
+
+  --primary: 0 74% 42%; /* Vermelho The Grinders */
+  --primary-foreground: 0 0% 100%;
+  
+  --primary-glow: 0 84% 52%;
+
+  --secondary: 0 0% 18%;
+  --secondary-foreground: 0 0% 98%;
+
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 65%;
+
+  --accent: 0 74% 42%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 74% 42%;
+
+  --radius: 0.5rem;
 }
 
 @theme inline {
