@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -20,9 +20,13 @@ export default function EditPaymentPage() {
   
   const [payment, setPayment] = useState<Pagamento | null>(null);
   const [formData, setFormData] = useState({ amount: '', due_date: '' });
+  
+  // NOVO ESTADO: Data do pagamento (padrão: hoje)
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [createNext, setCreateNext] = useState(true); // Estado para o checkbox de recorrência
+  const [createNext, setCreateNext] = useState(true);
 
   const fetchPayment = async () => {
     if (!idPagamento) return;
@@ -34,6 +38,10 @@ export default function EditPaymentPage() {
         amount: data.amount.toString(),
         due_date: new Date(data.due_date).toISOString().split('T')[0],
       });
+      // Se já estiver pago, preenche com a data real, senão mantém hoje
+      if (data.paid_at) {
+          setPaymentDate(new Date(data.paid_at).toISOString().split('T')[0]);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -70,10 +78,15 @@ export default function EditPaymentPage() {
 
   const handleMarkAsPaid = async () => {
     try {
-      // CORREÇÃO: Não enviamos mais o 'paid_at', a API cuida disso.
+      // CORREÇÃO: Agora enviamos o 'paid_at' escolhido pelo usuário
       await fetchWithAuth(`pagamentos/${idPagamento}?create_next=${createNext}`, {
         method: 'PATCH',
-        body: JSON.stringify({ pagamento: { status: 'pago' } }),
+        body: JSON.stringify({ 
+            pagamento: { 
+                status: 'pago',
+                paid_at: paymentDate // Envia a data selecionada
+            } 
+        }),
       });
       alert('Pagamento conciliado com sucesso! ' + (createNext ? 'A próxima cobrança foi gerada.' : ''));
       router.push(`/coach/payments/${idAluno}`);
@@ -90,7 +103,7 @@ export default function EditPaymentPage() {
           body: JSON.stringify({ pagamento: { status: 'pendente', paid_at: null } }),
         });
         alert('Pagamento revertido para "pendente".');
-        fetchPayment(); // Recarrega os dados da página atual para mostrar o formulário novamente
+        fetchPayment(); 
       } catch (err: any) {
         alert(err.message);
       }
@@ -132,7 +145,8 @@ export default function EditPaymentPage() {
           <p><strong>Status:</strong> <span className="text-green-600 font-bold">Pago</span></p>
           <p><strong>Valor:</strong> R$ {payment.amount.toFixed(2).replace('.', ',')}</p>
           <p><strong>Vencimento:</strong> {new Date(payment.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
-          <p><strong>Pago em:</strong> {new Date(payment.paid_at!).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
+          {/* Exibe a data real do pagamento */}
+          <p><strong>Pago em:</strong> {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</p>
           <button onClick={handleUnmarkAsPaid} className="w-full bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 mt-4">
             Desconciliar Pagamento
           </button>
@@ -155,8 +169,21 @@ export default function EditPaymentPage() {
           <hr className="my-4"/>
 
           <div className="bg-gray-50 p-4 rounded-md space-y-3">
-            <h3 className="text-lg font-semibold text-center text-neutral-700">Ações de Conciliação</h3>
-            <div className="flex items-center">
+            <h3 className="text-lg font-semibold text-center text-neutral-700">Conciliação</h3>
+            
+            {/* NOVO CAMPO: Data do Pagamento */}
+            <div>
+                <label htmlFor="paymentDate" className="block text-sm font-medium text-neutral-700 mb-1">Data do Pagamento</label>
+                <input 
+                  id="paymentDate" 
+                  type="date" 
+                  value={paymentDate} 
+                  onChange={(e) => setPaymentDate(e.target.value)} 
+                  className="w-full border p-2 rounded text-neutral-600"
+                />
+            </div>
+
+            <div className="flex items-center pt-2">
               <input 
                 id="createNext"
                 type="checkbox"
@@ -165,7 +192,7 @@ export default function EditPaymentPage() {
                 className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
               />
               <label htmlFor="createNext" className="ml-2 block text-sm text-neutral-700">
-                Criar a cobrança do próximo mês automaticamente?
+                Criar a cobrança do próximo mês?
               </label>
             </div>
             <button type="button" onClick={handleMarkAsPaid} className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">
