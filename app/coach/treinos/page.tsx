@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 
-// Interface atualizada (sem treino_info)
 interface Student {
   id: string;
   user: { name: string; email: string; };
   pagamento: { vencimento: string | null; status: string | null; };
   plano: { nome: string | null; };
-  // A propriedade treino_info foi removida
+  treino_info: { proximo_treino: string | null; ultima_atualizacao: string | null; };
 }
 
 export default function CoachStudentsForWorkoutsPage() {
@@ -18,7 +17,8 @@ export default function CoachStudentsForWorkoutsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  // Estado para o limite por página
+  const [limit, setLimit] = useState(10); 
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -27,7 +27,11 @@ export default function CoachStudentsForWorkoutsPage() {
     const fetchStudents = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ search, page: page.toString(), limit: limit.toString() });
+        const params = new URLSearchParams({ 
+          search, 
+          page: page.toString(), 
+          limit: limit.toString() // Envia o limite selecionado
+        });
         const data = await fetchWithAuth(`alunos?${params}`);
         setStudents(data.alunos);
         setTotal(data.total);
@@ -38,7 +42,7 @@ export default function CoachStudentsForWorkoutsPage() {
       }
     };
     fetchStudents();
-  }, [search, page, limit]);
+  }, [search, page, limit]); // Recarrega quando o limite muda
 
   const totalPages = Math.ceil(total / limit);
 
@@ -57,8 +61,22 @@ export default function CoachStudentsForWorkoutsPage() {
           placeholder="Buscar por nome ou email"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="border border-neutral-300 p-2 rounded w-full md:w-1/2"
+          className="border border-neutral-300 p-2 rounded w-full md:flex-1"
         />
+        
+        {/* NOVO: Seletor de Limite por Página */}
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(parseInt(e.target.value));
+            setPage(1); // Volta para a página 1 ao mudar o limite
+          }}
+          className="border border-neutral-300 p-2 rounded w-full md:w-auto"
+        >
+          <option value={10}>10 por página</option>
+          <option value={20}>20 por página</option>
+          <option value={50}>50 por página</option>
+        </select>
       </div>
 
       {loading ? (
@@ -78,24 +96,24 @@ export default function CoachStudentsForWorkoutsPage() {
 
               {selectedId === student.id && (
                 <div className="mt-4 border-t pt-4 text-sm space-y-2">
+                  {/* ... (detalhes do aluno iguais ao seu código anterior) ... */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div><span className="font-semibold">Plano:</span> {student.plano.nome || '-'}</div>
                     <div><span className="font-semibold">Status:</span> <span className={student.pagamento.status === 'ativo' ? 'text-green-600 font-bold' : 'text-orange-500 font-bold'}>{student.pagamento.status || '-'}</span></div>
                     <div><span className="font-semibold">Vencimento:</span> {formatDate(student.pagamento.vencimento)}</div>
                   </div>
-                  
-                  {/* AS LINHAS QUE CAUSAVAM O ERRO FORAM REMOVIDAS DAQUI
-                  */}
-
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div><span className="font-semibold">Próximo Treino:</span> {formatDate(student.treino_info.proximo_treino)}</div>
+                    <div><span className="font-semibold">Última Atualização:</span> {formatDate(student.treino_info.ultima_atualizacao)}</div>
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Agora isso leva para a página de blocos do aluno
                       router.push(`/coach/treinos/${student.id}`);
                     }}
                     className="mt-3 bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
                   >
-                    Gerenciar blocos de treino
+                    Gerenciar treinos
                   </button>
                 </div>
               )}
@@ -104,7 +122,7 @@ export default function CoachStudentsForWorkoutsPage() {
         </ul>
       )}
 
-      {/* --- CONTROLES DE PAGINAÇÃO --- */}
+      {/* Controles de Paginação */}
       <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
         <button
           onClick={() => setPage((prev) => Math.max(1, prev - 1))}

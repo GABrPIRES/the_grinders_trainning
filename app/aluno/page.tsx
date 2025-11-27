@@ -13,8 +13,7 @@ import {
   AlertCircle,
   TrendingUp
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { ptBR } from 'date-fns/locale';
+import { parseISO, isWithinInterval } from "date-fns"; // Mantido apenas para lógica
 
 interface DashboardData {
   student_name: string;
@@ -27,7 +26,6 @@ interface DashboardData {
   treinos_concluidos: number;
 }
 
-// Componente de Atalho (Botão Grande)
 function ShortcutCard({ title, subtitle, icon, href, colorClass, router }: any) {
   return (
     <button
@@ -65,10 +63,20 @@ export default function AlunoDashboardPage() {
     fetchData();
   }, []);
 
+  // --- CORREÇÃO DE DATA ---
+  // Usamos toLocaleDateString com UTC para garantir que a data não volte 1 dia
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Data não def.";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', { 
+      day: 'numeric', 
+      month: 'short', 
+      timeZone: 'UTC' // Força o uso da data UTC (original)
+    }).replace('.', ''); // Remove o ponto do mês abrev. (opcional)
+  };
+
   if (loading) return <div className="p-8 text-center animate-pulse">Carregando seu dashboard...</div>;
   if (!data) return <div className="p-8 text-center text-red-600">Erro ao carregar dados.</div>;
-
-  const formatDate = (date: string) => format(parseISO(date), "dd 'de' MMM", { locale: ptBR });
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 text-neutral-800">
@@ -80,7 +88,7 @@ export default function AlunoDashboardPage() {
           <p className="text-neutral-500">Pronto para o treino de hoje?</p>
         </div>
         
-        {/* Status Financeiro (Badge) */}
+        {/* Status Financeiro */}
         <div className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${
           data.status_financeiro === 'ativo' ? 'bg-green-100 text-green-700' : 
           data.status_financeiro === 'vencido' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
@@ -91,14 +99,13 @@ export default function AlunoDashboardPage() {
         </div>
       </div>
 
-      {/* 1. CARD DESTAQUE: Próximo Treino / Semana Atual */}
+      {/* 1. CARD DESTAQUE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna Esquerda: O Treino/Semana (Destaque) */}
+        {/* Coluna Esquerda */}
         <div className="lg:col-span-2 space-y-6">
           
           {data.active_block ? (
             <div className="bg-gradient-to-br from-red-700 to-red-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-              {/* Background Pattern */}
               <div className="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
                 <Dumbbell size={150} />
               </div>
@@ -150,7 +157,7 @@ export default function AlunoDashboardPage() {
           )}
         </div>
 
-        {/* Coluna Direita: Estatísticas Rápidas */}
+        {/* Coluna Direita */}
         <div className="space-y-6">
            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
               <h3 className="font-bold text-neutral-700 mb-4 flex items-center gap-2">
@@ -201,7 +208,6 @@ export default function AlunoDashboardPage() {
             colorClass="hover:border-green-500 text-green-700"
             router={router}
           />
-           {/* Adicione mais se precisar, ex: Perfil */}
         </div>
       </div>
 
