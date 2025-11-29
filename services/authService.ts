@@ -1,12 +1,11 @@
-// services/authService.ts
+import Cookies from 'js-cookie';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function login({ email, password }: { email: string; password: string }) {
-  const res = await fetch(`${API_URL}/login`, { // 1. URL atualizada
+  const res = await fetch(`${API_URL}/login`, { 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    // 2. Corpo da requisição está correto (sem o objeto 'user' aninhado)
     body: JSON.stringify({ email, password }),
   });
 
@@ -17,17 +16,25 @@ export async function login({ email, password }: { email: string; password: stri
 
   const data = await res.json();
 
-  // 3. Salva o token no localStorage
+  // Salva o token no localStorage
   if (data.token) {
     localStorage.setItem('jwt_token', data.token);
+    // Salva nos Cookies também para o Middleware funcionar
+    Cookies.set('token', data.token, { expires: 7 }); 
+    Cookies.set('role', data.user.role, { expires: 7 });
   }
 
-  return data; // Retorna os dados completos (incluindo o user)
+  return data; 
 }
 
 export async function logout() {
-  // 4. Ação de logout agora é apenas remover o token do localStorage
+  // 1. Limpa localStorage
   localStorage.removeItem('jwt_token');
-  // Não precisamos mais de uma chamada de API para logout
-  return Promise.resolve();
+  localStorage.removeItem('user');
+
+  // 2. Limpa os Cookies (ESSENCIAL para o Middleware não te deixar voltar)
+  Cookies.remove('token');
+  Cookies.remove('role');
+
+  window.location.href = '/login';
 }

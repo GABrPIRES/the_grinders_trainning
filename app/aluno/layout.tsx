@@ -12,7 +12,7 @@ export default function AlunoLayout({ children }: { children: React.ReactNode })
           <AlunoSidebar />
         </SidebarWrapper>
         
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 md:ml-64">
           <HeaderBar />
 
           {/* Container do conteúdo + footer */}

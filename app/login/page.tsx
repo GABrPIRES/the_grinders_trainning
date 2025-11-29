@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/services/authService";
-import Image from "next/image"; // Precisamos do Image para o *fundo*
-import { Loader2, Mail, Lock } from "lucide-react";
+import Image from "next/image";
+import { Loader2, Eye, EyeOff } from "lucide-react"; // Adicionei Eye e EyeOff
+import Cookies from "js-cookie";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [erro, setErro] = useState("");
-  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false); // Novo estado para mostrar senha
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  // Suas funções de login originais
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
@@ -24,134 +25,125 @@ export default function LoginPage() {
     try {
       const res = await login(form);
       const role = res.user?.role;
+      if (res.token) {
+        Cookies.set("token", res.token, { expires: 7, path: '/' });
+        Cookies.set("role", role, { expires: 7, path: '/' });
+      }
       router.refresh();
       if (role === "admin") router.push("/admin");
       else if (role === "personal") router.push("/coach");
       else if (role === "aluno") router.push("/aluno");
-      else setErro("Role inválida. Contate o suporte.");
+      else setErro("Role inválida.");
     } catch (err: any) {
-      setErro(err.message || "Erro ao fazer login. Verifique suas credenciais.");
+      setErro(err.message || "Erro ao fazer login.");
     } finally {
       setLoading(false);
     }
   }
 
-  // Componente de Logo em Texto (para ser reutilizado)
-  const TextLogo = () => (
-    <div className="text-center md:text-left">
-      <h1 className="text-3xl font-extrabold tracking-wider text-white uppercase">
-        The Grinders
-      </h1>
-      <p className="text-sm font-light text-neutral-200" style={{ letterSpacing: '0.3em' }}>
-        POWERLIFTING
-      </p>
-    </div>
-  );
-
   return (
-    // Layout de tela inteira: coluna no mobile, linha no desktop
-    <div className="flex flex-col md:flex-row min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white">
       
-      {/* Lado Esquerdo (Branding/Imagem) */}
-      <div className="relative w-full md:w-1/2 flex flex-col justify-start 
-                      bg-red-700 md:bg-transparent text-white 
-                      h-48 md:h-screen overflow-hidden"> 
+      {/* --- LADO ESQUERDO (IMAGEM) --- */}
+      {/* No mobile ele some (hidden), no desktop ocupa metade (md:w-1/2) e tela toda (h-screen) */}
+      <div className="hidden md:block relative w-1/2 h-screen">
+
+        {/* Imagem limpa, sem blur, ocupando tudo */}
+        <Image
+          src="/images/davi-cardoso.png"
+          alt="Atleta de powerlifting"
+          fill
+          priority
+          style={{ objectFit: "cover" }}
+          className="z-0"
+        />
         
-        {/* Imagem de Fundo (Aparece apenas no Desktop) */}
-        <div className="hidden md:block absolute inset-0">
-          <Image
-            src="/images/davi-cardoso.png" // <- Sua imagem do atleta
-            alt="Atleta de powerlifting"
-            layout="fill"
-            objectFit="cover"
-            quality={80}
-            className="z-0"
-          />
-          {/* Overlay Vermelho com Blur (Desktop) */}
-          <div className="absolute inset-0 bg-red-700 opacity-70 backdrop-blur-sm z-10"></div>
-        </div>
-
-        {/* Logo no Cabeçalho (Mobile) */}
-        <div className="md:hidden relative z-20 flex items-center justify-center p-4 h-full">
-          <TextLogo />
-        </div>
-
-        {/* Logo no Topo do Quadrante (Desktop) */}
-        <div className="hidden md:flex relative z-20 p-8 pt-8 md:pt-12 items-start justify-start w-full">
-          <TextLogo />
-        </div>
-
+        {/* Um gradiente preto muito leve APENAS na base para dar peso, sem atrapalhar a nitidez */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-10 pointer-events-none"></div>
       </div>
 
-      {/* Lado Direito (Formulário de Login) */}
-      <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-center text-neutral-800">
+      {/* --- LADO DIREITO (FORMULÁRIO) --- */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12 bg-neutral-100">
         
-        {/* Adiciona um logo "fantasma" no mobile para centralizar o form */}
-        {/* Este é um truque para empurrar o formulário para baixo no mobile */}
-        <div className="md:hidden h-48 -mt-48"></div> {/* Espaçador invisível */}
+        {/* Logo Visível APENAS no Mobile (centralizada no topo) */}
+        <div className="flex justify-center">
+            <Image
+              src="/images/logo_the_grinders_dark-removebg-preview.png" // Use a versão escura aqui se o fundo for branco
+              // Se sua logo for branca e não aparecer no fundo branco, avise que trocamos para /logo-dark.png
+              alt="The Grinders Logo"
+              width={380}
+              height={50}
+              className="object-contain"
+            />
+        </div>
 
-        <h2 className="text-3xl font-bold text-neutral-800 text-center mb-8">
-          Bem-vindo(a) de volta!
-        </h2>
+        <div className="max-w-md w-full mx-auto space-y-8">
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          {/* Input de Email com Ícone */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
-              Email
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <Mail className="h-5 w-5 text-neutral-400" />
-              </span>
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            
+            {/* Input Email */}
+            <div className="space-y-1">
               <input
-                type="email" id="email" name="email"
-                value={form.email} onChange={handleChange} required
-                className="w-full p-3 pl-10 border border-neutral-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 text-neutral-800"
-                disabled={loading} placeholder="seu.email@exemplo.com"
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Email"
+                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all text-neutral-900 placeholder:text-neutral-400 bg-white"
               />
             </div>
-          </div>
 
-          {/* Input de Senha com Ícone */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-1">
-              Senha
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <Lock className="h-5 w-5 text-neutral-400" />
-              </span>
-              <input
-                type="password" id="password" name="password"
-                value={form.password} onChange={handleChange} required
-                className="w-full p-3 pl-10 border border-neutral-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 text-neutral-800"
-                disabled={loading} placeholder="••••••••"
-              />
+            {/* Input Senha com Botão de Mostrar/Ocultar */}
+            <div className="space-y-1">
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"} // Alterna o tipo
+                  autoComplete="current-password"
+                  required
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all text-neutral-900 placeholder:text-neutral-400 pr-12 bg-white"
+                />
+                
+                {/* Botão do Olhinho */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-400 hover:text-neutral-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
-          </div>
 
-          {erro && (
-            <div className="text-red-600 text-sm text-center">
-              {erro}
+            {erro && (
+              <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded border border-red-100">
+                {erro}
+              </div>
+            )}
+
+            {/* Botão de Entrar */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-red-700 text-white font-bold py-3 rounded-lg hover:bg-red-800 transition-colors shadow-sm flex justify-center items-center disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : "Entrar"}
+            </button>
+
+            {/* Link Esqueceu a Senha */}
+            <div className="text-center">
+              <a href="#" className="text-sm font-semibold text-red-700 hover:text-red-900 hover:underline">
+                Esqueceu sua senha?
+              </a>
             </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full bg-red-700 text-white p-3 rounded-md font-semibold hover:bg-red-800 transition-colors flex items-center justify-center gap-2"
-            disabled={loading}
-          >
-            {loading && <Loader2 className="animate-spin" size={20} />}
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm">
-          <a href="#" className="text-red-600 hover:underline">
-            Esqueceu sua senha?
-          </a>
+          </form>
         </div>
       </div>
     </div>

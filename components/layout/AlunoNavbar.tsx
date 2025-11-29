@@ -40,7 +40,7 @@ export default function AlunoSidebar() {
       <div>
         <div className="text-center py-6 border-b border-gray-700">
             <Image
-                src="/images/logo-the-grinders-2.png"
+                src="/images/logo-the-grinders-2-removebg-preview.png"
                 alt="Logo The Grinders"
                 width={250}
                 height={50}
