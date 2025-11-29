@@ -1,112 +1,145 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api';
-import { ArrowLeft } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { fetchWithAuth } from "@/lib/api";
+import { ArrowLeft, Save, Loader2, Lock, User, Mail, Phone } from "lucide-react";
 
-// Tipos para os dados da API
-interface Plan { id: string; name: string; }
-interface Assinatura { plano_id: string; status: string; }
-
-export default function EditStudentPage() {
-  const router = useRouter();
+export default function EditStudentAccountPage() {
   const { id } = useParams();
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone_number: '',
-    plano_id: '',
-    status: 'ativo',
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Focamos APENAS nos dados essenciais de conta
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone_number: "",
+    password: "",
+    password_confirmation: ""
   });
 
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
   useEffect(() => {
-    if (!id) return;
-    const fetchData = async () => {
+    async function loadData() {
       try {
-        const [studentData, plansData] = await Promise.all([
-          fetchWithAuth(`alunos/${id}`),
-          fetchWithAuth('planos') // Busca os planos do coach logado
-        ]);
-        
-        const activeSubscription = studentData.assinaturas?.find((a: Assinatura) => a.status === 'ativo');
-
-        setFormData({
-          name: studentData.user.name,
-          email: studentData.user.email,
-          password: '',
-          phone_number: studentData.phone_number || '',
-          plano_id: activeSubscription?.plano_id || '',
-          status: studentData.user.status || 'ativo',
-        });
-        setPlans(plansData);
-      } catch (err) {
-        setError('Erro ao carregar os dados');
+        const data = await fetchWithAuth(`alunos/${id}`);
+        setForm(prev => ({
+          ...prev,
+          name: data.user.name || "",
+          email: data.user.email || "",
+          phone_number: data.phone_number || "",
+          password: "", 
+          password_confirmation: ""
+        }));
+      } catch (error) {
+        console.error("Erro ao carregar aluno", error);
       } finally {
         setLoading(false);
       }
-    };
-    fetchData();
+    }
+    loadData();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setSaving(true);
+
+    if (form.password && form.password !== form.password_confirmation) {
+        alert("As senhas não coincidem.");
+        setSaving(false);
+        return;
+    }
+
     try {
       await fetchWithAuth(`alunos/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ aluno: formData }),
+        method: "PUT",
+        body: JSON.stringify({ 
+            aluno: {
+                name: form.name,
+                email: form.email,
+                phone_number: form.phone_number,
+                password: form.password,
+                password_confirmation: form.password_confirmation
+            } 
+        }),
       });
-      alert('Dados atualizados com sucesso!');
-      router.push('/coach/students');
-    } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar os dados');
+      alert("Conta do aluno atualizada!");
+      router.push(`/coach/students/${id}`); // Volta para a visualização completa
+    } catch (error: any) {
+      alert("Erro ao atualizar: " + error.message);
+    } finally {
+      setSaving(false);
     }
   };
-  
-  if (loading) return <p>Carregando...</p>;
+
+  if (loading) return <div className="p-8 text-center">Carregando formulário...</div>;
 
   return (
-    <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <div className="border-b pb-4 mb-6">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
-          <ArrowLeft size={16} />
-          Voltar para a lista de alunos
+    <div className="max-w-2xl mx-auto p-6 text-neutral-800">
+      <div className="flex items-center gap-4 mb-8">
+        <button onClick={() => router.back()} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
+          <ArrowLeft size={24} />
         </button>
-        <h1 className="text-2xl font-bold text-gray-800">Editar Aluno</h1>
+        <h1 className="text-2xl font-bold">Editar Conta do Aluno</h1>
       </div>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
-        <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nome"/>
-        <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Email"/>
-        <input type="text" name="phone_number" value={formData.phone_number} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Telefone"/>
-        <input type="password" name="password" value={formData.password} onChange={handleChange} className="w-full border p-2 rounded" placeholder="Nova senha (deixe em branco)"/>
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-neutral-200 shadow-sm space-y-6">
         
-        <select name="plano_id" value={formData.plano_id} onChange={handleChange} className="w-full border p-2 rounded">
-          <option value="">Nenhum plano</option>
-          {plans.map((plan) => (<option key={plan.id} value={plan.id}>{plan.name}</option>))}
-        </select>
-        
-        <select name="status" value={formData.status} onChange={handleChange} className="w-full border p-2 rounded">
-          <option value="ativo">Ativo</option>
-          <option value="inativo">Inativo</option>
-        </select>
+        {/* Dados Pessoais */}
+        <div className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2">
+                <User size={20} /> Informações Básicas
+            </h2>
+            <div>
+                <label className="block text-sm font-medium mb-1 text-neutral-600">Nome Completo</label>
+                <input name="name" value={form.name} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" required />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Mail size={14}/> Email</label>
+                    <input name="email" value={form.email} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" required />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Phone size={14}/> Telefone</label>
+                    <input name="phone_number" value={form.phone_number} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" />
+                </div>
+            </div>
+        </div>
 
-        <button type="submit" className="w-full bg-red-700 text-white p-2 rounded hover:bg-red-800">
-          Atualizar Aluno
+        {/* Alterar Senha */}
+        <div className="pt-6">
+            <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2 mb-4">
+                <Lock size={20} /> Segurança
+            </h2>
+            <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded mb-4 border border-yellow-100">
+                Preencha abaixo apenas se quiser alterar a senha do aluno.
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-neutral-600">Nova Senha</label>
+                    <input type="password" name="password" value={form.password} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" placeholder="Mínimo 6 caracteres" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1 text-neutral-600">Confirmar Senha</label>
+                    <input type="password" name="password_confirmation" value={form.password_confirmation} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" placeholder="Repita a senha" />
+                </div>
+            </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full bg-red-700 text-white font-bold py-3.5 rounded-xl hover:bg-red-800 transition-colors flex items-center justify-center gap-2 mt-8 shadow-lg"
+        >
+          {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+          {saving ? "Salvando..." : "Salvar Alterações"}
         </button>
+
       </form>
     </div>
   );

@@ -17,7 +17,7 @@ import Image from 'next/image';
 const navItems = [
   { label: 'Home', href: '/admin', icon: <Home size={18} /> },
   { label: 'Profile', href: '/admin/profile', icon: <User size={18} /> },
-  { label: 'Coachs', href: '/admin/coachs', icon: <Users size={18} /> },
+  { label: 'Coaches', href: '/admin/coaches', icon: <Users size={18} /> },
   { label: 'Students', href: '/admin/students', icon: <GraduationCap size={18} /> },
   { label: 'Settings', href: '/admin/settings', icon: <Settings size={18} /> },
 ];

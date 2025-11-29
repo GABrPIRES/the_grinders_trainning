@@ -1,139 +1,123 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api'; // Importamos nosso helper
+import { useState } from "react";
+import { fetchWithAuth } from "@/lib/api";
+import { Lock, Shield, Loader2, Check, AlertTriangle } from "lucide-react";
 
 export default function AdminSettingsPage() {
-    const router = useRouter();
-    const { user, loading } = useAuth();
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passForm, setPassForm] = useState({
+    current_password: "",
+    password: "",
+    password_confirmation: ""
+  });
 
-    const [form, setForm] = useState({ name: '', email: '' });
-    const [senhaForm, setSenhaForm] = useState({
-        current_password: '',
-        new_password: '',
-        password_confirmation: '',
-    });
+  const handlePassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassForm({ ...passForm, [e.target.name]: e.target.value });
+  };
 
-    useEffect(() => {
-        if (user) {
-          setForm({
-            name: user.name,
-            email: user.email,
-          });
-        }
-    }, [user]);
-
-    if (loading) return <p className='text-neutral-800'>Carregando...</p>;
-    if (!user) return <p>Usuário não autenticado.</p>;
-
-  function handleProfileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  function handleSenhaChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setSenhaForm({ ...senhaForm, [e.target.name]: e.target.value });
-  }
-
-  async function atualizarPerfil(e: React.FormEvent) {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (passForm.password !== passForm.password_confirmation) {
+        alert("A nova senha e a confirmação não coincidem.");
+        return;
+    }
+    setSavingPassword(true);
     try {
-        await fetchWithAuth('profile', {
-          method: 'PATCH',
-          body: JSON.stringify({ profile: form }),
-        });
-    
-        alert('Perfil atualizado com sucesso!');
-        router.refresh();
-      } catch (err: any) {
-        alert(err.message || 'Erro ao atualizar perfil');
-      }
-  }
-
-  async function alterarSenha(e: React.FormEvent) {
-    e.preventDefault();
-    if (senhaForm.new_password !== senhaForm.password_confirmation) {
-      alert('As novas senhas não conferem!');
-      return;
+      await fetchWithAuth("auth/change_password", {
+        method: "POST",
+        body: JSON.stringify(passForm),
+      });
+      alert("Senha de administrador alterada com sucesso!");
+      setPassForm({ current_password: "", password: "", password_confirmation: "" });
+    } catch (error: any) {
+      alert("Erro ao alterar senha: " + error.message);
+    } finally {
+      setSavingPassword(false);
     }
-    try{
-        await fetchWithAuth('profile/change_password', {
-            method: 'POST',
-            body: JSON.stringify(senhaForm),
-          });
-
-        alert('Senha atualizada com sucesso!');
-        setSenhaForm({ current_password: '', new_password: '', password_confirmation: '' }); // Limpa o formulário
-        router.refresh();
-    } catch (err: any) {
-        alert(err.message || 'Erro ao atualizar senha');
-    }
-  }
+  };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white p-6 shadow rounded space-y-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">Configurações da Conta</h1>
+    <div className="max-w-3xl mx-auto space-y-6 text-neutral-800 pb-20 md:pb-0">
+      
+      <div>
+        <h1 className="text-2xl font-bold text-neutral-900">Configurações</h1>
+        <p className="text-neutral-500 text-sm">Segurança da conta administrativa.</p>
+      </div>
 
-      <section>
-        <h2 className="text-xl text-orange-700 font-semibold mb-2">Editar Perfil</h2>
-        <form onSubmit={atualizarPerfil} className="text-neutral-300 space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Nome"
-            value={form.name}
-            onChange={handleProfileChange}
-            className="w-full border p-2 rounded"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleProfileChange}
-            className="w-full border p-2 rounded"
-          />
-          <button className="bg-red-700 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-800">
-            Salvar Alterações
-          </button>
-        </form>
-      </section>
+      <div className="space-y-6">
+        
+        {/* SEGURANÇA */}
+        <section className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-neutral-100 bg-neutral-50/50">
+             <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800">
+               <Shield size={20} className="text-red-700" /> Alterar Senha Mestra
+             </h2>
+             <p className="text-sm text-neutral-500 mt-1">
+                Mantenha sua senha forte. Esta conta tem acesso total ao sistema.
+             </p>
+          </div>
+          
+          <div className="p-6">
+             <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                
+                <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 flex items-start gap-3 mb-4">
+                    <AlertTriangle className="text-yellow-600 shrink-0 mt-0.5" size={18} />
+                    <p className="text-xs text-yellow-800">
+                        Ao alterar a senha, todas as sessões ativas deste administrador podem ser desconectadas por segurança.
+                    </p>
+                </div>
 
-      <hr />
+                <div>
+                   <label className="block text-sm font-medium mb-1 text-neutral-600">Senha Atual</label>
+                   <input 
+                     type="password" 
+                     name="current_password" 
+                     value={passForm.current_password} 
+                     onChange={handlePassChange} 
+                     className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+                     required 
+                   />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                       <label className="block text-sm font-medium mb-1 text-neutral-600">Nova Senha</label>
+                       <input 
+                         type="password" 
+                         name="password" 
+                         value={passForm.password} 
+                         onChange={handlePassChange} 
+                         className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+                         required 
+                         placeholder="Mínimo 8 caracteres"
+                       />
+                    </div>
+                    <div>
+                       <label className="block text-sm font-medium mb-1 text-neutral-600">Confirmar Senha</label>
+                       <input 
+                         type="password" 
+                         name="password_confirmation" 
+                         value={passForm.password_confirmation} 
+                         onChange={handlePassChange} 
+                         className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+                         required 
+                         placeholder="Repita a senha"
+                       />
+                    </div>
+                </div>
+                <button 
+                    type="submit" 
+                    disabled={savingPassword} 
+                    className="mt-4 bg-neutral-900 text-white font-bold py-3 px-6 rounded-lg hover:bg-black transition-colors flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center"
+                >
+                    {savingPassword ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
+                    Atualizar Credenciais
+                </button>
+             </form>
+          </div>
+        </section>
 
-      <section>
-        <h2 className="text-xl text-orange-700 font-semibold mb-2">Alterar Senha</h2>
-        <form onSubmit={alterarSenha} className="text-neutral-300 space-y-4">
-          <input
-            type="password"
-            name="current_password"
-            placeholder="Senha atual"
-            value={senhaForm.current_password}
-            onChange={handleSenhaChange}
-            className="w-full border p-2 rounded"
-          />
-          <input
-            type="password"
-            name="new_password"
-            placeholder="Nova senha"
-            value={senhaForm.new_password}
-            onChange={handleSenhaChange}
-            className="w-full border p-2 rounded"
-          />
-          <input
-            type="password"
-            name="password_confirmation"
-            placeholder="Confirmar nova senha"
-            value={senhaForm.password_confirmation}
-            onChange={handleSenhaChange}
-            className="w-full border p-2 rounded"
-          />
-          <button className="bg-red-700 text-white px-4 py-2 rounded cursor-pointer hover:bg-red-800">
-            Alterar Senha
-          </button>
-        </form>
-      </section>
+      </div>
     </div>
   );
 }
