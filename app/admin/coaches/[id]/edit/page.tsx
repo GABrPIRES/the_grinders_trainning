@@ -1,39 +1,41 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api';
-import { ArrowLeft } from 'lucide-react'; 
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { fetchWithAuth } from "@/lib/api";
+import { ArrowLeft, User, Mail, Lock, Save, Loader2, ShieldCheck, ToggleLeft } from "lucide-react";
 
 export default function EditCoachPage() {
   const router = useRouter();
   const { id } = useParams();
   
-  // 1. Adicionamos 'status' ao estado do formulário
   const [coach, setCoach] = useState({
-    name: '',
-    email: '',
-    password: '',
-    status: 'ativo', // Valor padrão
+    name: "",
+    email: "",
+    password: "",
+    status: "ativo",
   });
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!id) return;
     const fetchCoachData = async () => {
       try {
+        // Busca na rota de usuários geral (para editar dados de conta)
+        // Se sua API de admin/coaches retornar tudo, pode usar ela também
         const data = await fetchWithAuth(`users/${id}`);
-        // 2. Preenchemos o estado com o status vindo da API
         setCoach({
-          name: data.name,
-          email: data.email,
-          password: '',
-          status: data.status,
+          name: data.name || "",
+          email: data.email || "",
+          password: "",
+          status: data.status || "ativo",
         });
       } catch (err: any) {
-        setError('Erro ao carregar os dados do coach');
+        setError("Erro ao carregar os dados do coach");
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -47,81 +49,129 @@ export default function EditCoachPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
+    setSaving(true);
   
     try {
-      // 3. O 'status' já está no objeto 'coach', então ele será enviado automaticamente
       await fetchWithAuth(`users/${id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({ user: coach }),
       });
   
-      alert('Dados atualizados com sucesso!');
-      router.push('/admin/coachs');
+      alert("Dados do coach atualizados!");
+      router.push("/admin/coaches");
     } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar os dados');
+      setError(err.message || "Erro ao atualizar");
+    } finally {
+      setSaving(false);
     }
   };
   
-  if (loading) return <p>Carregando...</p>;
+  if (loading) return <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando dados...</div>;
 
   return (
-    <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <div className="border-b pb-4 mb-6">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
-          <ArrowLeft size={16} />
-          Voltar para a lista de coaches
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800">Editar Coach</h1>
-      </div>
+    <div className="max-w-2xl mx-auto pb-20 md:pb-0">
       
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4 text-neutral-500">
-        <input
-          type="text"
-          name="name"
-          value={coach.name}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Nome"
-        />
-        <input
-          type="email"
-          name="email"
-          value={coach.email}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Email"
-        />
-        <input
-          type="password"
-          name="password"
-          value={coach.password}
-          onChange={handleChange}
-          className="w-full border p-2 rounded"
-          placeholder="Nova senha (deixe em branco para não alterar)"
-        />
-        
-        {/* 4. Adicionamos o dropdown de status */}
+      {/* CABEÇALHO */}
+      <div className="flex items-center gap-4 mb-8">
+        <button 
+          onClick={() => router.back()} 
+          className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-600"
+        >
+          <ArrowLeft size={24} />
+        </button>
         <div>
-          <select
-            id="status"
-            name="status"
-            value={coach.status}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          >
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-          </select>
+          <h1 className="text-2xl font-bold text-neutral-900">Editar Coach</h1>
+          <p className="text-neutral-500 text-sm">Gerencie o acesso e status do profissional.</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm border border-red-100">
+          {error}
+        </div>
+      )}
+
+      {/* FORMULÁRIO */}
+      <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-xl border border-neutral-200 shadow-sm space-y-6">
+        
+        <div className="space-y-4">
+            <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800 border-b border-neutral-100 pb-2 mb-4">
+               <ShieldCheck size={20} className="text-red-700"/> Informações da Conta
+            </h2>
+
+            <div>
+               <label className="block text-sm font-medium mb-1 text-neutral-600">Nome Completo</label>
+               <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                  <input
+                    type="text"
+                    name="name"
+                    value={coach.name}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all text-neutral-800"
+                  />
+               </div>
+            </div>
+
+            <div>
+               <label className="block text-sm font-medium mb-1 text-neutral-600">Email</label>
+               <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                  <input
+                    type="email"
+                    name="email"
+                    value={coach.email}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all text-neutral-800"
+                  />
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                   <label className="block text-sm font-medium mb-1 text-neutral-600">Status da Conta</label>
+                   <div className="relative">
+                      <ToggleLeft className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                      <select
+                        name="status"
+                        value={coach.status}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none bg-white appearance-none cursor-pointer text-neutral-800"
+                      >
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                      </select>
+                   </div>
+                </div>
+                <div>
+                   <label className="block text-sm font-medium mb-1 text-neutral-600">Resetar Senha</label>
+                   <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                      <input
+                        type="password"
+                        name="password"
+                        value={coach.password}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all text-neutral-800"
+                        placeholder="Deixe vazio para manter"
+                      />
+                   </div>
+                </div>
+            </div>
         </div>
 
-        <button
-          type="submit"
-          className="w-full bg-red-700 text-white p-2 rounded hover:bg-red-800"
-        >
-          Atualizar
-        </button>
+        <div className="pt-4 flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-red-700 text-white font-bold py-3 px-8 rounded-xl hover:bg-red-800 transition-colors shadow-md flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center"
+          >
+            {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+            {saving ? "Salvando..." : "Salvar Alterações"}
+          </button>
+        </div>
+
       </form>
     </div>
   );
