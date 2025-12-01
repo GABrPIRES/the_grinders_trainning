@@ -72,7 +72,7 @@ export default function StudentSettingsPage() {
                        <input type="password" name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" required />
                     </div>
                 </div>
-                <button type="submit" disabled={savingPassword} className="mt-2 bg-neutral-900 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-black transition-colors flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center">
+                <button type="submit" disabled={savingPassword} className="mt-2 bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-red-800 transition-colors flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center">
                     {savingPassword ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
                     Atualizar Senha
                 </button>
