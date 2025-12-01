@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { UploadCloud, Loader, AlertCircle } from "lucide-react";
+import { 
+  UploadCloud, Loader2, AlertCircle, FileSpreadsheet, 
+  CheckCircle2, ChevronRight, User, Calendar 
+} from "lucide-react";
 import ImportPreviewCarousel, { 
   type ParsedData 
-} from "@/components/import/ImportPreviewCarousel"; // Ajuste o caminho se necessário
+} from "@/components/import/ImportPreviewCarousel";
 
-// Interfaces
 interface Aluno {
   id: string;
   user: { name: string; };
@@ -23,9 +25,9 @@ export default function ImportTreinoPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [selectedAlunoId, setSelectedAlunoId] = useState<string>('');
   
-  // Novos estados para os blocos
   const [blocos, setBlocos] = useState<TrainingBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string>('');
+  
   const [loadingAlunos, setLoadingAlunos] = useState(true);
   const [loadingBlocos, setLoadingBlocos] = useState(false);
   
@@ -34,7 +36,6 @@ export default function ImportTreinoPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // 1. Busca alunos
   useEffect(() => {
     const fetchAlunos = async () => {
       try {
@@ -50,7 +51,6 @@ export default function ImportTreinoPage() {
     fetchAlunos();
   }, []);
 
-  // 2. Busca os blocos do aluno selecionado
   useEffect(() => {
     if (!selectedAlunoId) {
       setBlocos([]);
@@ -83,10 +83,6 @@ export default function ImportTreinoPage() {
       setUploadError("Selecione um aluno, um bloco e pelo menos um arquivo.");
       return;
     }
-    if (!selectedAlunoId || !files || files.length === 0) {
-      setUploadError("Selecione um aluno e pelo menos um arquivo.");
-      return;
-    }
     if (files.length > 5) {
         setUploadError("Você pode selecionar no máximo 5 arquivos.");
         return;
@@ -95,24 +91,24 @@ export default function ImportTreinoPage() {
     setIsUploading(true);
     setUploadError(null);
     setParsedData([]); 
+    
     const formData = new FormData();
     Array.from(files).forEach(file => {
       formData.append('files[]', file);
     });
+
     try {
       const response = await fetchWithAuth(`alunos/${selectedAlunoId}/import_training_block`, {
         method: 'POST',
         body: formData,
-        headers: { } // Deixado em branco para o FormData
+        headers: { } 
       });
       setParsedData(response.parsed_data || []); 
+      
       if(response.errors && response.errors.length > 0){
          setUploadError(`Alguns arquivos tiveram problemas: ${response.errors.join(', ')}`);
-      }
-      if (response.parsed_data && response.parsed_data.length > 0) {
-         console.log("Dados parseados:", response.parsed_data);
-      } else if (!response.errors || response.errors.length === 0) {
-         setUploadError("Nenhum dado válido foi encontrado nos arquivos.");
+      } else if (!response.parsed_data || response.parsed_data.length === 0) {
+         setUploadError("Nenhum dado válido encontrado nas planilhas.");
       }
     } catch (err: any) {
       setUploadError(err.message || "Erro desconhecido durante o upload.");
@@ -130,110 +126,134 @@ export default function ImportTreinoPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 text-neutral-800 space-y-8">
-      <h1 className="text-2xl font-bold border-b pb-4">Importar Treinos de Planilha</h1>
-      {/* Passo 1: Selecionar Aluno */}
-      <div className="bg-white p-4 rounded-lg border shadow-sm">
-        <label htmlFor="alunoSelect" className="block text-lg font-semibold mb-2">1. Selecione o Aluno</label>
-        {loadingAlunos ? (
-          <p className="text-sm text-neutral-500">Carregando alunos...</p>
-        ) : (
-          <select
-            id="alunoSelect"
-            value={selectedAlunoId}
-            onChange={(e) => {
-              setSelectedAlunoId(e.target.value);
-              setParsedData([]); // Limpa preview se trocar aluno
-              setUploadError(null);
-            }}
-            className="w-full border p-2 rounded text-neutral-600 disabled:bg-neutral-100"
-            disabled={alunos.length === 0 || isUploading}
-          >
-            <option value="">-- Escolha um aluno --</option>
-            {alunos.map(aluno => (
-              <option key={aluno.id} value={aluno.id}>{aluno.user.name}</option>
-            ))}
-          </select>
-        )}
+    <div className="max-w-5xl mx-auto space-y-8 pb-20 md:pb-0 text-neutral-800">
+      
+      {/* CABEÇALHO */}
+      <div>
+        <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
+           <FileSpreadsheet className="text-red-600" /> Importação em Massa
+        </h1>
+        <p className="text-neutral-500 text-sm">Carregue planilhas Excel (.xlsx) para criar treinos automaticamente.</p>
       </div>
 
-      <div className={`bg-white p-4 rounded-lg border shadow-sm ${!selectedAlunoId ? 'opacity-50 cursor-not-allowed' : ''}`}>
-        <label htmlFor="blockSelect" className="block text-lg font-semibold mb-2">2. Selecione o Bloco de Destino</label>
-        {loadingBlocos ? (
-          <p className="text-sm text-neutral-500">Carregando blocos...</p>
-        ) : (
-          <select
-            id="blockSelect"
-            value={selectedBlockId}
-            onChange={(e) => {
-              setSelectedBlockId(e.target.value);
-              setParsedData([]); // Limpa preview se trocar bloco
-              setUploadError(null);
-            }}
-            className="w-full border p-2 rounded text-neutral-600 disabled:bg-neutral-100"
-            disabled={!selectedAlunoId || loadingBlocos || isUploading}
-          >
-            <option value="">-- Escolha um bloco existente --</option>
-            {blocos.map(block => (
-              <option key={block.id} value={block.id}>{block.title}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* PASSO 1: ALUNO */}
+        <div className={`bg-white p-6 rounded-2xl border transition-all ${selectedAlunoId ? 'border-red-500 shadow-md ring-1 ring-green-100' : 'border-neutral-200 shadow-sm'}`}>
+           <div className="flex items-center gap-3 mb-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${selectedAlunoId ? 'bg-red-700 text-white' : 'bg-neutral-100 text-neutral-500'}`}>1</div>
+              <h2 className="font-semibold text-neutral-900">Selecione o Aluno</h2>
+           </div>
+           
+           <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+              <select
+                value={selectedAlunoId}
+                onChange={(e) => { setSelectedAlunoId(e.target.value); setParsedData([]); setUploadError(null); }}
+                className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg appearance-none bg-white focus:ring-2 focus:ring-red-500 outline-none transition-all cursor-pointer disabled:bg-neutral-50 disabled:text-neutral-400"
+                disabled={loadingAlunos || isUploading}
+              >
+                <option value="">Escolha...</option>
+                {alunos.map(aluno => (
+                  <option key={aluno.id} value={aluno.id}>{aluno.user.name}</option>
+                ))}
+              </select>
+              <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" size={16}/>
+           </div>
+        </div>
 
-      {/* Passo 2: Upload */}
-      <div className={`bg-white p-4 rounded-lg border shadow-sm ${!selectedAlunoId ? 'opacity-50' : ''}`}>
-        <label className="block text-lg font-semibold mb-2">2. Selecione as Planilhas (.xlsx)</label>
-        <div className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center">
-          <UploadCloud className="mx-auto h-12 w-12 text-neutral-400" />
-          <input
-            id="file-upload"
-            type="file"
-            multiple // Permite múltiplos arquivos
-            accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={handleFileChange}
-            disabled={!selectedAlunoId || isUploading}
-            className="mt-4 block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 disabled:opacity-50"
-          />
-          <p className="mt-1 text-xs text-neutral-500">Selecione até 5 arquivos XLSX.</p>
+        {/* PASSO 2: BLOCO */}
+        <div className={`bg-white p-6 rounded-2xl border transition-all ${selectedBlockId ? 'border-red-500 shadow-md ring-1 ring-green-100' : 'border-neutral-200 shadow-sm'} ${!selectedAlunoId ? 'opacity-50 pointer-events-none' : ''}`}>
+           <div className="flex items-center gap-3 mb-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${selectedBlockId ? 'bg-red-700 text-white' : 'bg-neutral-100 text-neutral-500'}`}>2</div>
+              <h2 className="font-semibold text-neutral-900">Bloco de Destino</h2>
+           </div>
+
+           <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+              <select
+                value={selectedBlockId}
+                onChange={(e) => { setSelectedBlockId(e.target.value); setParsedData([]); setUploadError(null); }}
+                className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg appearance-none bg-white focus:ring-2 focus:ring-red-500 outline-none transition-all cursor-pointer disabled:bg-neutral-50 disabled:text-neutral-400"
+                disabled={!selectedAlunoId || loadingBlocos || isUploading}
+              >
+                <option value="">Escolha o bloco...</option>
+                {blocos.map(block => (
+                  <option key={block.id} value={block.id}>{block.title}</option>
+                ))}
+              </select>
+              <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" size={16}/>
+           </div>
+           {blocos.length === 0 && selectedAlunoId && !loadingBlocos && (
+              <p className="text-xs text-red-500 mt-2">Este aluno não possui blocos criados.</p>
+           )}
+        </div>
+
+        {/* PASSO 3: UPLOAD */}
+        <div className={`bg-white p-6 rounded-2xl border transition-all ${files && files.length > 0 ? 'border-red-500 shadow-md ring-1 ring-green-100' : 'border-neutral-200 shadow-sm'} ${!selectedBlockId ? 'opacity-50 pointer-events-none' : ''}`}>
+           <div className="flex items-center gap-3 mb-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${files && files.length > 0 ? 'bg-red-700 text-white' : 'bg-neutral-100 text-neutral-500'}`}>3</div>
+              <h2 className="font-semibold text-neutral-900">Upload de Arquivos</h2>
+           </div>
+
+           <label 
+             htmlFor="file-upload"
+             className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-neutral-300 rounded-xl cursor-pointer hover:bg-neutral-50 hover:border-red-500 transition-all group"
+           >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                 <UploadCloud className="w-8 h-8 mb-2 text-neutral-400 group-hover:text-red-600 transition-colors" />
+                 <p className="text-xs text-neutral-500 group-hover:text-red-700">
+                    {files && files.length > 0 ? `${files.length} arquivo(s) selecionado(s)` : "Clique para selecionar XLSX"}
+                 </p>
+              </div>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={handleFileChange}
+                disabled={!selectedBlockId || isUploading}
+                className="hidden"
+              />
+           </label>
         </div>
       </div>
 
-      {/* Botão de Processar */}
-      <div className="text-center">
+      {/* BOTÃO DE PROCESSAR */}
+      <div className="flex flex-col items-center justify-center pt-4 border-t border-neutral-200">
+        {uploadError && (
+          <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm animate-in slide-in-from-top-2 fade-in">
+             <AlertCircle size={18} /> {uploadError}
+          </div>
+        )}
+        
         <button
           onClick={handleUploadAndParse}
-          disabled={!selectedAlunoId || !files || files.length === 0 || isUploading || loadingAlunos}
-          className="bg-red-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-800 disabled:bg-red-300 disabled:cursor-not-allowed flex items-center justify-center mx-auto"
+          disabled={!selectedBlockId || !files || files.length === 0 || isUploading}
+          className="bg-red-700 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-red-800 disabled:bg-neutral-300 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
         >
           {isUploading ? (
-            <>
-              <Loader className="animate-spin mr-2" size={20} /> Processando...
-            </>
+            <><Loader2 className="animate-spin" size={20} /> Processando Planilhas...</>
           ) : (
-            "Processar Planilhas"
+            <><CheckCircle2 size={20} /> Processar e Revisar</>
           )}
         </button>
-        {uploadError && (
-          <p className="mt-4 text-sm text-red-600 flex items-center justify-center gap-1">
-             <AlertCircle size={16} /> {uploadError}
-          </p>
-        )}
       </div>
 
-      {/* Passo 3: Preview e Edição (será implementado aqui) */}
+      {/* PREVIEW (Componente existente, apenas exibição condicional) */}
       {parsedData.length > 0 && !isUploading && (
-        <ImportPreviewCarousel 
-          initialData={parsedData} 
-          alunoId={selectedAlunoId}
-          targetBlockId={selectedBlockId} // <-- NOVO PROP
-          onSaveSuccess={() => {
-            alert("Importação salva com sucesso!");
-            clearImport();
-            // router.push(`/coach/treinos/${selectedAlunoId}`); 
-          }}
-          onCancel={clearImport} 
-        />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ImportPreviewCarousel 
+              initialData={parsedData} 
+              alunoId={selectedAlunoId}
+              targetBlockId={selectedBlockId}
+              onSaveSuccess={() => {
+                clearImport();
+                // router.push(`/coach/treinos/${selectedAlunoId}`); // Opcional
+              }}
+              onCancel={clearImport} 
+            />
+        </div>
       )}
     </div>
   );

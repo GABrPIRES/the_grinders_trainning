@@ -1,32 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { 
+  ArrowLeft, Save, Loader2, CreditCard, 
+  Clock, FileText, DollarSign, Trash2, AlertCircle 
+} from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 
 export default function EditPlanPage() {
+  const router = useRouter();
+  const { id } = useParams();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
   const [plan, setPlan] = useState({
     name: '',
-    description: '',
     price: '',
-    duration: '', // em dias
+    duration: '',
+    description: ''
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const router = useRouter();
-  const { id } = useParams(); // Pega o ID do plano da URL
 
+  // Busca os dados do plano
   useEffect(() => {
-    if (!id) return;
-    const fetchPlanData = async () => {
-      setLoading(true);
+    const fetchPlan = async () => {
       try {
         const data = await fetchWithAuth(`planos/${id}`);
         setPlan({
           name: data.name,
-          description: data.description || '',
-          price: data.price.toString(),
-          duration: data.duration.toString(),
+          price: data.price,
+          duration: data.duration,
+          description: data.description || ''
         });
       } catch (err: any) {
         setError('Erro ao carregar o plano.');
@@ -35,8 +41,7 @@ export default function EditPlanPage() {
         setLoading(false);
       }
     };
-
-    fetchPlanData();
+    fetchPlan();
   }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -45,93 +50,149 @@ export default function EditPlanPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     setError('');
 
     try {
       await fetchWithAuth(`planos/${id}`, {
-        method: 'PATCH', // Usamos PATCH para atualização
-        body: JSON.stringify({
-          plano: {
-            name: plan.name,
-            description: plan.description,
-            price: parseFloat(plan.price),
-            duration: parseInt(plan.duration, 10),
-          },
-        }),
+        method: 'PUT',
+        body: JSON.stringify({ plan }),
       });
-
       alert('Plano atualizado com sucesso!');
-      router.push('/coach/plans'); // Volta para a lista de planos
+      router.push('/coach/plans');
     } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar o plano.');
+      setError(err.message || 'Erro ao atualizar plano');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-neutral-800">Carregando...</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
+  const handleDelete = async () => {
+    if (window.confirm('Tem certeza que deseja excluir este plano?')) {
+        try {
+            await fetchWithAuth(`planos/${id}`, { method: 'DELETE' });
+            router.push('/coach/plans');
+        } catch (err: any) {
+            alert(err.message || 'Erro ao excluir.');
+        }
+    }
+  }
+
+  if (loading) return <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando dados...</div>;
 
   return (
-    <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Editar Plano</h1>
-
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-neutral-700">Nome do Plano</label>
-          <input
-            id="name"
-            type="text"
-            name="name"
-            value={plan.name}
-            onChange={handleChange}
-            className="mt-1 w-full border p-2 rounded text-neutral-600"
-            required
-          />
+    <div className="max-w-2xl mx-auto pb-20 md:pb-0 text-neutral-800">
+      
+      {/* CABEÇALHO */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+            <button 
+              onClick={() => router.back()} 
+              className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-600"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-900">Editar Plano</h1>
+              <p className="text-neutral-500 text-sm">Altere as informações deste pacote.</p>
+            </div>
         </div>
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-neutral-700">Descrição</label>
-          <textarea
-            id="description"
-            name="description"
-            value={plan.description}
-            onChange={handleChange}
-            className="mt-1 w-full border p-2 rounded text-neutral-600"
-            rows={3}
-          />
-        </div>
-        <div>
-          <label htmlFor="price" className="block text-sm font-medium text-neutral-700">Preço (R$)</label>
-          <input
-            id="price"
-            type="number"
-            name="price"
-            step="0.01"
-            value={plan.price}
-            onChange={handleChange}
-            className="mt-1 w-full border p-2 rounded text-neutral-600"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="duration" className="block text-sm font-medium text-neutral-700">Duração (dias)</label>
-          <input
-            id="duration"
-            type="number"
-            name="duration"
-            value={plan.duration}
-            onChange={handleChange}
-            className="mt-1 w-full border p-2 rounded text-neutral-600"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-red-700 text-white p-2 rounded cursor-pointer hover:bg-red-800"
+        
+        <button 
+            onClick={handleDelete}
+            className="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-2.5 rounded-xl transition-colors"
+            title="Excluir Plano"
         >
-          Salvar Alterações
+            <Trash2 size={20} />
         </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm border border-red-100 flex items-start gap-3">
+          <AlertCircle className="shrink-0 mt-0.5" size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* FORMULÁRIO */}
+      <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-2xl border border-neutral-200 shadow-sm space-y-6">
+        
+        {/* NOME */}
+        <div>
+           <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2">
+              <CreditCard size={16}/> Nome do Plano
+           </label>
+           <input 
+             name="name"
+             value={plan.name}
+             onChange={handleChange}
+             placeholder="Ex: Consultoria Mensal, Trimestral..."
+             className="w-full pl-4 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
+             required
+           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* PREÇO */}
+            <div>
+                <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2">
+                    <DollarSign size={16}/> Preço (R$)
+                </label>
+                <input 
+                    type="number"
+                    name="price"
+                    value={plan.price}
+                    onChange={handleChange}
+                    step="0.01"
+                    placeholder="0,00"
+                    className="w-full pl-4 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                    required
+                />
+            </div>
+
+            {/* DURAÇÃO */}
+            <div>
+                <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2">
+                    <Clock size={16}/> Duração (Dias)
+                </label>
+                <input 
+                    type="number"
+                    name="duration"
+                    value={plan.duration}
+                    onChange={handleChange}
+                    placeholder="30"
+                    className="w-full pl-4 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                    required
+                />
+            </div>
+        </div>
+
+        {/* DESCRIÇÃO */}
+        <div>
+           <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2">
+              <FileText size={16}/> Descrição / Benefícios
+           </label>
+           <textarea 
+             name="description"
+             value={plan.description}
+             onChange={handleChange}
+             placeholder="Descreva o que está incluso (ex: Avaliação de vídeos, suporte WhatsApp...)"
+             className="w-full pl-4 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all h-32 resize-none"
+           />
+        </div>
+
+        {/* BOTÃO SALVAR */}
+        <div className="pt-4 flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-red-700 text-white font-bold py-3 px-8 rounded-xl hover:bg-red-800 transition-colors shadow-md flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center"
+          >
+            {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+            {saving ? "Salvando..." : "Salvar Alterações"}
+          </button>
+        </div>
+
       </form>
     </div>
   );

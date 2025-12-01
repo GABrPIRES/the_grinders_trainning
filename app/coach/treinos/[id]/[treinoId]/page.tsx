@@ -2,510 +2,417 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Pencil, Copy, Plus, Trash, X } from "lucide-react";
-import { calculatePR } from "@/lib/calculatePR";
 import { v4 as uuid } from "uuid";
+import { calculatePR } from "@/lib/calculatePR";
 import { fetchWithAuth } from "@/lib/api";
-import { ArrowLeft } from "lucide-react";
+import { 
+  ArrowLeft, Save, Loader2, Dumbbell, Calendar, 
+  Trash2, Plus, AlertCircle, X, FileText 
+} from "lucide-react";
 
-// Tipos atualizados para snake_case e com a flag 'isNew'
+// --- Interfaces Atualizadas ---
 interface Section {
-  id: string;
-  isNew?: boolean;
-  carga?: number | null; // Permite null
-  load_unit?: 'kg' | 'lb' | 'rir' | string | null; // Adicionado e permite null
+  id: string; 
+  carga?: number | null;
+  load_unit?: 'kg' | 'lb' | 'rir' | string | null;
   series?: number | null;
   reps?: number | null;
   equip?: string | null;
   rpe?: number | null;
   pr?: number | null;
   feito?: boolean | null;
-  _destroy?: boolean;
-  [key: string]: any; // Mantido para flexibilidade
+  isNew?: boolean;     // Se é novo (não salvo no banco)
+  deleted?: boolean;   // Se foi marcado para deletar
+  [key: string]: any;
 }
 
 interface Exercise {
-  id: string;
-  isNew?: boolean; // Flag para novos itens
+  id: string; 
   name: string;
   sections: Section[];
-  _destroy?: boolean;
+  isNew?: boolean;
+  deleted?: boolean; // Se foi marcado para deletar
 }
 
-interface Treino {
-  id: string;
-  name: string;
-  day: string;
-  aluno_id: string;
-  exercicios: Exercise[];
-  week_id: string;
-}
-
-interface WeekData {
-  start_date: string | null;
-  end_date: string | null;
-}
-
-export default function ViewTreinoPage() {
+export default function EditWorkoutPage() {
   const { id: alunoId, treinoId } = useParams();
   const router = useRouter();
-  const [treino, setTreino] = useState<Treino | null>(null);
-  const [weekData, setWeekData] = useState<WeekData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
   const [error, setError] = useState("");
-  const [isDuplicateModalOpen, setDuplicateModalOpen] = useState(false);
-
-  const fetchTreinoAndWeekData = async () => {
-    if (!treinoId) return;
-    setLoading(true);
-    setError("");
-    try {
-      // Busca o treino
-      const treinoData = await fetchWithAuth(`treinos/${treinoId}`);
-      setTreino(treinoData);
-
-      // Se o treino foi carregado e tem week_id, busca os dados da semana
-      if (treinoData?.week_id) {
-        try {
-          const weekApiData = await fetchWithAuth(`weeks/${treinoData.week_id}`);
-          setWeekData({
-            start_date: weekApiData.start_date ? new Date(weekApiData.start_date).toISOString().split('T')[0] : null,
-            end_date: weekApiData.end_date ? new Date(weekApiData.end_date).toISOString().split('T')[0] : null,
-          });
-        } catch (weekErr) {
-          console.error("Erro ao buscar dados da semana:", weekErr);
-          setError("Erro ao carregar limites de data da semana.");
-          setWeekData(null); // Define como null se a busca falhar
-        }
-      } else {
-        setError("Treino não está associado a uma semana.");
-        setWeekData(null);
-      }
-
-    } catch (err: any) {
-      setError("Erro ao buscar treino: " + err.message);
-      setTreino(null); // Limpa o treino se a busca falhar
-      setWeekData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
 
   useEffect(() => {
-    fetchTreinoAndWeekData();
+    async function loadWorkout() {
+      try {
+        const data = await fetchWithAuth(`treinos/${treinoId}`);
+        
+        setTitle(data.name || "");
+        setDate(data.day ? data.day.split('T')[0] : "");
+        setDescription(data.description || "");
+
+        if (data.exercicios && Array.isArray(data.exercicios)) {
+            const mappedExercises = data.exercicios.map((ex: any) => ({
+                id: ex.id,
+                name: ex.name,
+                isNew: false, 
+                deleted: false, // Inicialmente visível
+                sections: ex.sections.map((sec: any) => ({
+                    id: sec.id,
+                    carga: sec.carga,
+                    load_unit: sec.load_unit || 'kg',
+                    series: sec.series,
+                    reps: sec.reps,
+                    equip: sec.equip,
+                    rpe: sec.rpe,
+                    pr: sec.pr,
+                    feito: sec.feito,
+                    isNew: false,
+                    deleted: false
+                }))
+            }));
+            setExercises(mappedExercises);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar treino:", err);
+        setError("Não foi possível carregar os dados do treino.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadWorkout();
   }, [treinoId]);
 
-  const handleChange = (exIndex: number, secIndex: number, field: string, value: any) => {
-    if (!treino) return;
+  // --- Lógica de Manipulação ---
+  
+  const handleAddExercise = () => setExercises(prev => [...prev, { id: uuid(), name: "", isNew: true, deleted: false, sections: [{ id: uuid(), isNew: true, deleted: false, carga: null, load_unit: 'kg', series: null, reps: null, equip: "", rpe: null, pr: null, feito: false }] }]);
+  
+  const handleRemoveExercise = (index: number) => {
+      if (confirm("Remover este exercício?")) {
+        setExercises(prev => {
+            const updated = [...prev];
+            // Se for novo (nunca salvo), pode remover do array direto
+            if (updated[index].isNew) {
+                return prev.filter((_, i) => i !== index);
+            }
+            // Se já existe no banco, marcamos como deletado para enviar _destroy
+            updated[index].deleted = true;
+            return updated;
+        });
+      }
+  };
 
-    setTreino(currentTreino => {
-        if (!currentTreino) return null;
+  const handleAddSection = (exerciseId: string) => setExercises(prev => prev.map(ex => ex.id === exerciseId ? { ...ex, sections: [...ex.sections, { id: uuid(), isNew: true, deleted: false, carga: null, load_unit: 'kg', series: null, reps: null, equip: "", rpe: null, pr: null, feito: false }] } : ex));
+  
+  const handleRemoveSection = (exerciseIndex: number, sectionIndex: number) => {
+      setExercises(prev => {
+          const updated = [...prev];
+          const section = updated[exerciseIndex].sections[sectionIndex];
+          
+          if (section.isNew) {
+             updated[exerciseIndex].sections = updated[exerciseIndex].sections.filter((_, i) => i !== sectionIndex);
+          } else {
+             updated[exerciseIndex].sections[sectionIndex].deleted = true;
+          }
+          return updated;
+      });
+  };
 
-        const updated = { ...currentTreino };
-        // Criamos uma cópia profunda da seção para evitar mutação direta
-        const section = JSON.parse(JSON.stringify(updated.exercicios[exIndex].sections[secIndex]));
+  const handleExerciseChange = (index: number, value: string) => { 
+      const newExercises = [...exercises]; 
+      newExercises[index].name = value; 
+      setExercises(newExercises); 
+  };
+
+  const handleSectionChange = (exerciseIndex: number, sectionIndex: number, field: string, value: any) => {
+    setExercises(currentExercises => {
+        const updated = [...currentExercises];
+        const section: Section = { ...updated[exerciseIndex].sections[sectionIndex] };
 
         if (field === 'feito') {
-            section[field] = value;
+            section.feito = value;
         } else if (['carga', 'rpe'].includes(field)) {
             const parsed = parseFloat(value);
-            section[field] = (value === '' || isNaN(parsed)) ? null : parsed;
+            section[field as keyof Section] = (value === '' || isNaN(parsed)) ? null : parsed;
         } else if (['series', 'reps'].includes(field)) {
             const parsed = parseInt(value, 10);
-            section[field] = (value === '' || isNaN(parsed)) ? null : parsed;
+            section[field as keyof Section] = (value === '' || isNaN(parsed)) ? null : parsed;
         } else {
-            section[field] = value; // Inclui load_unit aqui
+            section[field as keyof Section] = value;
         }
 
-        // CORREÇÃO: Recalcula PR apenas se a unidade não for 'rir'
         if (section.carga && section.reps && section.rpe && section.load_unit !== 'rir') {
             const pr = calculatePR({ carga: section.carga!, reps: section.reps!, rpe: section.rpe! });
             section.pr = pr !== null ? parseFloat(pr.toFixed(2)) : null;
         } else {
-            section.pr = null; // Limpa o PR se for RIR ou faltar dados
+            section.pr = null;
         }
 
-        // Atualiza o estado imutavelmente
-        const newExercicios = [...updated.exercicios];
-        const newSections = [...newExercicios[exIndex].sections];
-        newSections[secIndex] = section;
-        newExercicios[exIndex] = { ...newExercicios[exIndex], sections: newSections };
-
-        return { ...updated, exercicios: newExercicios };
+        updated[exerciseIndex].sections[sectionIndex] = section;
+        return updated;
     });
   };
 
-  const handleAddExercise = () => {
-    if (!treino) return;
-    const newExercise: Exercise = {
-      id: uuid(),
-      isNew: true, // Mar_ADD_EXERCISE)
-      name: "Novo exercício",
-      sections: [{ id: uuid(), isNew: true, carga: undefined, series: undefined, reps: undefined, equip: "", rpe: undefined, feito: false }],
-    };
-    setTreino({ ...treino, exercicios: [...treino.exercicios, newExercise] });
-  };
-
-  const handleAddSection = (exIndex: number) => {
-    if (!treino) return;
-    const updated = { ...treino };
-    updated.exercicios[exIndex].sections.push({ id: uuid(), isNew: true, carga: undefined, series: undefined, reps: undefined, equip: "", rpe: undefined, feito: false });
-    setTreino(updated);
-  };
-  
-  const handleDeleteExercise = (exIndex: number) => {
-    if (!treino) return;
-    const updatedExercicios = treino.exercicios.map((ex, index) => 
-      index === exIndex ? { ...ex, _destroy: true } : ex
-    );
-    setTreino({ ...treino, exercicios: updatedExercicios });
-  };
-
-  const handleDeleteSection = (exIndex: number, secIndex: number) => {
-    if (!treino) return;
-    const updatedExercicios = [...treino.exercicios];
-    updatedExercicios[exIndex].sections = updatedExercicios[exIndex].sections.map((sec, index) => 
-      index === secIndex ? { ...sec, _destroy: true } : sec
-    );
-    setTreino({ ...treino, exercicios: updatedExercicios });
-  };
-
-  const handleSave = async () => {
-    if (!treino) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
     try {
       const payload = {
         treino: {
-          name: treino.name,
-          day: new Date(treino.day).toISOString().split("T")[0],
-          // duration_time removido
-          exercicios_attributes: treino.exercicios
-            .map(ex => ({
-            id: ex.isNew ? undefined : ex.id,
-            name: ex.name,
-            _destroy: ex._destroy,
-            sections_attributes: ex.sections
-              .map(sec => ({
-              id: sec.isNew ? undefined : sec.id,
-              _destroy: sec._destroy,
-              carga: sec.carga,
-              load_unit: sec.load_unit || 'kg', // Envia load_unit (default kg)
-              series: sec.series,
-              reps: sec.reps,
-              equip: sec.equip,
-              rpe: sec.rpe,
-              pr: sec.pr,
-              feito: sec.feito
-            }))
-          }))
-        }
+          name: title,
+          day: date,
+          exercicios_attributes: exercises.map(ex => {
+            // Prepara o objeto do exercício
+            const exPayload: any = {
+                name: ex.name,
+                // Manda ID se existir (não for novo)
+                id: ex.isNew ? undefined : ex.id,
+                // Se estiver marcado como deletado, manda _destroy
+                _destroy: ex.deleted ? true : undefined,
+                
+                sections_attributes: ex.sections.map(sec => ({
+                    id: sec.isNew ? undefined : sec.id,
+                    _destroy: sec.deleted ? true : undefined,
+                    carga: sec.carga,
+                    load_unit: sec.load_unit || 'kg',
+                    series: sec.series,
+                    reps: sec.reps,
+                    equip: sec.equip,
+                    rpe: sec.rpe,
+                    pr: sec.pr,
+                    feito: sec.feito
+                }))
+            };
+            return exPayload;
+          }),
+        },
       };
-
-      await fetchWithAuth(`treinos/${treino.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
-
-      alert('Treino atualizado com sucesso!');
-      setEditMode(false);
-      fetchTreinoAndWeekData();
-
+      
+      await fetchWithAuth(`treinos/${treinoId}`, { method: "PUT", body: JSON.stringify(payload) });
+      
+      alert("Treino atualizado com sucesso!");
+      // Importante: Recarregar para limpar os estados de 'deleted' e pegar os novos IDs
+      window.location.reload(); 
     } catch (err: any) {
-      alert('Erro ao atualizar treino: ' + err.message);
-    }
-  };
-
-  const handleDeleteTreino = async () => {
-    if (!treino) return;
-    if (!window.confirm("Tem certeza que deseja excluir este treino?")) return;
-    try {
-      await fetchWithAuth(`treinos/${treino.id}`, { method: 'DELETE' });
-      alert("Treino deletado com sucesso.");
-      router.push(`/coach/treinos/${alunoId}`);
-    } catch (err: any) {
-      alert("Erro ao deletar treino: " + err.message);
-    }
-  };
-
-  if (loading) return <p className="p-6">Carregando treino...</p>;
-  if (error) return <p className="p-6 text-red-600">{error}</p>;
-  if (!treino) return <p className="p-6 text-red-600">Treino não encontrado.</p>;
-
-  return (
-    <div className="max-w-4xl mx-auto p-6 text-neutral-800">
-      <div className="border-b pb-4 mb-6">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
-          <ArrowLeft size={16} />
-          Voltar para a lista de treinos
-        </button>
-      </div>
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-full">
-          {editMode ? (
-            <div className="flex flex-col gap-2 mb-4">
-              <input type="text" className="border p-2 rounded font-bold text-xl max-w-96" value={treino.name} onChange={(e) => setTreino({ ...treino, name: e.target.value })}/>
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  className="border p-2 rounded text-sm max-w-40 text-neutral-600" // Adicionado text-neutral-600
-                  value={new Date(treino.day).toISOString().split("T")[0]}
-                  onChange={(e) => setTreino({ ...treino, day: e.target.value })}
-                  // ATUALIZAÇÃO: Restringe as datas com base nos dados da semana
-                  min={weekData?.start_date || ""}
-                  max={weekData?.end_date || ""}
-                  disabled={!weekData} // Desabilita enquanto weekData não carrega
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold mb-2">{treino.name}</h1>
-              <p className="text-sm text-neutral-600">
-                  {new Date(treino.day).toLocaleDateString("pt-BR", { timeZone: 'UTC' })}
-              </p>
-            </>
-          )}
-        </div>
-        <div className="flex gap-2 pt-1">
-          <button onClick={() => setDuplicateModalOpen(true)} className="p-2 border border-neutral-300 rounded cursor-pointer hover:bg-neutral-100"><Copy size={18} /></button>
-          <button onClick={() => setEditMode(!editMode)} className={`p-2 border rounded cursor-pointer transition-colors ${editMode ? 'bg-red-700 text-white border-red-700' : 'hover:bg-red-700 hover:text-white'}`}><Pencil size={18} /></button>
-        </div>
-      </div>
-
-      {!editMode && (<button onClick={handleDeleteTreino} className="mb-6 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-800"><Trash className="inline mr-1" size={16} /> Deletar treino</button>)}
-
-      {treino.exercicios.map((ex, exIndex) => {
-          if (ex._destroy) return null;
-          return (
-            <div key={ex.id} className="mb-6 bg-white border rounded p-4">
-              {/* Header do Exercício (igual) */}
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold w-full">{editMode ? (<input type="text" className="border p-1 rounded w-full" value={ex.name} onChange={(e) => { const updated = { ...treino }; updated.exercicios[exIndex].name = e.target.value; setTreino(updated); }}/>) : (`${exIndex + 1}. ${ex.name}`)}</h2>
-                {editMode && (<button onClick={() => handleDeleteExercise(exIndex)} className="text-red-500 hover:text-red-700 ml-4"><Trash size={18} /></button>)}
-              </div>
-              {/* Header das Colunas (Ajustado para novo layout) */}
-              <div className="grid grid-cols-10 gap-2 text-xs font-medium text-neutral-500 mb-1 px-1">
-                  <span className="col-span-3">Carga</span> {/* Ajustado */}
-                  <span className="col-span-1">Séries</span>
-                  <span className="col-span-1">Reps</span>
-                  <span className="col-span-1">Equip.</span>
-                  <span className="col-span-1">RPE</span>
-                  <span className="col-span-1">PR</span>
-                  <span className="col-span-1 text-center">Feito</span> {/* Ajustado */}
-              </div>
-
-              {/* Loop de Seções */}
-              {ex.sections.map((sec, secIndex) => {
-                if (sec._destroy) return null;
-                return (
-                  <div key={sec.id} className="grid grid-cols-10 gap-2 text-sm mb-1 items-center relative pr-6"> {/* Grid 10 colunas */}
-                    {editMode ? (
-                      <>
-                        {/* Coluna Carga + Select (3 colunas) */}
-                        <div className="col-span-3 flex gap-1">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Carga"
-                            className="text-neutral-600 border p-1 rounded w-2/3"
-                            value={sec.carga ?? ""}
-                            onChange={(e) => handleChange(exIndex, secIndex, "carga", e.target.value)}
-                          />
-                          <select
-                            className="text-neutral-600 border p-1 rounded w-1/3 text-xs"
-                            value={sec.load_unit || 'kg'}
-                            onChange={(e) => handleChange(exIndex, secIndex, "load_unit", e.target.value)}
-                          >
-                            <option value="kg">kg</option>
-                            <option value="lb">lb</option>
-                            <option value="rir">rir</option>
-                          </select>
-                        </div>
-                        {/* Outros Inputs (1 coluna cada) */}
-                        <input type="number" placeholder="Sér" className="col-span-1 border p-1 rounded" value={sec.series ?? ""} onChange={(e) => handleChange(exIndex, secIndex, "series", e.target.value)} />
-                        <input type="number" placeholder="Rep" className="col-span-1 border p-1 rounded" value={sec.reps ?? ""} onChange={(e) => handleChange(exIndex, secIndex, "reps", e.target.value)} />
-                        <input type="text" placeholder="Equip" className="col-span-1 border p-1 rounded" value={sec.equip ?? ""} onChange={(e) => handleChange(exIndex, secIndex, "equip", e.target.value)} />
-                        <input type="number" step="0.5" placeholder="RPE" className="col-span-1 border p-1 rounded" value={sec.rpe ?? ""} onChange={(e) => handleChange(exIndex, secIndex, "rpe", e.target.value)} />
-                        <input
-                            type="number"
-                            placeholder="PR"
-                            className={`col-span-1 border p-1 rounded ${sec.load_unit === 'rir' ? 'bg-gray-200' : 'bg-gray-100'}`}
-                            value={sec.pr ?? ""}
-                            readOnly
-                            disabled={sec.load_unit === 'rir'} // Desabilita se for RIR
-                        />
-                         <label className="col-span-1 flex items-center justify-center gap-1"> {/* Centraliza Checkbox */}
-                           <input type="checkbox" className="justify-self-center" checked={!!sec.feito} onChange={(e) => handleChange(exIndex, secIndex, "feito", e.target.checked)} />
-                         </label>
-                        <button onClick={() => handleDeleteSection(exIndex, secIndex)} className="absolute top-1 right-0 text-red-500 hover:text-red-700"><Trash size={14} /></button>
-                      </>
-                    ) : (
-                      <>
-                        {/* Exibição (Ajustado layout e unidade) */}
-                        <span className="p-1 col-span-3">{sec.carga ?? '-'} {sec.load_unit || 'kg'}</span>
-                        <span className="p-1 col-span-1">{sec.series ?? '-'}</span>
-                        <span className="p-1 col-span-1">{sec.reps ?? '-'}</span>
-                        <span className="p-1 col-span-1">{sec.equip ?? '-'}</span>
-                        <span className="p-1 col-span-1">{sec.rpe ?? '-'}</span>
-                        <span className="p-1 col-span-1">{sec.pr ?? '-'}</span>
-                        <span className="p-1 col-span-1 justify-self-center">{sec.feito ? "✅" : "❌"}</span> {/* Centraliza */}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-              {editMode && (<button onClick={() => handleAddSection(exIndex)} className="mt-2 text-sm text-blue-600 hover:underline"><Plus size={14} className="inline" /> Adicionar série</button>)}
-            </div>
-          )
-        })}
-
-      {editMode && (
-        <div className="mt-6 flex gap-4">
-          <button onClick={handleAddExercise} className="text-sm text-blue-600 hover:underline"><Plus size={14} className="inline" /> Adicionar exercício</button>
-          <button onClick={handleSave} className="bg-red-700 text-white py-2 px-6 rounded hover:bg-red-800 ml-auto">Salvar Alterações</button>
-        </div>
-      )}
-
-      {isDuplicateModalOpen && (
-        <DuplicateTreinoModal
-          alunoId={alunoId as string}
-          sourceTreino={treino}
-          onClose={() => setDuplicateModalOpen(false)}
-          onSuccess={(newTreinoId) => {
-            setDuplicateModalOpen(false);
-            router.push(`/coach/treinos/${alunoId}/${newTreinoId}`);
-            fetchTreinoAndWeekData(); // Recarrega o treino atual também, se necessário
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-interface Block { id: string; title: string; }
-interface Week { id: string; week_number: number; start_date: string | null; end_date: string | null; }
-
-function DuplicateTreinoModal({ alunoId, sourceTreino, onClose, onSuccess }: { alunoId: string; sourceTreino: Treino; onClose: () => void; onSuccess: (newTreinoId: string) => void; }) {
-  const [blocks, setBlocks] = useState<Block[]>([]);
-  const [selectedBlockId, setSelectedBlockId] = useState<string>('');
-  const [weeks, setWeeks] = useState<Week[]>([]);
-
-  const [formData, setFormData] = useState({
-    name: `${sourceTreino.name} (Cópia)`,
-    week_id: '',
-    day: ''
-  });
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  // Busca todos os blocos do aluno
-  useEffect(() => {
-    async function fetchBlocks() {
-      try {
-        setLoading(true);
-        const data = await fetchWithAuth(`alunos/${alunoId}/training_blocks`);
-        setBlocks(data);
-      } catch (err) {
-        setError('Erro ao carregar blocos de treino.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBlocks();
-  }, [alunoId]);
-
-  // Busca as semanas quando um bloco é selecionado
-  useEffect(() => {
-    if (!selectedBlockId) {
-      setWeeks([]);
-      setFormData(prev => ({...prev, week_id: ''}));
-      return;
-    }
-    async function fetchWeeks() {
-      try {
-        setLoading(true);
-        const data = await fetchWithAuth(`training_blocks/${selectedBlockId}`);
-        setWeeks(data.weeks || []);
-      } catch (err) {
-        setError('Erro ao carregar semanas do bloco.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchWeeks();
-  }, [selectedBlockId]);
-
-  const selectedWeek = weeks.find(w => w.id === formData.week_id);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const payload = { duplication: formData };
-      const newTreino = await fetchWithAuth(`treinos/${sourceTreino.id}/duplicate`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      alert('Treino duplicado com sucesso!');
-      onSuccess(newTreino.id);
-    } catch (err: any) {
-      setError(err.message || 'Falha ao duplicar o treino.');
+      setError(err.message || "Erro ao atualizar o treino.");
+      console.error("Erro na requisição:", err);
     } finally {
-      setLoading(false);
+        setSaving(false);
     }
   };
 
+  const handleDelete = async () => {
+      if(!confirm("Tem certeza que deseja excluir este treino?")) return;
+      try {
+          await fetchWithAuth(`treinos/${treinoId}`, { method: 'DELETE' });
+          router.back();
+      } catch (err: any) {
+          alert("Erro ao excluir.");
+      }
+  }
+
+  // Styles
+  const inputClass = "border border-neutral-300 rounded px-2 py-2 w-full text-sm focus:ring-2 focus:ring-red-500 outline-none";
+  const labelClass = "text-[10px] uppercase font-bold text-neutral-400 mb-1 block";
+
+  if (loading) return <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando treino...</div>;
+
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-800">
-          <X size={24} />
-        </button>
-        <h2 className="text-xl font-bold mb-4">Duplicar Treino para...</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-neutral-700">Novo Título do Treino</label>
-            <input type="text" id="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="mt-1 w-full border p-2 rounded text-neutral-600" required />
-          </div>
-
-          <div>
-            <label htmlFor="block" className="block text-sm font-medium text-neutral-700">Bloco de Destino</label>
-            <select id="block" value={selectedBlockId} onChange={e => setSelectedBlockId(e.target.value)} className="mt-1 w-full border p-2 rounded text-neutral-600" required>
-              <option value="">Selecione um bloco...</option>
-              {blocks.map(block => <option key={block.id} value={block.id}>{block.title}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="week_id" className="block text-sm font-medium text-neutral-700">Semana de Destino</label>
-            <select id="week_id" value={formData.week_id} onChange={e => setFormData({...formData, week_id: e.target.value})} className="mt-1 w-full border p-2 rounded text-neutral-600" disabled={!selectedBlockId || weeks.length === 0} required>
-              <option value="">Selecione uma semana...</option>
-              {weeks.map(week => <option key={week.id} value={week.id}>Semana {week.week_number}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="day" className="block text-sm font-medium text-neutral-700">Nova Data do Treino</label>
-            <input type="date" id="day" value={formData.day} onChange={e => setFormData({...formData, day: e.target.value})} className="mt-1 w-full border p-2 rounded text-neutral-600"
-              min={selectedWeek?.start_date ? new Date(selectedWeek.start_date).toISOString().split('T')[0] : ''}
-              max={selectedWeek?.end_date ? new Date(selectedWeek.end_date).toISOString().split('T')[0] : ''}
-              disabled={!formData.week_id}
-              required
-            />
-          </div>
-
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-
-          <div className="flex justify-end gap-4 pt-4">
-            <button type="button" onClick={onClose} className="bg-neutral-200 text-neutral-800 px-4 py-2 rounded hover:bg-neutral-300">Cancelar</button>
-            <button type="submit" disabled={loading} className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800 disabled:bg-red-400">
-              {loading ? 'Duplicando...' : 'Duplicar'}
+    <div className="max-w-5xl mx-auto pb-32 md:pb-8 text-neutral-800">
+      
+      {/* CABEÇALHO */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
+            <button onClick={() => router.back()} className="p-2 hover:bg-neutral-100 rounded-full text-neutral-600 transition-colors">
+            <ArrowLeft size={24} />
             </button>
-          </div>
-        </form>
+            <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Editar Treino</h1>
+            <p className="text-neutral-500 text-sm hidden md:block">Gerencie os exercícios e cargas.</p>
+            </div>
+        </div>
+        
+        <button 
+            onClick={handleDelete} 
+            className="text-red-600 hover:text-red-800 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium text-sm"
+        >
+            <Trash2 size={16} /> Excluir Treino
+        </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm border border-red-100 flex items-start gap-3">
+          <AlertCircle className="shrink-0 mt-0.5" size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        
+        {/* INFO DO TREINO */}
+        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+             <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Dumbbell size={16}/> Nome</label>
+             <input type="text" placeholder="Ex: Leg Day" className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all" value={title} onChange={e => setTitle(e.target.value)} required />
+          </div>
+          <div>
+             <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Calendar size={16}/> Data</label>
+             <input
+                type="date"
+                className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                required
+             />
+          </div>
+        </div>
+
+        {/* LISTA DE EXERCÍCIOS */}
+        <div className="space-y-6">
+            {exercises.map((exercise, exIndex) => {
+              // Se foi deletado, não renderiza na tela (mas continua no state para ser enviado com _destroy)
+              if (exercise.deleted) return null;
+
+              return (
+                <div key={exercise.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm relative group">
+                    
+                    {/* Nome do Exercício */}
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1 mr-4">
+                            <label className="block text-xs font-bold text-neutral-400 uppercase mb-1">Exercício {exIndex + 1}</label>
+                            <input 
+                                type="text" 
+                                placeholder="Nome do exercício..." 
+                                className="w-full text-lg font-bold text-neutral-900 border-b-2 border-transparent hover:border-neutral-200 focus:border-red-500 outline-none transition-colors py-1" 
+                                value={exercise.name} 
+                                onChange={e => handleExerciseChange(exIndex, e.target.value)} 
+                                required 
+                            />
+                        </div>
+                        <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="text-neutral-300 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors">
+                            <Trash2 size={20} />
+                        </button>
+                    </div>
+
+                    {/* SÉRIES: DESKTOP */}
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
+                            <thead>
+                                <tr className="text-xs text-neutral-400 font-bold uppercase border-b border-neutral-100">
+                                    <th className="p-2 w-28">Carga</th>
+                                    <th className="p-2 w-16">Séries</th>
+                                    <th className="p-2 w-16">Reps</th>
+                                    <th className="p-2 w-20">RPE</th>
+                                    <th className="p-2">Equipamento</th>
+                                    <th className="p-2 w-20">1RM</th>
+                                    <th className="p-2 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm">
+                                {exercise.sections.map((section, secIndex) => {
+                                  if (section.deleted) return null;
+                                  return (
+                                    <tr key={section.id} className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50/50">
+                                        <td className="p-2">
+                                            <div className="flex gap-1">
+                                                <input type="number" step="0.5" placeholder="0" className={inputClass} value={section.carga ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
+                                                <select className="border border-neutral-300 rounded px-1 text-xs bg-white focus:ring-2 focus:ring-red-500 outline-none" value={section.load_unit || 'kg'} onChange={(e) => handleSectionChange(exIndex, secIndex, "load_unit", e.target.value)}>
+                                                    <option value="kg">kg</option>
+                                                    <option value="lb">lb</option>
+                                                    <option value="rir">RIR</option>
+                                                </select>
+                                            </div>
+                                        </td>
+                                        <td className="p-2"><input type="number" placeholder="1" className={inputClass} value={section.series ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "series", e.target.value)} /></td>
+                                        <td className="p-2"><input type="number" placeholder="1" className={inputClass} value={section.reps ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} /></td>
+                                        <td className="p-2"><input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} /></td>
+                                        <td className="p-2"><input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} /></td>
+                                        <td className="p-2 text-center text-xs font-mono text-neutral-500">{section.pr || "-"}</td>
+                                        <td className="p-2 text-center">
+                                            <button type="button" onClick={() => handleRemoveSection(exIndex, secIndex)} className="text-neutral-300 hover:text-red-500 transition-colors"><X size={16}/></button>
+                                        </td>
+                                    </tr>
+                                  );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* SÉRIES: MOBILE */}
+                    <div className="md:hidden space-y-3">
+                        {exercise.sections.map((section, secIndex) => {
+                            if (section.deleted) return null;
+                            return (
+                                <div key={section.id} className="bg-neutral-50 p-3 rounded-lg border border-neutral-200 relative">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => handleRemoveSection(exIndex, secIndex)} 
+                                        className="absolute top-2 right-2 text-neutral-300 hover:text-red-500 p-1"
+                                    >
+                                        <X size={16}/>
+                                    </button>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 pr-6">
+                                        <div>
+                                            <span className={labelClass}>Carga</span>
+                                            <div className="flex gap-1">
+                                                <input type="number" step="0.5" placeholder="0" className={inputClass} value={section.carga ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
+                                                <select className="border border-neutral-300 rounded px-1 text-xs bg-white h-[38px]" value={section.load_unit || 'kg'} onChange={(e) => handleSectionChange(exIndex, secIndex, "load_unit", e.target.value)}>
+                                                    <option value="kg">kg</option>
+                                                    <option value="lb">lb</option>
+                                                    <option value="rir">RIR</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <span className={labelClass}>Séries</span>
+                                                <input type="number" placeholder="1" className={inputClass} value={section.series ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "series", e.target.value)} />
+                                            </div>
+                                            <div>
+                                                <span className={labelClass}>Reps</span>
+                                                <input type="number" placeholder="1" className={inputClass} value={section.reps ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className={labelClass}>RPE</span>
+                                            <input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} />
+                                        </div>
+                                        <div>
+                                            <span className={labelClass}>Equip</span>
+                                            <input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    <button type="button" onClick={() => handleAddSection(exercise.id)} className="mt-4 text-sm font-bold text-red-700 hover:text-red-800 flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-red-50 w-full md:w-auto justify-center">
+                        <Plus size={16} /> Adicionar Série
+                    </button>
+                </div>
+              );
+            })}
+        </div>
+
+        {/* AÇÕES FLUTUANTES */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-neutral-200 md:static md:bg-transparent md:border-0 md:p-0 flex flex-col md:flex-row gap-3 z-20 shadow-up md:shadow-none">
+            <button type="button" onClick={handleAddExercise} className="flex-1 py-3 border-2 border-dashed border-neutral-300 rounded-xl text-neutral-500 font-bold hover:border-red-300 hover:text-red-700 transition-all flex items-center justify-center gap-2">
+                <Plus size={20} /> Novo Exercício
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 py-3 bg-neutral-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-70">
+                {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                {saving ? "Salvando..." : "Salvar Alterações"}
+            </button>
+        </div>
+
+      </form>
     </div>
   );
 }

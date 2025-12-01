@@ -97,7 +97,7 @@ export default function CoachStudentsPage() {
           <p className="text-neutral-500 text-sm">Gerencie o progresso e assinaturas.</p>
         </div>
         <button
-          onClick={() => router.push("/coach/students/new")}
+          onClick={() => router.push("/coach/students/create")}
           className="w-full sm:w-auto bg-red-700 text-white px-4 py-2.5 rounded-lg font-bold hover:bg-red-800 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
         >
           <Plus size={20} />

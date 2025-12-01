@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash, Banknote, KeyRound, Filter, Search, X } from 'lucide-react';
+import { 
+  Trash, Banknote, KeyRound, Filter, Search, X, 
+  Wallet, Plus, ChevronLeft, ChevronRight, 
+  CheckCircle2, AlertCircle, Clock, MoreHorizontal, User 
+} from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 
-// --- Tipos ---
+// --- Tipos (Mantidos) ---
 interface PagamentoResumo {
   id?: string;
   aluno_id?: string;
@@ -72,19 +76,6 @@ const formatCurrency = (value?: number | null) => {
   return `R$ ${value.toFixed(2).replace('.', ',')}`;
 };
 
-const getStatusColor = (status?: string | null) => {
-  if (status === 'ativo') return 'text-green-600';
-  if (status === 'inativo') return 'text-red-600';
-  return 'text-neutral-500';
-};
-
-const getPaymentStatusColor = (status?: string | null) => {
-  if (status === 'pago') return 'text-green-600';
-  if (status === 'pendente') return 'text-orange-500';
-  if (status === 'atrasado') return 'text-red-600 animate-pulse';
-  return 'text-neutral-500';
-};
-
 const derivePaymentInfo = (aluno: Aluno) => {
   const paymentCandidates: PagamentoResumo[] = [];
   if (aluno.pagamento) paymentCandidates.push(aluno.pagamento);
@@ -128,6 +119,21 @@ const derivePaymentInfo = (aluno: Aluno) => {
   return { dueDate, amount, status, paymentState };
 };
 
+// --- Helpers Visuais (Premium) ---
+const getInitials = (name: string) => name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() || "AL";
+
+const getStatusBadge = (status?: string | null) => {
+  if (status === 'ativo') return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Ativo</span>;
+  if (status === 'inativo') return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">Inativo</span>;
+  return <span className="text-neutral-400 text-xs">-</span>;
+};
+
+const getPaymentStatusBadge = (paymentState: string) => {
+  if (paymentState === 'em-dia') return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200"><CheckCircle2 size={12}/> Em dia</span>;
+  if (paymentState === 'atrasado') return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200"><AlertCircle size={12}/> Atrasado</span>;
+  return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">Sem dados</span>;
+};
+
 // --- Componente Principal ---
 export default function CoachPaymentsPage() {
   const router = useRouter();
@@ -155,7 +161,8 @@ export default function CoachPaymentsPage() {
     try {
       const [methodsData, alunosResponse] = await Promise.all([
         fetchWithAuth('payment_methods'),
-        fetchWithAuth('alunos'),
+        // AJUSTE CRÍTICO: Pede 1000 alunos para garantir que o filtro no frontend funcione em todos
+        fetchWithAuth('alunos?limit=1000'), 
       ]);
       setPaymentMethods(methodsData);
       setAlunos(alunosResponse.alunos || alunosResponse || []);
@@ -171,69 +178,42 @@ export default function CoachPaymentsPage() {
     fetchPageData();
   }, [fetchPageData]);
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
+  // Handlers (Mantidos)
+  const handleSearchChange = (value: string) => { setSearch(value); setPage(1); };
+  const handleStatusFilterChange = (value: 'all' | 'ativo' | 'inativo') => { setStatusFilter(value); setPage(1); };
+  const handleDateChange = (type: 'from' | 'to', value: string) => { 
+    if (type === 'from') setDueDateFrom(value); 
+    if (type === 'to') setDueDateTo(value); 
+    setPage(1); 
   };
-
-  const handleStatusFilterChange = (value: 'all' | 'ativo' | 'inativo') => {
-    setStatusFilter(value);
-    setPage(1);
-  };
-
-  const handleDateChange = (type: 'from' | 'to', value: string) => {
-    if (type === 'from') setDueDateFrom(value);
-    if (type === 'to') setDueDateTo(value);
-    setPage(1);
-  };
-
-  const handleResetFilters = () => {
-    setSearch('');
-    setStatusFilter('all');
-    setDueDateFrom('');
-    setDueDateTo('');
-    setPage(1);
-  };
+  const handleResetFilters = () => { setSearch(''); setStatusFilter('all'); setDueDateFrom(''); setDueDateTo(''); setPage(1); };
 
   const handleAddPix = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetchWithAuth('payment_methods', {
-        method: 'POST',
-        body: JSON.stringify({ payment_method: { method_type: 'pix', details: pixForm } }),
-      });
+      await fetchWithAuth('payment_methods', { method: 'POST', body: JSON.stringify({ payment_method: { method_type: 'pix', details: pixForm } }) });
       alert('Chave PIX adicionada!');
       setPixForm({ key_type: 'cpf', key: '' });
       fetchPageData();
-    } catch (err: any) {
-      alert(err.message);
-    }
+    } catch (err: any) { alert(err.message); }
   };
 
   const handleAddBank = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetchWithAuth('payment_methods', {
-        method: 'POST',
-        body: JSON.stringify({ payment_method: { method_type: 'bank_account', details: bankForm } }),
-      });
+      await fetchWithAuth('payment_methods', { method: 'POST', body: JSON.stringify({ payment_method: { method_type: 'bank_account', details: bankForm } }) });
       alert('Conta bancária adicionada!');
       setBankForm({ bank_name: '', agency: '', account_number: '', holder_name: '' });
       fetchPageData();
-    } catch (err: any) {
-      alert(err.message);
-    }
+    } catch (err: any) { alert(err.message); }
   };
 
   const handleDeleteMethod = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover esta forma de pagamento?')) {
+    if (window.confirm('Tem certeza?')) {
       try {
         await fetchWithAuth(`payment_methods/${id}`, { method: 'DELETE' });
-        alert('Removido com sucesso!');
         fetchPageData();
-      } catch (err: any) {
-        alert(err.message);
-      }
+      } catch (err: any) { alert(err.message); }
     }
   };
 
@@ -249,185 +229,139 @@ export default function CoachPaymentsPage() {
         const email = aluno.user?.email?.toLowerCase() ?? '';
         if (!name.includes(normalizedSearch) && !email.includes(normalizedSearch)) return false;
       }
-
       if (statusFilter !== 'all' && (status ?? 'inativo') !== statusFilter) return false;
-
       if (dueDateFrom) {
         const from = new Date(dueDateFrom);
         if (!dueDateObj || dueDateObj < from) return false;
       }
-
       if (dueDateTo) {
         const to = new Date(dueDateTo);
         to.setHours(23, 59, 59, 999);
         if (!dueDateObj || dueDateObj > to) return false;
       }
-
       return true;
     });
   }, [alunos, dueDateFrom, dueDateTo, search, statusFilter]);
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(filteredAlunos.length / limit)),
-    [filteredAlunos.length, limit],
-  );
-
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredAlunos.length / limit)), [filteredAlunos.length, limit]);
   const paginatedAlunos = useMemo(() => {
     const start = (page - 1) * limit;
     const end = start + limit;
     return filteredAlunos.slice(start, end);
   }, [filteredAlunos, limit, page]);
 
-  useEffect(() => {
-    if (page > totalPages) setPage(1);
-  }, [page, totalPages]);
+  useEffect(() => { if (page > totalPages) setPage(1); }, [page, totalPages]);
 
   const pixKeys = paymentMethods.filter(p => p.method_type === 'pix');
   const bankAccount = paymentMethods.find(p => p.method_type === 'bank_account');
   const isFirstPageLoading = loading && alunos.length === 0 && page === 1;
 
+  // --- VISUAL PREMIUM ---
   return (
-    <div className="max-w-6xl mx-auto space-y-12 p-6">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 md:pb-0 text-neutral-800">
+      
+      {/* HEADER */}
+      <div className="flex items-center gap-3">
+         <div className="p-2.5 bg-neutral-900 text-white rounded-xl shadow-sm">
+            <Wallet size={24} />
+         </div>
+         <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Financeiro</h1>
+            <p className="text-neutral-500 text-sm">Gerencie recebimentos e mensalidades.</p>
+         </div>
+      </div>
+
       {isFirstPageLoading ? (
-        <p className="text-neutral-800">Carregando...</p>
+        <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando financeiro...</div>
       ) : (
         <>
-          {/* --- Minhas Informações de Recebimento --- */}
-          <section className="bg-white p-6 shadow rounded-md text-neutral-800">
-            <h1 className="text-2xl font-bold mb-4 border-b pb-4">Minhas Informações de Recebimento</h1>
+          {/* SEÇÃO 1: CONFIGURAÇÃO DE RECEBIMENTO */}
+          <section className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+            <h2 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2 border-b border-neutral-100 pb-2">
+               Dados de Recebimento
+            </h2>
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
               {/* PIX */}
               <div>
-                <h2 className="text-xl font-semibold text-red-700 mb-4 flex items-center gap-2">
-                  <KeyRound size={20} /> Chaves PIX
-                </h2>
-                {pixKeys.length > 0 ? (
-                  <ul className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                   <h3 className="font-bold text-neutral-800 flex items-center gap-2"><KeyRound size={18} className="text-green-600"/> Chaves PIX</h3>
+                   <span className="text-xs bg-neutral-100 px-2 py-1 rounded text-neutral-500 font-medium">{pixKeys.length}/2</span>
+                </div>
+
+                <div className="space-y-3 mb-4">
                     {pixKeys.map(pix => (
-                      <li
-                        key={pix.id}
-                        className="border p-3 rounded-md flex justify-between items-center bg-gray-50"
-                      >
+                      <div key={pix.id} className="border border-neutral-200 p-3 rounded-lg flex justify-between items-center bg-neutral-50 group hover:border-red-200 transition-colors">
                         <div>
-                          <p className="font-medium">{pix.details.key}</p>
-                          <p className="text-sm text-neutral-500">
-                            Tipo: {pix.details.key_type?.toUpperCase()}
-                          </p>
+                          <p className="font-mono font-medium text-neutral-900">{pix.details.key}</p>
+                          <p className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">{pix.details.key_type}</p>
                         </div>
-                        <button
-                          onClick={() => handleDeleteMethod(pix.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash size={18} />
+                        <button onClick={() => handleDeleteMethod(pix.id)} className="text-neutral-300 hover:text-red-600 p-2 rounded-full transition-colors">
+                          <Trash size={16} />
                         </button>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-neutral-500">Nenhuma chave PIX cadastrada.</p>
-                )}
+                    
+                    {pixKeys.length === 0 && <p className="text-sm text-neutral-400 italic">Nenhuma chave cadastrada.</p>}
+                </div>
 
                 {pixKeys.length < 2 && (
-                  <form onSubmit={handleAddPix} className="mt-6 p-4 border-t">
-                    <h3 className="font-medium mb-2">Adicionar Nova Chave PIX</h3>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <select
-                        value={pixForm.key_type}
-                        onChange={e => setPixForm({ ...pixForm, key_type: e.target.value })}
-                        className="border p-2 rounded"
-                      >
+                  <form onSubmit={handleAddPix} className="bg-neutral-50 p-4 rounded-xl border border-neutral-200/60">
+                    <p className="text-xs font-bold text-neutral-500 uppercase mb-3">Nova Chave</p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select value={pixForm.key_type} onChange={e => setPixForm({ ...pixForm, key_type: e.target.value })} className="border border-neutral-300 p-2 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-600 outline-none">
                         <option value="cpf">CPF/CNPJ</option>
-                        <option value="email">E-mail</option>
+                        <option value="email">Email</option>
                         <option value="phone">Telefone</option>
                         <option value="random">Aleatória</option>
                       </select>
-                      <input
-                        type="text"
-                        value={pixForm.key}
-                        onChange={e => setPixForm({ ...pixForm, key: e.target.value })}
-                        placeholder="Sua chave PIX"
-                        className="flex-1 border p-2 rounded"
-                        required
-                      />
-                      <button
-                        type="submit"
-                        className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
-                      >
-                        Adicionar
-                      </button>
+                      <input type="text" value={pixForm.key} onChange={e => setPixForm({ ...pixForm, key: e.target.value })} placeholder="Chave..." className="flex-1 border border-neutral-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-green-600 outline-none" required />
+                      <button type="submit" className="bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-800 transition-colors">Add</button>
                     </div>
                   </form>
                 )}
               </div>
 
-              {/* Conta bancária */}
+              {/* BANCO */}
               <div>
-                <h2 className="text-xl font-semibold text-red-700 mb-4 flex items-center gap-2">
-                  <Banknote size={20} /> Conta Bancária
-                </h2>
+                <h3 className="font-bold text-neutral-800 flex items-center gap-2 mb-4"><Banknote size={18} className="text-blue-600"/> Conta Bancária</h3>
+                
                 {bankAccount ? (
-                  <div className="border p-4 rounded-md bg-gray-50 space-y-1">
-                    <div className="flex justify-between items-start">
-                      <p>
-                        <strong>Titular:</strong> {bankAccount.details.holder_name}
-                      </p>
-                      <button
-                        onClick={() => handleDeleteMethod(bankAccount.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash size={18} />
-                      </button>
+                  <div className="border border-blue-100 bg-blue-50/30 p-5 rounded-xl relative group">
+                    <button onClick={() => handleDeleteMethod(bankAccount.id)} className="absolute top-4 right-4 text-neutral-300 hover:text-red-600 transition-colors">
+                        <Trash size={16} />
+                    </button>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                       <div>
+                          <p className="text-[10px] text-blue-400 font-bold uppercase mb-0.5">Banco</p>
+                          <p className="font-semibold text-neutral-800">{bankAccount.details.bank_name}</p>
+                       </div>
+                       <div>
+                          <p className="text-[10px] text-blue-400 font-bold uppercase mb-0.5">Agência</p>
+                          <p className="font-semibold text-neutral-800">{bankAccount.details.agency}</p>
+                       </div>
+                       <div className="col-span-2">
+                          <p className="text-[10px] text-blue-400 font-bold uppercase mb-0.5">Conta</p>
+                          <p className="font-mono font-semibold text-neutral-800 text-lg tracking-tight">{bankAccount.details.account_number}</p>
+                       </div>
+                       <div className="col-span-2 pt-2 border-t border-blue-100/50">
+                          <p className="text-[10px] text-blue-400 font-bold uppercase mb-0.5">Titular</p>
+                          <p className="font-medium text-neutral-700">{bankAccount.details.holder_name}</p>
+                       </div>
                     </div>
-                    <p>
-                      <strong>Banco:</strong> {bankAccount.details.bank_name}
-                    </p>
-                    <p>
-                      <strong>Agência:</strong> {bankAccount.details.agency}
-                    </p>
-                    <p>
-                      <strong>Conta:</strong> {bankAccount.details.account_number}
-                    </p>
                   </div>
                 ) : (
-                  <form onSubmit={handleAddBank} className="space-y-4 p-4 border-t">
-                    <h3 className="font-medium mb-2">Adicionar Conta Bancária</h3>
-                    <input
-                      type="text"
-                      value={bankForm.holder_name}
-                      onChange={e => setBankForm({ ...bankForm, holder_name: e.target.value })}
-                      placeholder="Nome do Titular"
-                      className="w-full border p-2 rounded"
-                      required
-                    />
-                    <input
-                      type="text"
-                      value={bankForm.bank_name}
-                      onChange={e => setBankForm({ ...bankForm, bank_name: e.target.value })}
-                      placeholder="Nome do Banco"
-                      className="w-full border p-2 rounded"
-                      required
-                    />
-                    <input
-                      type="text"
-                      value={bankForm.agency}
-                      onChange={e => setBankForm({ ...bankForm, agency: e.target.value })}
-                      placeholder="Agência"
-                      className="w-full border p-2 rounded"
-                      required
-                    />
-                    <input
-                      type="text"
-                      value={bankForm.account_number}
-                      onChange={e => setBankForm({ ...bankForm, account_number: e.target.value })}
-                      placeholder="Número da Conta com dígito"
-                      className="w-full border p-2 rounded"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      className="bg-red-700 text-white px-4 py-2 rounded hover:bg-red-800"
-                    >
-                      Adicionar Conta
+                  <form onSubmit={handleAddBank} className="bg-neutral-50 p-4 rounded-xl border border-neutral-200/60 space-y-3">
+                    <p className="text-xs font-bold text-neutral-500 uppercase">Configurar Conta</p>
+                    <input type="text" value={bankForm.holder_name} onChange={e => setBankForm({ ...bankForm, holder_name: e.target.value })} placeholder="Nome do Titular" className="w-full border border-neutral-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    <div className="grid grid-cols-2 gap-3">
+                        <input type="text" value={bankForm.bank_name} onChange={e => setBankForm({ ...bankForm, bank_name: e.target.value })} placeholder="Banco" className="w-full border border-neutral-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
+                        <input type="text" value={bankForm.agency} onChange={e => setBankForm({ ...bankForm, agency: e.target.value })} placeholder="Agência" className="w-full border border-neutral-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    </div>
+                    <input type="text" value={bankForm.account_number} onChange={e => setBankForm({ ...bankForm, account_number: e.target.value })} placeholder="Conta com dígito" className="w-full border border-neutral-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    <button type="submit" className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                       <Plus size={16}/> Salvar Conta
                     </button>
                   </form>
                 )}
@@ -435,165 +369,165 @@ export default function CoachPaymentsPage() {
             </div>
           </section>
 
-          {/* --- Pagamentos dos Alunos --- */}
-          <section className="bg-white p-6 shadow rounded-md">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 border-b pb-4">
-              <h1 className="text-2xl font-bold text-neutral-800">Pagamentos dos Alunos</h1>
-              <button
-                onClick={() => setShowFilters(prev => !prev)}
-                className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900"
-              >
-                <Filter size={16} /> {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
-              </button>
+          {/* SEÇÃO 2: LISTA DE ALUNOS */}
+          <section className="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+            
+            {/* Toolbar */}
+            <div className="p-5 border-b border-neutral-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-neutral-50/30">
+               <h2 className="font-bold text-lg text-neutral-800">Status dos Alunos</h2>
+               
+               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                  <div className="relative">
+                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+                     <input 
+                        type="text" placeholder="Buscar aluno..." 
+                        value={search} onChange={e => handleSearchChange(e.target.value)} 
+                        className="pl-9 pr-4 py-2 border border-neutral-300 rounded-lg text-sm focus:ring-2 focus:ring-neutral-900 outline-none w-full"
+                     />
+                  </div>
+                  <button onClick={() => setShowFilters(prev => !prev)} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilters ? 'bg-neutral-100 border-neutral-300 text-neutral-900' : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}>
+                     <Filter size={16} /> Filtros
+                  </button>
+               </div>
             </div>
 
-            {error && <p className="text-red-600 mb-4">{error}</p>}
-
-            <div className="space-y-4 mb-6">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por nome"
-                    value={search}
-                    onChange={e => handleSearchChange(e.target.value)}
-                    className="w-full border border-neutral-300 rounded pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-700"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={statusFilter}
-                    onChange={e => handleStatusFilterChange(e.target.value as 'all' | 'ativo' | 'inativo')}
-                    className="border border-neutral-300 rounded px-3 py-2"
-                  >
-                    <option value="all">Todos os status</option>
-                    <option value="ativo">Ativos</option>
-                    <option value="inativo">Inativos</option>
-                  </select>
-                </div>
-              </div>
-
-              {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-neutral-50 p-4 rounded">
+            {/* Filtros Expansíveis */}
+            {showFilters && (
+                <div className="p-4 bg-neutral-50 border-b border-neutral-200 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in slide-in-from-top-2">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-600 mb-1">
-                      Vencimento a partir de
-                    </label>
-                    <input
-                      type="date"
-                      value={dueDateFrom}
-                      onChange={e => handleDateChange('from', e.target.value)}
-                      className="w-full border border-neutral-300 rounded px-3 py-2"
-                    />
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Status</label>
+                    <select value={statusFilter} onChange={e => handleStatusFilterChange(e.target.value as any)} className="w-full border p-2 rounded-lg text-sm">
+                        <option value="all">Todos</option>
+                        <option value="ativo">Ativos</option>
+                        <option value="inativo">Inativos</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-600 mb-1">
-                      Vencimento até
-                    </label>
-                    <input
-                      type="date"
-                      value={dueDateTo}
-                      onChange={e => handleDateChange('to', e.target.value)}
-                      className="w-full border border-neutral-300 rounded px-3 py-2"
-                    />
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Vencimento De</label>
+                    <input type="date" value={dueDateFrom} onChange={e => handleDateChange('from', e.target.value)} className="w-full border p-2 rounded-lg text-sm" />
                   </div>
-                  <div className="sm:col-span-2 flex items-end justify-end">
-                    <button
-                      type="button"
-                      onClick={handleResetFilters}
-                      className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900"
-                    >
-                      <X size={16} /> Limpar filtros
-                    </button>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                        <label className="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Até</label>
+                        <input type="date" value={dueDateTo} onChange={e => handleDateChange('to', e.target.value)} className="w-full border p-2 rounded-lg text-sm" />
+                    </div>
+                    <button onClick={handleResetFilters} className="p-2.5 text-neutral-400 hover:text-red-600 bg-white border border-neutral-200 rounded-lg transition-colors" title="Limpar"><X size={18}/></button>
                   </div>
                 </div>
-              )}
-            </div>
+            )}
 
+            {/* Lista (Mobile Cards / Desktop Table) */}
             {loading && alunos.length > 0 ? (
-              <p className="text-sm">Atualizando lista...</p>
+              <p className="p-8 text-center text-neutral-500">Atualizando...</p>
             ) : (
-              <div className="space-y-3">
+              <>
                 {paginatedAlunos.length > 0 ? (
-                  paginatedAlunos.map(aluno => {
-                    const { dueDate, amount, status, paymentState } = derivePaymentInfo(aluno);
-                    const planName = aluno.plano?.nome ?? aluno.plano?.name ?? null;
-                    const formattedAmount = amount != null ? formatCurrency(amount) : '-';
-                    const subscriptionStatus = status ?? 'inativo';
-                    const formattedStatus =
-                      subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1);
-                    const paymentStateLabel =
-                      paymentState === 'atrasado'
-                        ? 'Pagamento atrasado'
-                        : paymentState === 'em-dia'
-                        ? 'Pagamento em dia'
-                        : 'Sem data de pagamento';
+                  <>
+                    {/* MOBILE CARDS */}
+                    <div className="md:hidden divide-y divide-neutral-100">
+                      {paginatedAlunos.map(aluno => {
+                          const { dueDate, amount, status, paymentState } = derivePaymentInfo(aluno);
+                          const planName = aluno.plano?.nome ?? aluno.plano?.name ?? null;
+                          const formattedAmount = amount != null ? formatCurrency(amount) : '-';
+                          const paymentStateLabel = paymentState === 'atrasado' ? 'Pagamento atrasado' : paymentState === 'em-dia' ? 'Em dia' : 'Sem dados';
 
-                    return (
-                      <div
-                        key={aluno.id}
-                        onClick={() => router.push(`/coach/payments/${aluno.id}`)}
-                        className="border p-4 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
-                      >
-                        <div>
-                          <p className="font-bold text-lg">{aluno.user?.name}</p>
-                          <p className="text-sm text-neutral-600">
-                            Próximo Vencimento: {formatDate(dueDate)}
-                          </p>
-                          {planName && (
-                            <p className="text-xs text-neutral-500">Plano: {planName}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">{formattedAmount}</p>
-                          <p
-                            className={`${getPaymentStatusColor(
-                              paymentState === 'atrasado'
-                                ? 'atrasado'
-                                : paymentState === 'em-dia'
-                                ? 'pago'
-                                : undefined
-                            )} text-sm font-bold`}
-                          >
-                            {paymentStateLabel}
-                          </p>
-                          <p
-                            className={`${getStatusColor(
-                              subscriptionStatus
-                            )} text-xs font-semibold mt-1`}
-                          >
-                            Status: {formattedStatus}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
+                          return (
+                              <div 
+                                  key={aluno.id} 
+                                  onClick={() => router.push(`/coach/payments/${aluno.id}`)}
+                                  className="p-4 active:bg-neutral-50 transition-colors relative overflow-hidden"
+                              >
+                                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${paymentState === 'atrasado' ? 'bg-red-500' : 'bg-transparent'}`}></div>
+                                  <div className="flex justify-between items-start mb-2 pl-2">
+                                      <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 font-bold text-xs">
+                                              {getInitials(aluno.user.name)}
+                                          </div>
+                                          <div>
+                                              <p className="font-bold text-neutral-900 text-sm">{aluno.user.name}</p>
+                                              <p className="text-xs text-neutral-500">{planName || "Sem Plano"}</p>
+                                          </div>
+                                      </div>
+                                      {getStatusBadge(status)}
+                                  </div>
+                                  <div className="flex justify-between items-center pl-2 pt-2 border-t border-neutral-50 mt-2">
+                                      <div className="text-xs text-neutral-500">
+                                          Venc: <span className="font-medium text-neutral-800">{formatDate(dueDate)}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                          <span className="font-bold text-neutral-900">{formattedAmount}</span>
+                                          <ChevronRight size={16} className="text-neutral-300"/>
+                                      </div>
+                                  </div>
+                              </div>
+                          );
+                      })}
+                    </div>
+
+                    {/* DESKTOP TABLE */}
+                    <table className="w-full text-left hidden md:table">
+                        <thead className="bg-neutral-50 text-xs text-neutral-500 font-bold uppercase border-b border-neutral-100">
+                            <tr>
+                                <th className="px-6 py-4">Aluno</th>
+                                <th className="px-6 py-4">Plano</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Próx. Vencimento</th>
+                                <th className="px-6 py-4 text-right">Valor</th>
+                                <th className="px-6 py-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                            {paginatedAlunos.map(aluno => {
+                                const { dueDate, amount, status, paymentState } = derivePaymentInfo(aluno);
+                                const planName = aluno.plano?.nome ?? aluno.plano?.name ?? null;
+                                const formattedAmount = amount != null ? formatCurrency(amount) : '-';
+                                const paymentStateLabel = paymentState === 'atrasado' ? 'Pagamento atrasado' : paymentState === 'em-dia' ? 'Em dia' : 'Sem dados';
+
+                                return (
+                                    <tr 
+                                        key={aluno.id} 
+                                        onClick={() => router.push(`/coach/payments/${aluno.id}`)}
+                                        className="hover:bg-neutral-50 transition-colors cursor-pointer group"
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 font-bold text-xs border border-neutral-200 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                                    {getInitials(aluno.user.name)}
+                                                </div>
+                                                <span className="font-bold text-neutral-900 text-sm">{aluno.user.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-neutral-500">{planName || "-"}</td>
+                                        <td className="px-6 py-4">{getStatusBadge(status)}</td>
+                                        <td className="px-6 py-4 text-sm font-mono text-neutral-600">
+                                            {formatDate(dueDate)}
+                                            {paymentState === 'atrasado' && <span className="ml-2 w-2 h-2 rounded-full bg-red-500 inline-block" title="Atrasado"></span>}
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-bold text-neutral-900">{formattedAmount}</td>
+                                        <td className="px-6 py-4 text-right text-neutral-300 group-hover:text-neutral-500">
+                                            <ChevronRight size={18} />
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                  </>
                 ) : (
-                  <p className="text-neutral-500">Nenhum aluno cadastrado.</p>
+                  <div className="p-12 text-center flex flex-col items-center">
+                     <Search size={48} className="text-neutral-200 mb-4"/>
+                     <p className="text-neutral-500 font-medium">Nenhum aluno encontrado.</p>
+                     <p className="text-neutral-400 text-sm">Tente ajustar os filtros de busca.</p>
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             {/* Paginação */}
-            <div className="flex justify-between items-center mt-6 text-sm text-neutral-500">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-              >
-                Anterior
-              </button>
-              <span>
-                Página {page} de {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => (p < totalPages ? p + 1 : p))}
-                disabled={page >= totalPages || loading}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-              >
-                Próxima
-              </button>
+            <div className="p-4 border-t border-neutral-200 flex items-center justify-between bg-neutral-50">
+               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1 || loading} className="p-2 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50 transition-colors shadow-sm"><ChevronLeft size={16}/></button>
+               <span className="text-sm font-medium text-neutral-600">Página {page} de {totalPages}</span>
+               <button onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages || loading} className="p-2 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50 transition-colors shadow-sm"><ChevronRight size={16}/></button>
             </div>
           </section>
         </>
@@ -601,4 +535,3 @@ export default function CoachPaymentsPage() {
     </div>
   );
 }
-

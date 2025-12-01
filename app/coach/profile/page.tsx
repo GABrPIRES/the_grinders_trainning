@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { 
-  User, 
-  Mail, 
-  Phone, 
-  Save, 
-  Loader2, 
-  Camera, 
-  MapPin,
-  Briefcase
+  User, Mail, Phone, Save, Loader2, Briefcase
 } from "lucide-react";
 
 export default function CoachProfilePage() {
@@ -21,7 +14,6 @@ export default function CoachProfilePage() {
     name: "",
     email: "",
     phone_number: "",
-    cref: "", // Exemplo de dado específico de coach
     bio: ""
   });
 
@@ -29,14 +21,21 @@ export default function CoachProfilePage() {
     async function loadProfile() {
       try {
         const data = await fetchWithAuth("profile");
-        // Ajuste conforme a estrutura real da sua API (ex: data.user e data.personal)
+        
+        // Lógica segura para pegar o nome (da raiz ou aninhado)
+        const userName = data.name || data.user?.name || "";
+        const userEmail = data.email || data.user?.email || "";
+        
+        // Dados do Personal
+        const personal = data.personal || {};
+
         setForm({
-          name: data.user?.name || "",
-          email: data.user?.email || "",
-          phone_number: data.personal?.phone_number || "",
-          cref: data.personal?.cref || "",
-          bio: data.personal?.bio || ""
+          name: userName,
+          email: userEmail,
+          phone_number: personal.phone_number || "",
+          bio: personal.bio || ""
         });
+
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
       } finally {
@@ -57,18 +56,21 @@ export default function CoachProfilePage() {
       await fetchWithAuth("profile", {
         method: "PUT",
         body: JSON.stringify({ 
-            // Adapte a estrutura para o que sua API espera receber no update do profile
-            user: { name: form.name },
+            // Envia o User separado
+            user: { 
+                name: form.name 
+            },
+            // Envia o Personal separado
             personal: { 
                 phone_number: form.phone_number,
-                cref: form.cref,
                 bio: form.bio
             }
         }),
       });
       alert("Perfil atualizado com sucesso!");
     } catch (error: any) {
-      alert("Erro ao atualizar: " + error.message);
+      console.error(error);
+      alert("Erro ao atualizar: " + (error.message || "Tente novamente."));
     } finally {
       setSaving(false);
     }
@@ -83,7 +85,7 @@ export default function CoachProfilePage() {
       .toUpperCase();
   };
 
-  if (loading) return <div className="p-12 text-center text-neutral-500">Carregando perfil...</div>;
+  if (loading) return <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando perfil...</div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 text-neutral-800 pb-20 md:pb-0">
@@ -91,12 +93,12 @@ export default function CoachProfilePage() {
       {/* CABEÇALHO */}
       <div>
         <h1 className="text-2xl font-bold text-neutral-900">Meu Perfil</h1>
-        <p className="text-neutral-500 text-sm">Gerencie suas informações pessoais e profissionais.</p>
+        <p className="text-neutral-500 text-sm">Gerencie suas informações pessoais de apresentação.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* COLUNA DA ESQUERDA: CARTÃO DE IDENTIDADE */}
+        {/* COLUNA ESQUERDA (Cartão Visual) */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-neutral-900 to-neutral-800 z-0"></div>
@@ -116,19 +118,16 @@ export default function CoachProfilePage() {
                     <Mail size={16} />
                     <span className="truncate">{form.email}</span>
                  </div>
-                 <div className="flex items-center gap-3 text-sm text-neutral-600 bg-neutral-50 p-3 rounded-lg">
-                    <Briefcase size={16} />
-                    <span>CREF: {form.cref || "Não informado"}</span>
-                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* COLUNA DA DIREITA: FORMULÁRIO DE EDIÇÃO */}
+        {/* COLUNA DIREITA (Formulário) */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-xl border border-neutral-200 shadow-sm space-y-6">
+          <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-xl border border-neutral-200 shadow-sm space-y-8">
             
+            {/* DADOS PESSOAIS */}
             <div>
               <h3 className="text-lg font-bold flex items-center gap-2 text-neutral-800 mb-4 border-b pb-2">
                 <User size={20} className="text-red-700"/> Dados Pessoais
@@ -154,7 +153,7 @@ export default function CoachProfilePage() {
                    />
                 </div>
                 <div>
-                   <label className="block text-sm font-medium mb-1 text-neutral-600">Telefone</label>
+                   <label className="block text-sm font-medium mb-1 text-neutral-600">Telefone / WhatsApp</label>
                    <input 
                      name="phone_number" 
                      value={form.phone_number} 
@@ -163,31 +162,14 @@ export default function CoachProfilePage() {
                      placeholder="(00) 00000-0000"
                    />
                 </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold flex items-center gap-2 text-neutral-800 mb-4 border-b pb-2 mt-2">
-                <Briefcase size={20} className="text-red-700"/> Dados Profissionais
-              </h3>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-neutral-600">Registro Profissional (CREF)</label>
-                  <input 
-                    name="cref" 
-                    value={form.cref} 
-                    onChange={handleChange} 
-                    className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
-                  />
-                </div>
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1 text-neutral-600">Bio / Sobre Mim</label>
                   <textarea 
                     name="bio" 
                     value={form.bio} 
                     onChange={handleChange} 
-                    className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none h-24 resize-none" 
-                    placeholder="Conte um pouco sobre sua experiência..."
+                    className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none h-32 resize-none" 
+                    placeholder="Conte um pouco sobre sua experiência, especialidades..."
                   />
                 </div>
               </div>
