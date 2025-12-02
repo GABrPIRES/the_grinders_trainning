@@ -1,22 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { ArrowLeft, User, Mail, Lock, Phone, Save, Loader2, GraduationCap } from "lucide-react";
+import { 
+  ArrowLeft, User, Mail, Lock, Phone, 
+  Save, Loader2, GraduationCap, Shield, ChevronDown
+} from "lucide-react";
+
+interface Coach {
+  id: string;
+  user: {
+    name: string;
+  };
+}
 
 export default function CreateStudentPage() {
+  const router = useRouter();
   const [student, setStudent] = useState({
     name: "",
     email: "",
     password: "",
     phone_number: "",
+    personal_id: "", // Novo campo para o Coach
   });
+  const [coaches, setCoaches] = useState<Coach[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Busca os coaches para preencher o select
+  useEffect(() => {
+    async function loadCoaches() {
+      try {
+        // Trazemos uma lista maior para garantir que todos apareçam
+        const data = await fetchWithAuth("admin/coaches?limit=100"); 
+        // Tratamento para garantir array (caso venha { coaches: [], total: ... })
+        setCoaches(Array.isArray(data) ? data : (data.coaches || []));
+      } catch (err) {
+        console.error("Erro ao carregar lista de coaches", err);
+      }
+    }
+    loadCoaches();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setStudent({ ...student, [e.target.name]: e.target.value });
   };
 
@@ -26,18 +53,23 @@ export default function CreateStudentPage() {
     setLoading(true);
 
     try {
-      await fetchWithAuth("users", {
+      // MUDANÇA IMPORTANTE: 
+      // Usamos a rota específica de criação de alunos do Admin, que aceita 'personal_id'
+      await fetchWithAuth("admin/alunos", {
         method: "POST",
         body: JSON.stringify({
-          user: {
-            ...student,
-            role: "aluno",
+          aluno: { // Estrutura aninhada que o Admin::AlunosController espera
+            name: student.name,
+            email: student.email,
+            password: student.password,
+            phone_number: student.phone_number,
+            personal_id: student.personal_id || null,
           },
         }),
       });
 
-      alert("Aluno cadastrado com sucesso!");
-      router.push("/admin/students"); // Ajuste se sua rota for /admin/alunos
+      alert("Aluno cadastrado e vinculado com sucesso!");
+      router.push("/admin/students");
     } catch (err: any) {
       setError(err.message || "Erro ao cadastrar aluno");
     } finally {
@@ -46,7 +78,7 @@ export default function CreateStudentPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto pb-20 md:pb-0">
+    <div className="max-w-2xl mx-auto pb-20 md:pb-0 text-neutral-800">
       
       {/* CABEÇALHO */}
       <div className="flex items-center gap-4 mb-8">
@@ -58,13 +90,13 @@ export default function CreateStudentPage() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Novo Aluno</h1>
-          <p className="text-neutral-500 text-sm">Cadastre um novo aluno na plataforma.</p>
+          <p className="text-neutral-500 text-sm">Cadastre um aluno e vincule-o a um coach.</p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm border border-red-100">
-          {error}
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm border border-red-100 flex items-center gap-2">
+          <span className="font-bold">Erro:</span> {error}
         </div>
       )}
 
@@ -73,9 +105,33 @@ export default function CreateStudentPage() {
         
         <div className="space-y-4">
             <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800 border-b border-neutral-100 pb-2 mb-4">
-               <GraduationCap size={20} className="text-red-700"/> Dados do Aluno
+               <GraduationCap size={20} className="text-red-700"/> Dados Cadastrais
             </h2>
 
+            {/* Coach Responsável (NOVO) */}
+            <div>
+               <label className="block text-sm font-medium mb-1 text-neutral-600">Coach Responsável</label>
+               <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                  <select
+                    name="personal_id"
+                    value={student.personal_id}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-10 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all bg-white appearance-none cursor-pointer text-neutral-700"
+                  >
+                    <option value="">Selecione um Coach (Opcional)</option>
+                    {coaches.map((coach) => (
+                      <option key={coach.id} value={coach.id}>
+                        {coach.user.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" size={16}/>
+               </div>
+               <p className="text-xs text-neutral-400 mt-1">O aluno aparecerá na lista deste coach imediatamente.</p>
+            </div>
+
+            {/* Nome */}
             <div>
                <label className="block text-sm font-medium mb-1 text-neutral-600">Nome Completo</label>
                <div className="relative">
@@ -92,6 +148,7 @@ export default function CreateStudentPage() {
                </div>
             </div>
 
+            {/* Email e Telefone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                    <label className="block text-sm font-medium mb-1 text-neutral-600">Email</label>
@@ -124,6 +181,7 @@ export default function CreateStudentPage() {
                 </div>
             </div>
 
+            {/* Senha */}
             <div>
                <label className="block text-sm font-medium mb-1 text-neutral-600">Senha Inicial</label>
                <div className="relative">

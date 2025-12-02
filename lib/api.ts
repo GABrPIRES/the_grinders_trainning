@@ -1,37 +1,33 @@
 // lib/api.ts
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('jwt_token') : null;
-
-  // --- CORREÇÃO DO ERRO TS(2322) ---
-  // Usamos o construtor `Headers` que sabe lidar com
-  // RequestInit['headers'] (seja objeto, array, ou outro Headers)
+  // [SEGURANÇA] Não pegamos mais token do localStorage. O Cookie HttpOnly vai automático.
+  
   const headers = new Headers(options.headers);
 
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  // Só definimos 'Content-Type: application/json' se o corpo
-  // NÃO for FormData e o usuário já não tiver definido um ('Content-Type').
+  // Define JSON apenas se não for FormData
   if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   
-  // Se for FormData, nós propositalmente deletamos o Content-Type.
-  // O navegador vai adicionar o 'multipart/form-data' correto 
-  // com o 'boundary' (ex: WebKitFormBoundary...)
   if (options.body instanceof FormData) {
     headers.delete('Content-Type');
   }
-  // --- FIM DA CORREÇÃO ---
 
   const response = await fetch(`${API_URL}/${endpoint}`, {
     ...options,
-    headers, // Passa o objeto Headers
+    headers,
+    credentials: 'include', // [IMPORTANTE] Isso faz o navegador enviar o Cookie HttpOnly
   });
+
+  if (response.status === 401) {
+    // Se der 401, o cookie expirou ou é inválido.
+    // Podemos redirecionar para login ou apenas lançar erro para o Context lidar.
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+       // Opcional: window.location.href = '/login'; 
+    }
+  }
 
   if (!response.ok) {
     let errorData;
@@ -40,7 +36,6 @@ export const fetchWithAuth = async (endpoint: string, options: RequestInit = {})
     } catch (e) {
       errorData = { error: 'Ocorreu um erro na resposta da API.' };
     }
-    // Tenta pegar a mensagem de erro da API
     const errorMessage = errorData.error || (errorData.errors && Array.isArray(errorData.errors) ? errorData.errors.join(', ') : 'Ocorreu um erro na API');
     throw new Error(errorMessage);
   }

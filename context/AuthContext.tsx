@@ -1,7 +1,9 @@
+// context/AuthContext.tsx
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { fetchWithAuth } from '@/lib/api'; // Usamos nosso helper de API
+import { fetchWithAuth } from '@/lib/api';
+import { usePathname, useRouter } from 'next/navigation';
 
 type User = {
   id: string;
@@ -23,32 +25,32 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      // 1. Verifica se existe um token no localStorage
-      const token = localStorage.getItem('jwt_token');
-      if (!token) {
-        setUser(null);
-        setLoading(false);
-        return;
+    const checkAuth = async () => {
+      // Evita check em páginas públicas para economizar requisições (opcional)
+      if (pathname === '/login' || pathname === '/') {
+          setLoading(false);
+          return;
       }
 
       try {
-        // 2. Usa nosso helper para buscar o perfil na API Rails
-        const userData = await fetchWithAuth('profile'); // Faz a chamada para GET /api/v1/profile
-        setUser(userData); // 3. Define o usuário com os dados recebidos da API
+        // Tenta buscar perfil. Se o cookie HttpOnly estiver lá e válido, funciona.
+        const userData = await fetchWithAuth('profile'); 
+        setUser(userData);
       } catch (error) {
-        console.error("Falha ao buscar usuário, limpando token:", error);
+        // Se der erro (401), não temos usuário
         setUser(null);
-        localStorage.removeItem('jwt_token'); // Limpa o token inválido
+        // Se estiver em rota protegida, o middleware ou o componente vai redirecionar
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-  }, []);
+    checkAuth();
+  }, [pathname]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

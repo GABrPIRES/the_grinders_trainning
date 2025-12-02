@@ -1,12 +1,15 @@
-import Cookies from 'js-cookie';
+// services/authService.ts
+import { fetchWithAuth } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function login({ email, password }: { email: string; password: string }) {
+  // Usamos fetch direto aqui pois login é público e não precisa das configs do fetchWithAuth ainda
   const res = await fetch(`${API_URL}/login`, { 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
+    credentials: 'include', // [IMPORTANTE] Para aceitar o Set-Cookie do backend
   });
 
   if (!res.ok) {
@@ -15,26 +18,22 @@ export async function login({ email, password }: { email: string; password: stri
   }
 
   const data = await res.json();
-
-  // Salva o token no localStorage
-  if (data.token) {
-    localStorage.setItem('jwt_token', data.token);
-    // Salva nos Cookies também para o Middleware funcionar
-    Cookies.set('token', data.token, { expires: 7 }); 
-    Cookies.set('role', data.user.role, { expires: 7 });
-  }
-
+  
+  // [SEGURANÇA] NÃO salvamos mais nada no localStorage ou Cookies via JS.
+  // O navegador já guardou o cookie HttpOnly.
+  
   return data; 
 }
 
 export async function logout() {
-  // 1. Limpa localStorage
-  localStorage.removeItem('jwt_token');
+  try {
+      // Avisa o backend para "matar" o cookie
+      await fetchWithAuth('logout', { method: 'DELETE' }); 
+  } catch (e) {
+      console.error("Erro ao fazer logout na API", e);
+  }
+
+  // Limpa o que sobrou no front e redireciona
   localStorage.removeItem('user');
-
-  // 2. Limpa os Cookies (ESSENCIAL para o Middleware não te deixar voltar)
-  Cookies.remove('token');
-  Cookies.remove('role');
-
   window.location.href = '/login';
 }
