@@ -1,5 +1,3 @@
-import prisma from '@/lib/db';
-
 export const emailValidator = async (email: string) => {
   // Validação do formato de e-mail
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
