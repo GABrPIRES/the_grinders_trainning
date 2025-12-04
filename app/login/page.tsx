@@ -22,19 +22,30 @@ export default function LoginPage() {
     e.preventDefault();
     setErro("");
     setLoading(true);
-  
+
     try {
-      const res = await login(form); // res = { message, user }
-  
+      const res = await login(form); // Se falhar, ele joga pro catch
+      
+      // Se chegou aqui, o login foi 200 OK.
       const role = res.user?.role;
-  
-      // não precisa mexer em cookie aqui, o JWT HttpOnly já foi setado pelo backend
-      router.refresh();
-  
+
+      // NÃO precisamos mais salvar o token manualmente. O navegador já pegou o Cookie.
+      // Apenas salvamos a Role para ajudar na UI (opcional, mas útil)
+      if (role) {
+          Cookies.set("role", role, { expires: 7, path: '/' });
+      }
+
+      // Redirecionamento baseado na role
+      router.refresh(); // Atualiza para o middleware pegar o cookie novo
+      
       if (role === "admin") router.push("/admin");
       else if (role === "personal") router.push("/coach");
       else if (role === "aluno") router.push("/aluno");
-      else setErro("Role inválida.");
+      else {
+          // Fallback se não tiver role
+          router.push("/aluno"); 
+      }
+
     } catch (err: any) {
       setErro(err.message || "Erro ao fazer login.");
     } finally {
