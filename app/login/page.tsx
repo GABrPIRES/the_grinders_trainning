@@ -22,14 +22,15 @@ export default function LoginPage() {
     e.preventDefault();
     setErro("");
     setLoading(true);
+  
     try {
-      const res = await login(form);
+      const res = await login(form); // res = { message, user }
+  
       const role = res.user?.role;
-      if (res.token) {
-        Cookies.set("token", res.token, { expires: 7, path: '/' });
-        Cookies.set("role", role, { expires: 7, path: '/' });
-      }
+  
+      // não precisa mexer em cookie aqui, o JWT HttpOnly já foi setado pelo backend
       router.refresh();
+  
       if (role === "admin") router.push("/admin");
       else if (role === "personal") router.push("/coach");
       else if (role === "aluno") router.push("/aluno");
