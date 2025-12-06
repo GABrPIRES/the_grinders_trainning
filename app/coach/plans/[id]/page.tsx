@@ -56,7 +56,14 @@ export default function EditPlanPage() {
     try {
       await fetchWithAuth(`planos/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ 
+            plano: { // <--- MUDOU DE 'plan' PARA 'plano'
+               ...plan,
+               // Garanta que números sejam números se necessário, ou deixe o Rails tratar
+               price: parseFloat(plan.price as string),
+               duration: parseInt(plan.duration as string)
+            } 
+        }),
       });
       alert('Plano atualizado com sucesso!');
       router.push('/coach/plans');

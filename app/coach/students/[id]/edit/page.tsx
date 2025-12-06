@@ -3,37 +3,52 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { ArrowLeft, Save, Loader2, Lock, User, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Lock, User, Mail, Phone, CreditCard } from "lucide-react";
+
+interface Plan {
+  id: string;
+  name: string;
+}
 
 export default function EditStudentAccountPage() {
   const { id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
 
-  // Focamos APENAS nos dados essenciais de conta
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone_number: "",
     password: "",
-    password_confirmation: ""
+    password_confirmation: "",
+    plano_id: "" // Novo campo
   });
 
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await fetchWithAuth(`alunos/${id}`);
+        // Carrega dados do aluno E lista de planos em paralelo
+        const [studentData, plansData] = await Promise.all([
+            fetchWithAuth(`alunos/${id}`),
+            fetchWithAuth('planos')
+        ]);
+
         setForm(prev => ({
           ...prev,
-          name: data.user.name || "",
-          email: data.user.email || "",
-          phone_number: data.phone_number || "",
+          name: studentData.user.name || "",
+          email: studentData.user.email || "",
+          phone_number: studentData.phone_number || "",
+          plano_id: studentData.current_plano_id || "", // Usa o campo novo que criamos na API
           password: "", 
           password_confirmation: ""
         }));
+
+        setPlans(Array.isArray(plansData) ? plansData : []);
+
       } catch (error) {
-        console.error("Erro ao carregar aluno", error);
+        console.error("Erro ao carregar dados", error);
       } finally {
         setLoading(false);
       }
@@ -41,7 +56,7 @@ export default function EditStudentAccountPage() {
     loadData();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -64,12 +79,13 @@ export default function EditStudentAccountPage() {
                 email: form.email,
                 phone_number: form.phone_number,
                 password: form.password,
-                password_confirmation: form.password_confirmation
+                password_confirmation: form.password_confirmation,
+                plano_id: form.plano_id // Envia o ID do plano selecionado
             } 
         }),
       });
       alert("Conta do aluno atualizada!");
-      router.push(`/coach/students/${id}`); // Volta para a visualização completa
+      router.push(`/coach/students/${id}`);
     } catch (error: any) {
       alert("Erro ao atualizar: " + error.message);
     } finally {
@@ -111,8 +127,30 @@ export default function EditStudentAccountPage() {
             </div>
         </div>
 
+        {/* Assinatura (NOVO) */}
+        <div className="pt-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2 mb-4">
+                <CreditCard size={20} /> Plano & Assinatura
+            </h2>
+            <div>
+                <label className="block text-sm font-medium mb-1 text-neutral-600">Plano Atual</label>
+                <select 
+                    name="plano_id" 
+                    value={form.plano_id} 
+                    onChange={handleChange} 
+                    className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600 bg-white"
+                >
+                    <option value="">Sem plano ativo</option>
+                    {plans.map(plan => (
+                        <option key={plan.id} value={plan.id}>{plan.name}</option>
+                    ))}
+                </select>
+                <p className="text-xs text-neutral-400 mt-1">Ao alterar o plano, uma nova assinatura será criada iniciando hoje.</p>
+            </div>
+        </div>
+
         {/* Alterar Senha */}
-        <div className="pt-6">
+        <div className="pt-4">
             <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2 mb-4">
                 <Lock size={20} /> Segurança
             </h2>

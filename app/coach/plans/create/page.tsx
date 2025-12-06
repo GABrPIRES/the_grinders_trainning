@@ -33,7 +33,7 @@ export default function CreatePlanPage() {
       await fetchWithAuth('planos', {
         method: 'POST',
         body: JSON.stringify({ 
-            plan: {
+            plano: {
                 ...plan,
                 price: parseFloat(plan.price),
                 duration: parseInt(plan.duration)
