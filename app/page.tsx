@@ -8,6 +8,7 @@ import FoundersStory from "@/components/landing/FounderStory";
 import Benefits from "@/components/landing/Benefits";
 import Athletes from "@/components/landing/Athletes";
 import FinalCTA from "@/components/landing/FinalCTA";
+import Footer from "@/components/layout/Footer";
 
 export default function LandingPage() {
   return (
@@ -27,6 +28,7 @@ export default function LandingPage() {
         </div>
         <FinalCTA />
       </main>
+      <Footer />
     </div>
   );
 }
