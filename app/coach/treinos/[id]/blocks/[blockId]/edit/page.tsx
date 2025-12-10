@@ -72,6 +72,15 @@ export default function EditBlockPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const selectedDate = new Date(form.start_date);
+    const year = selectedDate.getFullYear();
+    
+    if (year < 2024 || year > 2100) {
+        alert("Por favor, verifique a data. O ano parece incorreto (ex: 0025).");
+        return;
+    }
+
     setSaving(true);
     setError("");
 
