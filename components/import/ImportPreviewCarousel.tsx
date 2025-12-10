@@ -99,19 +99,44 @@ export default function ImportPreviewCarousel({ initialData, alunoId, targetBloc
               targetWeekExists: !!matchingWeek,
               targetWeekStartDate: matchingWeek?.start_date ? new Date(matchingWeek.start_date).toISOString().split('T')[0] : null,
               targetWeekEndDate: matchingWeek?.end_date ? new Date(matchingWeek.end_date).toISOString().split('T')[0] : null,
-              treinos: planilha.treinos.map(treino => ({
-                ...treino,
-                id: uuid(),
-                day: '', 
-                exercicios: treino.exercicios.map(ex => ({
-                  ...ex,
-                  id: uuid(),
-                  sections: ex.sections.map(sec => ({
-                    ...sec,
+              treinos: planilha.treinos.map((treino, index) => {
+                
+                // --- LÓGICA DE SUGESTÃO DE DATA ---
+                let suggestedDate = '';
+                if (matchingWeek?.start_date) {
+                    // Cria a data baseada no início da semana (em UTC para evitar problemas de fuso)
+                    const dateObj = new Date(matchingWeek.start_date);
+                    // Adiciona dias baseado na ordem do treino (Treino 0 = +0 dias, Treino 1 = +1 dia...)
+                    dateObj.setUTCDate(dateObj.getUTCDate() + index);
+                    
+                    // Verifica se passou do fim da semana. Se passou, fixa no último dia (opcional, mas evita erros de validação)
+                    if (matchingWeek.end_date) {
+                        const endDateObj = new Date(matchingWeek.end_date);
+                        if (dateObj > endDateObj) {
+                             suggestedDate = matchingWeek.end_date; // Trava no último dia
+                        } else {
+                             suggestedDate = dateObj.toISOString().split('T')[0];
+                        }
+                    } else {
+                        suggestedDate = dateObj.toISOString().split('T')[0];
+                    }
+                }
+                // ----------------------------------
+
+                return {
+                    ...treino,
                     id: uuid(),
-                  }))
-                }))
-              }))
+                    day: suggestedDate, // <--- AQUI: Preenche automaticamente!
+                    exercicios: treino.exercicios.map(ex => ({
+                    ...ex,
+                    id: uuid(),
+                    sections: ex.sections.map(sec => ({
+                        ...sec,
+                        id: uuid(),
+                    }))
+                    }))
+                };
+              })
             };
           });
           
