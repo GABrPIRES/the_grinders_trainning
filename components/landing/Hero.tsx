@@ -9,7 +9,7 @@ const Hero = () => {
       {/* Imagem de Fundo com Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/images/time_background_landing.jpg"
+          src="/images/time_background_landing_page.jpg"
           alt="Powerlifter training"
           fill={true}
           className="object-cover w-full h-full opacity-60"

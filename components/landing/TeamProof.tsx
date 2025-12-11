@@ -14,8 +14,8 @@ const TeamProof = () => {
 
   // Adicione suas fotos aqui. Pode repetir a mesma para testar se tiver poucas.
   const teamImages = [
-    "/images/Carrossel_1.jpg",
-    "/images/Carrosel_2.jpg", // Exemplo: Adicione mais fotos na pasta public/images
+    "/images/carrossel_1.jpg",
+    "/images/carrossel_2.jpg", // Exemplo: Adicione mais fotos na pasta public/images
     "/images/the_grinders_team.jpg"
   ];
 
