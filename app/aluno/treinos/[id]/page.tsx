@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { fetchWithAuth } from '@/lib/api';
-import { ArrowLeft, Save, Dumbbell, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Dumbbell, Calendar, Info } from 'lucide-react';
 import { calculatePR } from '@/lib/calculatePR';
 
 interface Section {
@@ -111,38 +111,37 @@ export default function AlunoTreinoDetalhesPage() {
       alert("Alterações salvas com sucesso!");
       setChanges({});
       fetchTreinoData(); 
-    } catch (error: any) { // Tipar como any para acessar .message
+    } catch (error: any) { 
       console.error("Erro ao salvar:", error);
-      // Mostra a mensagem de erro específica da API (ex: "O RPE deve ser...")
       alert(`Erro ao salvar: ${error.message || "Tente novamente."}`);
     }
   };
 
-  if (loading) return <div className="p-6 text-center">Carregando treino...</div>;
+  if (loading) return <div className="p-6 text-center animate-pulse">Carregando treino...</div>;
   if (!treino) return <div className="p-6 text-center text-red-600">Treino não encontrado.</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 text-neutral-800">
+    <div className="max-w-5xl mx-auto p-4 md:p-6 text-neutral-800 pb-24">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8 top-0 z-10 pt-2 pb-4 border-b border-gray-200 md:static md:bg-transparent md:border-none md:p-0">
         <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-4 transition-colors">
           <ArrowLeft size={16} />
-          Voltar para o Programa
+          Voltar
         </button>
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h1 className="text-3xl font-bold text-neutral-900">{treino.name}</h1>
-                <div className="flex items-center gap-2 text-neutral-500 mt-1">
+                <h1 className="text-2xl md:text-3xl font-bold text-neutral-900">{treino.name}</h1>
+                <div className="flex items-center gap-2 text-neutral-500 mt-1 text-sm md:text-base">
                     <Calendar size={16} />
-                    <span>{new Date(treino.day).toLocaleDateString("pt-BR", { timeZone: 'UTC' })}</span>
+                    <span className="capitalize">{new Date(treino.day).toLocaleDateString("pt-BR", { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' })}</span>
                 </div>
             </div>
             
             {Object.keys(changes).length > 0 && (
                 <button 
                     onClick={handleSaveChanges} 
-                    className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg shadow-md flex items-center gap-2 hover:bg-green-700 transition-colors animate-pulse"
+                    className="w-full md:w-auto bg-green-600 text-white font-bold py-3 md:py-2 px-6 rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-green-700 transition-colors animate-pulse order-first md:order-last mb-2 md:mb-0"
                 >
                     <Save size={18} />
                     Salvar Alterações
@@ -154,71 +153,103 @@ export default function AlunoTreinoDetalhesPage() {
       {/* Lista de Exercícios */}
       <div className="space-y-6">
         {treino.exercicios.map((ex, exIndex) => (
-            <div key={ex.id} className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
-            <h2 className="text-lg font-bold mb-4 text-red-700 flex items-center gap-2">
-                <Dumbbell size={20} />
-                {exIndex + 1}. {ex.name}
-            </h2>
+            <div key={ex.id} className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+                {/* Título do Exercício */}
+                <div className="bg-neutral-50 p-4 border-b border-neutral-100">
+                    <h2 className="text-lg font-bold text-red-700 flex items-center gap-2">
+                        <Dumbbell size={20} />
+                        <span className="line-clamp-1">{exIndex + 1}. {ex.name}</span>
+                    </h2>
+                </div>
             
-            {/* Cabeçalho da Tabela */}
-            <div className="grid grid-cols-7 gap-2 text-xs font-semibold text-neutral-500 mb-2 px-2 uppercase tracking-wide text-center">
-                <span className="col-span-1">Carga</span>
-                <span className="col-span-1">Séries</span>
-                <span className="col-span-1">Reps</span>
-                <span className="col-span-1">Equip</span>
-                <span className="col-span-1">RPE Real</span>
-                <span className="col-span-1">PR Est.</span>
-                <span className="col-span-1">Feito</span>
-            </div>
+                {/* Cabeçalho da Tabela (Visível APENAS no Desktop) */}
+                <div className="hidden md:grid grid-cols-7 gap-2 text-xs font-semibold text-neutral-500 py-3 px-4 uppercase tracking-wide text-center border-b border-neutral-100 bg-white">
+                    <span className="col-span-1">Carga</span>
+                    <span className="col-span-1">Séries</span>
+                    <span className="col-span-1">Reps</span>
+                    <span className="col-span-1">Equip</span>
+                    <span className="col-span-1">RPE Real</span>
+                    <span className="col-span-1">PR Est.</span>
+                    <span className="col-span-1">Feito</span>
+                </div>
 
-            {/* Linhas das Séries */}
-            <div className="space-y-1">
-                {ex.sections.map((sec, secIndex) => (
-                    <div key={sec.id} className={`grid grid-cols-7 gap-2 text-sm items-center p-2 rounded-lg transition-colors ${sec.feito ? 'bg-green-50 border border-green-100' : 'bg-neutral-50 hover:bg-neutral-100'}`}>
-                    
-                    {/* Carga */}
-                    <span className="font-medium text-center">
-                        {sec.carga ?? '-'} <span className="text-xs text-neutral-400">{sec.load_unit || 'kg'}</span>
-                    </span>
-                    
-                    {/* Séries */}
-                    <span className="text-center">{sec.series ?? '-'}</span>
-                    
-                    {/* Reps */}
-                    <span className="text-center">{sec.reps ?? '-'}</span>
-                    
-                    {/* Equip */}
-                    <span className="text-center text-xs text-neutral-500 truncate">{sec.equip || '-'}</span>
-                    
-                    {/* RPE Input */}
-                    <div className="flex justify-center">
-                        <input
-                            type="number"
-                            step="0.5"
-                            placeholder='-'
-                            className="border border-neutral-300 p-1 rounded w-12 text-center text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
-                            value={sec.rpe ?? ''}
-                            onChange={(e) => handleSectionChange(exIndex, secIndex, 'rpe', e.target.value)}
-                        />
-                    </div>
-                    
-                    {/* PR */}
-                    <span className="text-center font-medium text-neutral-700">
-                        {sec.pr ? `${sec.pr}kg` : '-'}
-                    </span>
-                    
-                    {/* Checkbox Feito */}
-                    <div className="flex justify-center">
-                        <input
-                        type="checkbox"
-                        className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer accent-red-600"
-                        checked={!!sec.feito}
-                        onChange={(e) => handleSectionChange(exIndex, secIndex, 'feito', e.target.checked)}
-                        />
-                    </div>
-                    </div>
-                ))}
-            </div>
+                {/* Linhas das Séries */}
+                <div className="divide-y divide-neutral-100">
+                    {ex.sections.map((sec, secIndex) => (
+                        <div 
+                            key={sec.id} 
+                            // MOBILE: Grid de 3 colunas | DESKTOP: Grid de 7 colunas
+                            className={`
+                                grid grid-cols-3 md:grid-cols-7 gap-y-4 gap-x-2 md:gap-2 items-center 
+                                p-4 md:p-2 transition-colors
+                                ${sec.feito ? 'bg-green-50/50' : 'hover:bg-neutral-50'}
+                            `}
+                        >
+                        
+                            {/* Carga */}
+                            <div className="flex flex-col md:block items-center justify-center">
+                                <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Carga</span>
+                                <span className="font-bold text-lg md:text-sm text-neutral-800">
+                                    {sec.carga ?? '-'} <span className="text-xs text-neutral-400 font-normal">{sec.load_unit || 'kg'}</span>
+                                </span>
+                            </div>
+                            
+                            {/* Séries */}
+                            <div className="flex flex-col md:block items-center justify-center">
+                                <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Séries</span>
+                                <span className="text-sm">{sec.series ?? '-'}</span>
+                            </div>
+                            
+                            {/* Reps */}
+                            <div className="flex flex-col md:block items-center justify-center">
+                                <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Reps</span>
+                                <span className="text-sm">{sec.reps ?? '-'}</span>
+                            </div>
+                            
+                            {/* Equip (No mobile ocupa a linha inteira se tiver texto grande, ou fica oculto se vazio) */}
+                            <div className="col-span-3 md:col-span-1 flex md:block items-center justify-center md:text-center text-xs text-neutral-500 py-1 md:py-0 bg-neutral-50 md:bg-transparent rounded md:rounded-none order-last md:order-none">
+                                {sec.equip ? (
+                                    <span className="flex items-center gap-1"><Info size={10} className="md:hidden"/> {sec.equip}</span>
+                                ) : (
+                                    <span className="hidden md:inline">-</span>
+                                )}
+                            </div>
+                            
+                            {/* RPE Input */}
+                            <div className="flex flex-col md:block items-center justify-center">
+                                <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">RPE Real</span>
+                                <input
+                                    type="number"
+                                    step="0.5"
+                                    placeholder='-'
+                                    className="border border-neutral-300 p-2 md:p-1 rounded-lg w-16 md:w-12 text-center text-base md:text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none bg-white"
+                                    value={sec.rpe ?? ''}
+                                    onChange={(e) => handleSectionChange(exIndex, secIndex, 'rpe', e.target.value)}
+                                />
+                            </div>
+                            
+                            {/* PR */}
+                            <div className="flex flex-col md:block items-center justify-center">
+                                <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">PR Est.</span>
+                                <span className="font-medium text-neutral-700 text-sm">
+                                    {sec.pr ? `${sec.pr}kg` : '-'}
+                                </span>
+                            </div>
+                            
+                            {/* Checkbox Feito */}
+                            <div className="flex flex-col md:block items-center justify-center">
+                                <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Feito?</span>
+                                <input
+                                    type="checkbox"
+                                    className="h-6 w-6 md:h-5 md:w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer accent-red-600"
+                                    checked={!!sec.feito}
+                                    onChange={(e) => handleSectionChange(exIndex, secIndex, 'feito', e.target.checked)}
+                                />
+                            </div>
+
+                        </div>
+                    ))}
+                </div>
             </div>
         ))}
       </div>
