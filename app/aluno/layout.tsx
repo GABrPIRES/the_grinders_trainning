@@ -5,21 +5,22 @@ import { AuthProvider } from '@/context/AuthContext';
 
 export default function AlunoLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <div className="flex min-h-screen">
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50"> {/* TRAVA TELA INTEIRA */}
+      <AuthProvider>
         <SidebarWrapper>
           <AlunoSidebar />
         </SidebarWrapper>
         
-        <div className="flex flex-col flex-1 md:ml-64 w-full overflow-x-hidden">
+        {/* Container da Direita (Header + Conteúdo) */}
+        <div className="flex flex-col flex-1 h-full overflow-hidden md:ml-64 relative">
           <HeaderBar />
 
-          {/* Container do conteúdo + footer */}
-          <div className="flex flex-col flex-1 justify-between">
-            <main className="flex-1 p-6 bg-gray-100 min-h-0 overflow-y-auto">{children}</main>
-          </div>
+          {/* Área de Conteúdo (SÓ AQUI PODE ROLAR) */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 scroll-smooth">
+              {children}
+          </main>
         </div>
-      </div>
-    </AuthProvider>
+      </AuthProvider>
+    </div>
   );
 }

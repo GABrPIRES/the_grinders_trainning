@@ -10,12 +10,12 @@ export default function Benefits() {
     { icon: Calendar, title: "Gestão de Blocos", description: "Crie e edite blocos de treino complexos com semanas e datas definidas." },
     { icon: FileSpreadsheet, title: "Importação Rápida", description: "Pare de digitar. Importe suas planilhas de Excel existentes diretamente para o app." },
     { icon: BarChart3, title: "Visão Completa", description: "Acompanhe o progresso de todos os seus alunos em um dashboard inteligente." },
-    { icon: MessageSquare, title: "Feedback Rápido", description: "Receba dados de RPE, vídeos e métricas dos seus atletas em tempo real." }
+    { icon: MessageSquare, title: "Feedback Rápido", description: "Receba dados de RPE e evolução dos treinos." }
   ];
 
   const athleteBenefits = [
     { icon: ListChecks, title: "Clareza Total", description: "Receba seu treino do dia de forma clara e objetiva. Sem confusão." },
-    { icon: Dumbbell, title: "Registro Flexível", description: "Registre suas cargas em KG, LB ou RIR. O app cuida do resto." },
+    { icon: Dumbbell, title: "Registro Flexível", description: "Registre suas cargas em KG ou LB. O app cuida do resto." },
     { icon: TrendingUp, title: "Histórico de Progresso", description: "Veja seus recordes pessoais (PRs) subindo e acompanhe sua evolução em gráficos." },
     { icon: Camera, title: "Comunicação Direta", description: "Envie seus vídeos e RPEs diretamente para seu coach." }
   ];

@@ -12,7 +12,7 @@ import Footer from "@/components/layout/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-white selection:bg-red-700 selection:text-white">
+    <div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-neutral-950 text-white selection:bg-red-700 selection:text-white scroll-smooth">
       <Header />
       <main>
         <Hero />

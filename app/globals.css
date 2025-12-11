@@ -51,25 +51,54 @@
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  overflow-x: hidden;
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* O segredo: o corpo não rola, quem rola é a div interna */
+  margin: 0;
+  padding: 0;
 }
 
-/* Custom Scrollbar (Para ficar bonito no Windows) */
+/* 2. Customização SUAVE para Windows (Não afeta Mac se não forçar webkit agressivo) */
+/* Isso deixa a barra fina no Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent; /* Cor cinza suave e fundo transparente */
+}
+
+/* Isso estiliza Chrome/Edge no Windows, mas tentaremos não quebrar o Mac */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;     /* Barra bem fina */
+  height: 6px;    /* Para rolagem horizontal se houver */
 }
+
 ::-webkit-scrollbar-track {
-  background: #f1f1f1; 
+  background: transparent; /* Fundo invisível */
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1; 
-  border-radius: 4px;
+  background-color: rgba(156, 163, 175, 0.5); /* Cinza translúcido */
+  border-radius: 20px; /* Redondo */
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8; 
+  background-color: rgba(107, 114, 128, 0.8); /* Mais escuro ao passar o mouse */
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden; /* Importante para Safari/iOS */
+}
+
+/* Garante que o verso do cartão fique espelhado corretamente */
+.rotate-y-180 {
+  transform: rotateY(180deg);
 }

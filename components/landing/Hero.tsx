@@ -9,7 +9,7 @@ const Hero = () => {
       {/* Imagem de Fundo com Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/images/cardoso_family.jpg"
+          src="/images/time_background_landing.jpg"
           alt="Powerlifter training"
           fill={true}
           className="object-cover w-full h-full opacity-60"
@@ -27,7 +27,7 @@ const Hero = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-6xl md:text-8xl font-black mb-6 tracking-tight text-white drop-shadow-2xl"
+          className="text-6xl md:text-8xl font-black font-serif mb-6 tracking-tight text-white drop-shadow-2xl"
         >
           FORJE A SUA
           <span className="block text-red-700 mt-2">FORÇA.</span>
@@ -52,13 +52,13 @@ const Hero = () => {
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
           <Link 
-            href="/login" 
+            href="https://wa.me/554199592555"  
             className="bg-red-700 hover:bg-red-600 text-white text-lg px-8 py-4 rounded-lg font-bold transition-all hover:scale-105 shadow-lg shadow-red-900/30"
           >
             Seja um Grinder
           </Link>
           <Link 
-            href="/login" 
+            href="https://wa.me/554199592555" 
             className="border-2 border-neutral-700 hover:border-white text-white hover:bg-white/10 text-lg px-8 py-4 rounded-lg font-bold transition-all"
           >
             Se torne um Coach

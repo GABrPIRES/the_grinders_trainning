@@ -40,7 +40,7 @@ const FoundersStory = () => {
             </h2>
             <div className="space-y-6 text-lg text-neutral-400 leading-relaxed">
               <p>
-                Fundado por dois atletas de elite do powerlifting brasileiro, ambos com mais de 10 anos de 
+                Fundado por dois atletas de elite do powerlifting brasileiro, ambos com uma vasta
                 experiência no esporte e múltiplos títulos nacionais, eles sabiam que o caos das planilhas 
                 de Excel e apps genéricos estava limitando o potencial de seus atletas.
               </p>
