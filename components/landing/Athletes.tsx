@@ -111,11 +111,72 @@ const AthleteCard = ({ athlete, isDragging }: { athlete: any, isDragging: boolea
 // --- COMPONENTE PRINCIPAL ---
 const Athletes = () => {
   const athletes = [
-    { image: "/images/math_power.jpg", name: "Math do Santos", achievement: "Campeão Brasileiro", quote: "O app mudou completamente meu jogo. Foco 100% no treino." },
-    { image: "/images/Vini_e_Cardoso.jpg", name: "Vinicius Oliveira", achievement: "Recordista Sul-Americano", quote: "A comunicação com meu coach ficou muito mais clara e eficiente." },
-    { image: "/images/sunshine_alteta.jpg", name: "Rafaela Sunshine", achievement: "Atleta Internacional", quote: "Ver meus PRs subirem semana após semana é extremamente motivador." },
-    { image: "/images/math_power.jpg", name: "Lucas Silva", achievement: "Estreante do Ano", quote: "A planilha automatizada salvou horas da minha semana." },
-    { image: "/images/Vini_e_Cardoso.jpg", name: "Ana Paula", achievement: "Elite Deadlift", quote: "Melhor investimento que fiz para minha preparação." },
+    { 
+      image: "/images/IMG-20250829-WA0146 - Gustavo.jpg",
+      name: "Gustavo Almeida Fialho", 
+      achievement: "Campeão Paranaense e Brasileiro 2025 (-105kg), Recordista Brasileiro de Agachamento", 
+      quote: "Comentário do time: Estou na equipe praticamente desde a fundação. Sempre foram muito companheiros, tanto nos treinos quanto no apoio logístico em campeonatos." 
+    },
+    { 
+      image: "/images/IMG_2218 - Vinicius Oliveira.JPEG",
+      name: "Vinícius de Oliveira", 
+      achievement: "Campeão Brasileiro e Paranaense 2025, Recordista Brasileiro de Agachamento e Total", 
+      quote: "Comentário do App: Aguardando ansiosamente o lançamento completo! O sistema promete muito." 
+    },
+    { 
+      image: "/images/IMG_2178 - Guilherme Borges Basso.jpeg",
+      name: "Guilherme Borges Basso", 
+      achievement: "Vice-campeão Catarinense Sub-Júnior 2025 (-74kg)", 
+      quote: "Comentário do time: O time é extremamente único e unido. Todos em SC se ajudam de uma maneira surpreendente." 
+    },
+    { 
+      image: "/images/Sup. e Terra 2022 68 - João Vitor.jpg",
+      name: "João Vitor de Oliveira Camargo", 
+      achievement: "Top 3 Campeonato Brasileiro 2025", 
+      quote: "Comentário do time: A The Grinders não é só uma equipe, é também uma família." 
+    },
+    { 
+      image: "/images/IMG_7448 - BRENO MARCONDES.jpeg",
+      name: "Breno Marcondes", 
+      achievement: "Atleta The Grinders", 
+      quote: "Comentário do App: Muito bem estruturado e fácil de entender." 
+    },
+    { 
+      image: "/images/14147d77-588d-40ec-92ee-ccf4edb9931a - Thiago Paiva.jpeg",
+      name: "Thiago Ramos de Paiva", 
+      achievement: "Tricampeão Estadual, Recordista de Supino (-66kg Jr/Open), 3º lugar Brasileiro 2025", 
+      quote: "Comentário do time: O time está em outro nível! A estrutura e o apoio são incríveis." 
+    },
+    { 
+      image: "/images/IMG_3457 - Rafaela Sunshine da silva.jpeg",
+      name: "Rafaela Sunshine da Silva", 
+      achievement: "Campeã Brasileira e Estadual 2025, Melhor Atleta Jr Catarinense", 
+      quote: "Comentário do time: Uma equipe muito unida e acolhedora." 
+    },
+    { 
+      image: "/images/IMG_3527 - Jean Felipe Ferraz Gonçalves.jpeg",
+      name: "Jean Felipe Ferraz Gonçalves", 
+      achievement: "Atleta The Grinders", 
+      quote: "Comentário do time: Um time que nos abraça como familiares. Ninguém é melhor que ninguém, todos buscam evoluir e são tratados de maneira igual." 
+    },
+    { 
+      image: "/images/PWR SUBJR-JR-UNIV-21 - Brloco2.jpg",
+      name: "Angelo Henrique Ribeiro", 
+      achievement: "Top 3 Paranaense Júnior", 
+      quote: "Comentário do time: O apoio da equipe nos campeonatos é essencial. Ajudaram do início ao fim." 
+    },
+    { 
+      image: "/images/ABAF7752-FB79-41F4-A2F9-6299F4AF3DFE - Leo Egas.jpeg",
+      name: "Leo Namegas", 
+      achievement: "Melhor Atleta Jr Paulista 2023, Recordista Estadual Agachamento/Terra/Total", 
+      quote: "Comentário do time: A união da equipe é incrível, todos se ajudam e se gostam muito." 
+    },
+    { 
+      image: "/images/WhatsApp Image 2026-01-09 at 11.25.46 - Laura Lima.jpeg",
+      name: "André Luiz Cordeiro Júnior", 
+      achievement: "Campeão Brasileiro e Sul-Americano de Supino Raw 2025", 
+      quote: "Comentário do time: Equipe muito dedicada ao sucesso do próximo e com apoio incondicional aos atletas." 
+    }
   ];
 
   const scrollRef = useRef<HTMLDivElement>(null);
