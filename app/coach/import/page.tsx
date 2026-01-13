@@ -40,7 +40,7 @@ export default function ImportTreinoPage() {
     const fetchAlunos = async () => {
       try {
         setLoadingAlunos(true);
-        const data = await fetchWithAuth('alunos'); 
+        const data = await fetchWithAuth('alunos?limit=10000'); 
         setAlunos(data.alunos || []);
       } catch (err) {
         setUploadError("Falha ao carregar a lista de alunos.");
