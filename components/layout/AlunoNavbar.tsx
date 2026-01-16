@@ -50,11 +50,11 @@ export default function AlunoSidebar() {
         </div>
         <nav className="mt-6 space-y-2 px-4">
           {navItems.map((item) => {
-            // --- AQUI ESTÁ A CORREÇÃO ---
-            // Para a Home, checamos a igualdade exata. Para os outros, usamos startsWith.
-            const isActive = item.href === '/aluno' 
-              ? pathname === item.href 
-              : pathname.startsWith(item.href);
+            const isHome = item.href === '/aluno';
+            
+            const isActive = isHome 
+                ? pathname === item.href 
+                : pathname?.startsWith(item.href);
 
             return (
               <Link

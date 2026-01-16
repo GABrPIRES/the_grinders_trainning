@@ -57,7 +57,12 @@ export default function CoachSidebar() {
         {/* Menu */}
         <nav className="mt-6 space-y-2 px-4">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isHome = item.href === '/coach';
+            
+            const isActive = isHome 
+                ? pathname === item.href 
+                : pathname?.startsWith(item.href);
+
             return (
               <Link
                 key={item.href}
