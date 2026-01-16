@@ -255,12 +255,12 @@ export default function EditWorkoutPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* INFO DO TREINO */}
-        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
+        <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-3"> {/* 75% de largura no Desktop */}
              <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Dumbbell size={16}/> Nome</label>
              <input type="text" placeholder="Ex: Leg Day" className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all" value={title} onChange={e => setTitle(e.target.value)} required />
           </div>
-          <div>
+          <div className="md:col-span-1"> {/* 25% de largura no Desktop */}
              <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Calendar size={16}/> Data</label>
              <input
                 type="date"
@@ -304,12 +304,12 @@ export default function EditWorkoutPage() {
                         <table className="w-full text-left border-collapse min-w-[600px]">
                             <thead>
                                 <tr className="text-xs text-neutral-400 font-bold uppercase border-b border-neutral-100">
-                                    <th className="p-2 w-28">Carga</th>
-                                    <th className="p-2 w-16">Séries</th>
-                                    <th className="p-2 w-16">Reps</th>
-                                    <th className="p-2 w-20">RPE</th>
-                                    <th className="p-2">Equipamento</th>
-                                    <th className="p-2 w-20">1RM</th>
+                                    <th className="p-2 w-[25%]">Carga</th>
+                                    <th className="p-2 w-[12%]">Séries</th>
+                                    <th className="p-2 w-[12%]">Reps</th>
+                                    <th className="p-2 w-[12%]">RPE</th>
+                                    <th className="p-2 w-[25%]">Equipamento</th>
+                                    <th className="p-2 w-[14%]">PR</th>
                                     <th className="p-2 w-10"></th>
                                 </tr>
                             </thead>

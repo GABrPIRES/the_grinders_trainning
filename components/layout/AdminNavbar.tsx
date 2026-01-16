@@ -32,7 +32,7 @@ export default function AdminSidebar() {
   };
 
   return (
-    <div className="w-64 h-screen bg-black text-white flex flex-col justify-between">
+    <div className="sidebar-hide-scroll w-64 h-screen bg-black text-white flex flex-col justify-between">
       <div>
         {/* Logo */}
         <div className="text-center py-6 border-b border-gray-700">
