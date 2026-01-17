@@ -37,7 +37,7 @@ export default function SidebarWrapper({ children }: { children: React.ReactNode
         className={`
           fixed z-50 top-0 left-0 h-full w-64 bg-neutral-900 text-white
           transform transition-transform duration-300 ease-in-out
-          overflow-y-auto border-r border-neutral-800
+          overflow-y-hidden border-r border-neutral-800
           ${open ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:fixed md:inset-y-0
         `}

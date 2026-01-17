@@ -49,7 +49,12 @@ export default function AdminSidebar() {
         {/* Navegação */}
         <nav className="mt-6 space-y-2 px-4">
           {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isHome = item.href === '/admin';
+            
+            const isActive = isHome 
+                ? pathname === item.href 
+                : pathname?.startsWith(item.href);
+                
             console.log(pathname.startsWith(item.href));
             console.log(`Item: ${item.href}, isActive: ${isActive}`);
             return (
