@@ -156,10 +156,11 @@ export default function AlunoTreinoDetalhesPage() {
             <div key={ex.id} className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
                 {/* Título do Exercício */}
                 <div className="bg-neutral-50 p-4 border-b border-neutral-100">
-                    <h2 className="text-lg font-bold text-red-700 flex items-center gap-2">
-                        <Dumbbell size={20} />
-                        <span className="line-clamp-1">{exIndex + 1}. {ex.name}</span>
-                    </h2>
+                <h2 className="text-lg font-bold text-red-700 flex items-start gap-2">
+                  <span className="flex-1 min-w-0 break-words">
+                      {exIndex + 1}. {ex.name}
+                  </span>
+              </h2>
                 </div>
             
                 {/* Cabeçalho da Tabela (Visível APENAS no Desktop) */}
@@ -186,62 +187,62 @@ export default function AlunoTreinoDetalhesPage() {
                             `}
                         >
                         
-                            {/* Carga */}
-                            <div className="flex flex-col md:block items-center justify-center">
+                            {/* Carga - Adicionado md:text-center */}
+                            <div className="flex flex-col md:block items-center justify-center md:text-center">
                                 <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Carga</span>
                                 <span className="font-bold text-lg md:text-sm text-neutral-800">
                                     {sec.carga ?? '-'} <span className="text-xs text-neutral-400 font-normal">{sec.load_unit || 'kg'}</span>
                                 </span>
                             </div>
                             
-                            {/* Séries */}
-                            <div className="flex flex-col md:block items-center justify-center">
+                            {/* Séries - Adicionado md:text-center */}
+                            <div className="flex flex-col md:block items-center justify-center md:text-center">
                                 <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Séries</span>
                                 <span className="text-sm">{sec.series ?? '-'}</span>
                             </div>
                             
-                            {/* Reps */}
-                            <div className="flex flex-col md:block items-center justify-center">
+                            {/* Reps - Adicionado md:text-center */}
+                            <div className="flex flex-col md:block items-center justify-center md:text-center">
                                 <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Reps</span>
                                 <span className="text-sm">{sec.reps ?? '-'}</span>
                             </div>
                             
-                            {/* Equip (No mobile ocupa a linha inteira se tiver texto grande, ou fica oculto se vazio) */}
+                            {/* Equip - Já tinha md:text-center, mantido */}
                             <div className="col-span-3 md:col-span-1 flex md:block items-center justify-center md:text-center text-xs text-neutral-500 py-1 md:py-0 bg-neutral-50 md:bg-transparent rounded md:rounded-none order-last md:order-none">
                                 {sec.equip ? (
-                                    <span className="flex items-center gap-1"><Info size={10} className="md:hidden"/> {sec.equip}</span>
+                                    <span className="flex items-center justify-center gap-1"><Info size={10} className="md:hidden"/> {sec.equip}</span>
                                 ) : (
                                     <span className="hidden md:inline">-</span>
                                 )}
                             </div>
                             
-                            {/* RPE Input */}
-                            <div className="flex flex-col md:block items-center justify-center">
+                            {/* RPE Input - Adicionado md:text-center para alinhar o input */}
+                            <div className="flex flex-col md:block items-center justify-center md:text-center">
                                 <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">RPE Real</span>
                                 <input
                                     type="number"
                                     step="0.5"
                                     placeholder='-'
-                                    className="border border-neutral-300 p-2 md:p-1 rounded-lg w-16 md:w-12 text-center text-base md:text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none bg-white"
+                                    className="border border-neutral-300 p-2 md:p-1 rounded-lg w-16 md:w-12 text-center text-base md:text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none bg-white mx-auto"
                                     value={sec.rpe ?? ''}
                                     onChange={(e) => handleSectionChange(exIndex, secIndex, 'rpe', e.target.value)}
                                 />
                             </div>
                             
-                            {/* PR */}
-                            <div className="flex flex-col md:block items-center justify-center">
+                            {/* PR - Adicionado md:text-center */}
+                            <div className="flex flex-col md:block items-center justify-center md:text-center">
                                 <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">PR Est.</span>
                                 <span className="font-medium text-neutral-700 text-sm">
                                     {sec.pr ? `${sec.pr}kg` : '-'}
                                 </span>
                             </div>
                             
-                            {/* Checkbox Feito */}
-                            <div className="flex flex-col md:block items-center justify-center">
+                            {/* Checkbox Feito - Adicionado md:text-center */}
+                            <div className="flex flex-col md:block items-center justify-center md:text-center">
                                 <span className="md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Feito?</span>
                                 <input
                                     type="checkbox"
-                                    className="h-6 w-6 md:h-5 md:w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer accent-red-600"
+                                    className="h-6 w-6 md:h-5 md:w-5 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer accent-red-600 mx-auto block"
                                     checked={!!sec.feito}
                                     onChange={(e) => handleSectionChange(exIndex, secIndex, 'feito', e.target.checked)}
                                 />
