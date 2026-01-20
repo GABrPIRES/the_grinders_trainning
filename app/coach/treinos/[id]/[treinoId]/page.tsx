@@ -14,7 +14,7 @@ import {
 interface Section {
   id: string; 
   carga?: number | null;
-  load_unit?: 'kg' | 'lb' | 'rir' | string | null;
+  load_unit?: 'kg' | 'lb' | 'rir' | '%' | string | null;
   series?: number | null;
   reps?: number | null;
   equip?: string | null;
@@ -325,6 +325,7 @@ export default function EditWorkoutPage() {
                                                     <option value="kg">kg</option>
                                                     <option value="lb">lb</option>
                                                     <option value="rir">RIR</option>
+                                                    <option value="%">%</option>
                                                 </select>
                                             </div>
                                         </td>
@@ -366,6 +367,7 @@ export default function EditWorkoutPage() {
                                                     <option value="kg">kg</option>
                                                     <option value="lb">lb</option>
                                                     <option value="rir">RIR</option>
+                                                    <option value="%">%</option>
                                                 </select>
                                             </div>
                                         </div>
