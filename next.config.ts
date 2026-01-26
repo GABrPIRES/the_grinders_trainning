@@ -1,7 +1,19 @@
 // next.config.ts
 import type { NextConfig } from "next";
 
+// 1. Inicializa o plugin do PWA
+// Usamos 'require' aqui porque alguns plugins do Next ainda não exportam tipos ES6 perfeitamente
+const withPWA = require("next-pwa")({
+  dest: "public",         // Onde os arquivos do service worker serão gerados
+  register: true,         // Registra o SW automaticamente
+  skipWaiting: true,      // Atualiza o cache assim que uma nova versão estiver disponível
+  disable: process.env.NODE_ENV === "development", // Desativa em localhost para não atrapalhar o dev
+});
+
+// 2. Sua configuração original (Segurança + React Strict Mode)
 const nextConfig: NextConfig = {
+  reactStrictMode: true, // Recomendado manter true
+  
   // [SEGURANÇA] Cabeçalhos HTTP para blindar o navegador
   async headers() {
     return [
@@ -34,4 +46,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// 3. Exporta a configuração envolvida pelo PWA
+export default withPWA(nextConfig);

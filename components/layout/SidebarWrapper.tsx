@@ -1,51 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import MobileMenu from './MobileMenu'; // Certifique-se que o caminho está correto
 
 export default function SidebarWrapper({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-
-  // Fecha o menu ao trocar de página
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  // Removemos useState e useEffect porque não existe mais "abrir/fechar" menu.
+  // Agora é: Ou é Mobile (Barra Inferior) ou é Desktop (Barra Lateral).
 
   return (
     <>
-      {/* Botão hamburguer (mobile only) */}
-      <button
-        className="fixed top-4 left-4 z-[60] bg-black text-white p-2 rounded-md md:hidden shadow-md"
-        onClick={() => setOpen(!open)}
-        aria-label="Abrir menu"
-      >
-        <Menu size={20} />
-      </button>
-
-      {/* Fundo escuro ao abrir no mobile */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* Sidebar com transição */}
+      {/* 1. Sidebar Desktop 
+        - hidden: Escondido por padrão (Mobile).
+        - md:flex: Flexível e visível apenas em telas médias pra cima.
+        - fixed: Preso na esquerda.
+      */}
       <aside
-        className={`
-          fixed z-50 top-0 left-0 h-full w-64 bg-neutral-900 text-white
-          transform transition-transform duration-300 ease-in-out
-          overflow-y-hidden overflow-x-hidden border-r border-neutral-800
-          ${open ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 md:fixed md:inset-y-0
-        `}
+        className="
+          hidden md:flex 
+          fixed top-0 left-0 z-50 h-full w-64 
+          flex-col 
+          bg-neutral-900 text-white 
+          border-r border-neutral-800 
+          overflow-y-auto overflow-x-hidden
+        "
       >
+        {/* Aqui renderiza os links que você já tem (CoachNavbar, AdminNavbar, etc) */}
         {children}
       </aside>
+
+      {/* 2. Menu Mobile (Barra Inferior)
+        - Renderizamos o componente que criamos antes.
+        - Ele já possui a classe 'md:hidden' interna, então some no Desktop.
+      */}
+      <MobileMenu />
     </>
   );
 }
-
-

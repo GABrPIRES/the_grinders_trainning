@@ -26,7 +26,7 @@ export default function HeaderBar() {
   return (
     // 'sticky top-0' mantém a barra fixa no topo enquanto a página rola
     // 'pl-14' no mobile garante que o texto não fique embaixo do botão preto do menu
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white border-b border-neutral-200 px-6 py-3 shadow-sm transition-all pl-16 md:pl-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white border-b border-neutral-200 px-6 py-3 shadow-sm transition-all md:pl-8">
       
       {/* Lado Esquerdo: Título da Página */}
       <div className="flex flex-col justify-center">
