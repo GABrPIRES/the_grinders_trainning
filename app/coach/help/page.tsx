@@ -133,9 +133,9 @@ export default function CoachHelpPage() {
       </section>
 
       {/* MENSAGEM FINAL */}
-      <div className="bg-neutral-900 text-white p-8 rounded-xl text-center">
+      <div className="bg-red-700 text-white p-8 rounded-xl text-center">
         <h3 className="text-xl font-bold mb-2">Ainda precisa de ajuda?</h3>
-        <p className="text-neutral-400 mb-6 max-w-lg mx-auto">
+        <p className="text-black mb-6 max-w-lg mx-auto">
             Nossa equipe de suporte responde geralmente em menos de 2 horas durante o horário comercial.
         </p>
         <a 

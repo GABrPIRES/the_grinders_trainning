@@ -109,7 +109,7 @@ export default function CoachSettingsPage() {
                 <button
                     type="submit"
                     disabled={savingPassword}
-                    className="mt-2 bg-neutral-900 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-black transition-colors flex items-center gap-2 disabled:opacity-70"
+                    className="mt-2 bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-red-800 transition-colors flex items-center gap-2 disabled:opacity-70"
                 >
                     {savingPassword ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
                     Atualizar Senha

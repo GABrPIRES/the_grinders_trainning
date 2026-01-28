@@ -51,8 +51,8 @@ export default function MeuCoachPage() {
 
         <div className="px-6 pb-8 md:px-10">
            {/* Avatar e Nome */}
-           <div className="flex flex-col md:flex-row items-center md:items-end mb-6 gap-6">
-              <div className="w-32 h-32 rounded-full border-4 border-white bg-neutral-100 flex items-center justify-center shadow-md text-4xl font-bold text-neutral-400">
+           <div className="flex flex-col md:flex-row items-center md:items-end mb-6 gap-6 pt-10">
+              <div className="w-32 h-32 rounded-full border-4 border-white bg-red-100 flex items-center justify-center shadow-md text-4xl font-bold text-red-400">
                   {/* Se tiver foto, usar Image. Senão, Iniciais ou Ícone */}
                   <User size={64} />
               </div>

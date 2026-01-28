@@ -79,7 +79,7 @@ export default function AlunoDashboardPage() {
   if (!data) return <div className="p-8 text-center text-red-600">Erro ao carregar dados.</div>;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 text-neutral-800">
+    <div className="p-6 max-w-5xl mx-auto space-y-8 text-neutral-800 pb-20">
       
       {/* Cabeçalho de Boas-vindas */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

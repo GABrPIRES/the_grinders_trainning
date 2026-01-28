@@ -104,7 +104,7 @@ export default function MeusTreinosPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 text-neutral-800 space-y-8">
+    <div className="max-w-4xl mx-auto p-6 text-neutral-800 space-y-8 pb-20">
       <div>
         <h1 className="text-3xl font-bold text-neutral-900">Meus Treinos</h1>
         <p className="text-neutral-500">Selecione um bloco e uma semana para ver seus treinos.</p>

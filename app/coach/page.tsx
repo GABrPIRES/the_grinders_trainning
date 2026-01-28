@@ -82,7 +82,7 @@ export default function CoachDashboardPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-20">
       {/* 1. Cards de Estatísticas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
@@ -123,7 +123,7 @@ export default function CoachDashboardPage() {
         </div>
 
         {/* 3. Atalhos */}
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-6 rounded-lg shadow b-20">
           <h2 className="text-lg font-semibold mb-4 text-neutral-800">Atalhos</h2>
           <div className="grid grid-cols-2 gap-4">
             <ShortcutCard title="Gerenciar Alunos" href="/coach/students" icon={<Users className="h-8 w-8 text-neutral-600" />} router={router} />
