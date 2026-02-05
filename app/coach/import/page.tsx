@@ -131,7 +131,7 @@ export default function ImportTreinoPage() {
       {/* CABEÇALHO */}
       <div>
         <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-           <FileSpreadsheet className="text-red-600" /> Importação em Massa
+          Importação em Massa
         </h1>
         <p className="text-neutral-500 text-sm">Carregue planilhas Excel (.xlsx) para criar treinos automaticamente.</p>
       </div>

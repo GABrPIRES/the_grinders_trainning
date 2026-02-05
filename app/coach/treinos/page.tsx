@@ -86,7 +86,7 @@ export default function CoachWorkoutsSelectionPage() {
       {/* CABEÇALHO */}
       <div>
         <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-            <Dumbbell className="text-red-700" /> Gerenciar Treinos
+            Gerenciar Treinos
         </h1>
         <p className="text-neutral-500 text-sm">Selecione um aluno para editar ou criar planilhas.</p>
       </div>

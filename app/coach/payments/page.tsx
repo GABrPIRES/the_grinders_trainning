@@ -262,9 +262,6 @@ export default function CoachPaymentsPage() {
       
       {/* HEADER */}
       <div className="flex items-center gap-3">
-         <div className="p-2.5 bg-red-700 text-white rounded-xl shadow-sm">
-            <Wallet size={24} />
-         </div>
          <div>
             <h1 className="text-2xl font-bold text-neutral-900">Financeiro</h1>
             <p className="text-neutral-500 text-sm">Gerencie recebimentos e mensalidades.</p>
