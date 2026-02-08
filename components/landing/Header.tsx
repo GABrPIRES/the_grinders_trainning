@@ -31,12 +31,20 @@ const Header = () => {
         </nav>
 
         {/* Botão CTA */}
-        <Link 
-          href="/login"
-          className="bg-red-700 hover:bg-red-600 text-white px-6 py-2 rounded-md font-bold transition-colors text-sm"
-        >
-          Entrar
-        </Link>
+        <div className='flex items-center gap-4'>
+          <Link 
+            href="/signup"
+            className="border-neutral-700 hover:border-white text-white hover:bg-white/10 text-white border-[0.5px] px-6 py-3 rounded-md font-bold transition-colors text-sm"
+          >
+            Cadastrar
+          </Link>
+          <Link 
+            href="/login"
+            className="bg-red-700 hover:bg-red-600 text-white px-6 py-3 rounded-md font-bold transition-colors text-sm"
+          >
+            Entrar
+          </Link>
+        </div>
       </div>
     </header>
   );
