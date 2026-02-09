@@ -2,7 +2,7 @@
     "name": "The Grinders Powerlifting",
     "short_name": "The Grinders",
     "description": "Plataforma oficial de treino The Grinders.",
-    "start_url": "/",
+    "start_url": "/login",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",

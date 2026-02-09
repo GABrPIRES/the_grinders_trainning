@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkAuth = async () => {
       // Evita check em páginas públicas para economizar requisições (opcional)
-      if (pathname === '/login' || pathname === '/') {
+      if (pathname === '/login' || pathname === '/' || pathname === '/signup') {
           setLoading(false);
           return;
       }

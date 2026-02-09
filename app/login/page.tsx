@@ -155,6 +155,11 @@ export default function LoginPage() {
                 Esqueceu sua senha?
               </a>
             </div>
+            <div className="text-center">
+              <p className="text-black text-sm">Não tem uma conta? <a href="/signup" className="text-sm font-semibold text-red-700 hover:text-red-900 hover:underline">
+                Cadastre-se agora.
+              </a></p>
+            </div>
           </form>
         </div>
       </div>
