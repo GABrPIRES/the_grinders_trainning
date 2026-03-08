@@ -273,7 +273,7 @@ export default function EditWorkoutPage() {
         </div>
 
         {/* LISTA DE EXERCÍCIOS */}
-        <div className="space-y-6">
+        <div className="space-y-6 md:pb-0 pb-12">
             {exercises.map((exercise, exIndex) => {
               // Se foi deletado, não renderiza na tela (mas continua no state para ser enviado com _destroy)
               if (exercise.deleted) return null;
@@ -404,11 +404,20 @@ export default function EditWorkoutPage() {
         </div>
 
         {/* AÇÕES FLUTUANTES */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-neutral-200 md:static md:bg-transparent md:border-0 md:p-0 flex flex-col md:flex-row gap-3 z-20 shadow-up md:shadow-none">
-            <button type="button" onClick={handleAddExercise} className="flex-1 py-3 border-2 border-dashed border-neutral-300 rounded-xl text-neutral-500 font-bold hover:border-red-300 hover:text-red-700 transition-all flex items-center justify-center gap-2">
+        <div className="fixed bottom-10 left-0 right-0 p-4 pb-8 bg-white border-t border-neutral-200 md:static md:bg-transparent md:border-0 md:p-0 flex flex-col md:flex-row gap-3 z-30 shadow-up md:shadow-none">
+            <button 
+                type="button" 
+                onClick={handleAddExercise} 
+                className="w-full md:flex-1 py-3 border-2 border-dashed border-neutral-300 rounded-xl text-neutral-500 font-bold hover:border-red-300 hover:text-red-700 transition-all flex items-center justify-center gap-2"
+            >
                 <Plus size={20} /> Novo Exercício
             </button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 bg-neutral-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-70">
+            
+            <button 
+                type="submit" 
+                disabled={saving} 
+                className="w-full md:flex-1 py-3 bg-neutral-900 text-white font-bold rounded-xl hover:bg-black transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-70"
+            >
                 {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                 {saving ? "Salvando..." : "Salvar Alterações"}
             </button>
