@@ -3,17 +3,19 @@
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { 
-  Dumbbell, 
-  Calendar, 
-  CreditCard, 
-  User, 
-  ArrowRight, 
-  CheckCircle2, 
+import {
+  Dumbbell,
+  Calendar,
+  CreditCard,
+  User,
+  ArrowRight,
+  CheckCircle2,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  ClipboardList,
 } from "lucide-react";
 import { parseISO, isWithinInterval } from "date-fns"; // Mantido apenas para lógica
+import WeeklyFeedbackModal from "@/components/modals/WeeklyFeedbackModal";
 
 interface DashboardData {
   student_name: string;
@@ -24,6 +26,11 @@ interface DashboardData {
   current_week: { number: number; start_date: string; end_date: string; id: string } | null;
   next_workout: { id: string; name: string; day: string } | null;
   treinos_concluidos: number;
+}
+
+interface PendingFeedback {
+  pending: boolean;
+  week_id?: string;
 }
 
 function ShortcutCard({ title, subtitle, icon, href, colorClass, router }: any) {
@@ -47,13 +54,19 @@ function ShortcutCard({ title, subtitle, icon, href, colorClass, router }: any) 
 export default function AlunoDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingFeedback, setPendingFeedback] = useState<PendingFeedback | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetchWithAuth('student_dashboard');
+        const [res, feedbackRes] = await Promise.all([
+          fetchWithAuth('student_dashboard'),
+          fetchWithAuth('weekly_feedbacks/pending').catch(() => null),
+        ]);
         setData(res);
+        if (feedbackRes) setPendingFeedback(feedbackRes);
       } catch (err) {
         console.error(err);
       } finally {
@@ -98,6 +111,41 @@ export default function AlunoDashboardPage() {
            data.status_financeiro === 'vencido' ? 'Pagamento Pendente' : 'Sem Assinatura'}
         </div>
       </div>
+
+      {/* Formulário Semanal Pendente */}
+      {pendingFeedback?.pending && pendingFeedback.week_id && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
+              <ClipboardList size={22} className="text-amber-700" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-900">Formulário semanal pendente</p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                Você completou todos os treinos da semana! Preencha a avaliação para o coach ajustar sua próxima semana.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowFeedbackModal(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+          >
+            <ClipboardList size={16} />
+            Preencher agora
+          </button>
+        </div>
+      )}
+
+      {showFeedbackModal && pendingFeedback?.week_id && (
+        <WeeklyFeedbackModal
+          weekId={pendingFeedback.week_id}
+          onClose={() => setShowFeedbackModal(false)}
+          onSubmitted={() => {
+            setShowFeedbackModal(false);
+            setPendingFeedback({ pending: false });
+          }}
+        />
+      )}
 
       {/* 1. CARD DESTAQUE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

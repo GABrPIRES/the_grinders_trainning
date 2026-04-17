@@ -3,15 +3,17 @@
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { Dumbbell, Calendar, ArrowRight, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
+import { Dumbbell, Calendar, ArrowRight, ChevronDown, ChevronUp, CheckCircle, ClipboardList } from "lucide-react";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from 'date-fns/locale';
+import WeeklyFeedbackModal from "@/components/modals/WeeklyFeedbackModal";
 
 // Interfaces
 interface Treino {
   id: string;
   name: string;
   day: string;
+  status?: 'draft' | 'published' | 'in_progress' | 'completed';
 }
 interface Week {
   id: string;
@@ -34,14 +36,22 @@ export default function MeusTreinosPage() {
   const [loading, setLoading] = useState(true);
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
   const [expandedWeekId, setExpandedWeekId] = useState<string | null>(null);
+  const [pendingFeedbackWeekId, setPendingFeedbackWeekId] = useState<string | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await fetchWithAuth('meus_treinos'); 
+        const [data, feedbackRes] = await Promise.all([
+          fetchWithAuth('meus_treinos'),
+          fetchWithAuth('weekly_feedbacks/pending').catch(() => null),
+        ]);
         setBlocks(data || []);
+        if (feedbackRes?.pending && feedbackRes?.week_id) {
+          setPendingFeedbackWeekId(feedbackRes.week_id);
+        }
         
         // Tenta expandir automaticamente o bloco e semana atuais
         if (data && data.length > 0) {
@@ -144,29 +154,55 @@ export default function MeusTreinosPage() {
                   {block.weeks.map(week => {
                     const isCurrentWeek = isCurrentDate(week.start_date, week.end_date);
                     const isWeekExpanded = expandedWeekId === week.id;
+                    const hasPendingFeedback = pendingFeedbackWeekId === week.id;
 
                     return (
-                      <div key={week.id} className={`bg-white border rounded-lg transition-all ${isCurrentWeek ? 'border-red-200 shadow-sm ring-1 ring-red-100' : 'border-neutral-200'}`}>
-                        <button 
+                      <div key={week.id} className={`bg-white border rounded-lg transition-all ${hasPendingFeedback ? 'border-amber-300 shadow-sm ring-1 ring-amber-100' : isCurrentWeek ? 'border-red-200 shadow-sm ring-1 ring-red-100' : 'border-neutral-200'}`}>
+                        <button
                           onClick={() => setExpandedWeekId(isWeekExpanded ? null : week.id)}
                           className="w-full flex items-center justify-between p-4 text-left"
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isCurrentWeek ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${hasPendingFeedback ? 'bg-amber-100 text-amber-700' : isCurrentWeek ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600'}`}>
                               {week.week_number}
                             </div>
                             <div>
-                              <p className={`font-semibold ${isCurrentWeek ? 'text-red-900' : 'text-neutral-700'}`}>
+                              <p className={`font-semibold ${hasPendingFeedback ? 'text-amber-900' : isCurrentWeek ? 'text-red-900' : 'text-neutral-700'}`}>
                                 Semana {week.week_number}
-                                {isCurrentWeek && <span className="ml-2 text-xs font-normal text-red-600">(Atual)</span>}
+                                {isCurrentWeek && !hasPendingFeedback && <span className="ml-2 text-xs font-normal text-red-600">(Atual)</span>}
                               </p>
                               <p className="text-xs text-neutral-500">
                                 {formatDate(week.start_date)} - {formatDate(week.end_date)}
                               </p>
                             </div>
                           </div>
-                          {isWeekExpanded ? <ChevronUp size={18} className="text-neutral-400" /> : <ChevronDown size={18} className="text-neutral-400" />}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {hasPendingFeedback && (
+                              <span className="text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 rounded-full">
+                                Formulário pendente
+                              </span>
+                            )}
+                            {isWeekExpanded ? <ChevronUp size={18} className="text-neutral-400" /> : <ChevronDown size={18} className="text-neutral-400" />}
+                          </div>
                         </button>
+
+                        {/* Banner de formulário pendente */}
+                        {hasPendingFeedback && (
+                          <div className="mx-4 mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <ClipboardList size={16} className="text-amber-600 flex-shrink-0" />
+                              <p className="text-xs font-semibold text-amber-800">
+                                Semana concluída! Preencha o formulário para gerar a próxima.
+                              </p>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setShowFeedbackModal(true); }}
+                              className="text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
+                            >
+                              Preencher
+                            </button>
+                          </div>
+                        )}
 
                         {/* Lista de Treinos da Semana */}
                         {isWeekExpanded && (
@@ -186,7 +222,15 @@ export default function MeusTreinosPage() {
                                             <p className="text-xs text-neutral-500">{formatDate(treino.day)}</p>
                                           </div>
                                        </div>
-                                       <ArrowRight size={16} className="text-neutral-300 group-hover:text-red-600" />
+                                       <div className="flex items-center gap-2">
+                                         {treino.status === 'in_progress' && (
+                                           <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full animate-pulse">Em andamento</span>
+                                         )}
+                                         {treino.status === 'completed' && (
+                                           <CheckCircle size={16} className="text-green-500" />
+                                         )}
+                                         <ArrowRight size={16} className="text-neutral-300 group-hover:text-red-600" />
+                                       </div>
                                      </button>
                                    </li>
                                  ))}
@@ -205,6 +249,17 @@ export default function MeusTreinosPage() {
           );
         })}
       </div>
+
+      {showFeedbackModal && pendingFeedbackWeekId && (
+        <WeeklyFeedbackModal
+          weekId={pendingFeedbackWeekId}
+          onClose={() => setShowFeedbackModal(false)}
+          onSubmitted={() => {
+            setShowFeedbackModal(false);
+            setPendingFeedbackWeekId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
