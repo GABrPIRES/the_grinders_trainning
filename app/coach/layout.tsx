@@ -16,7 +16,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
           <HeaderBar />
 
           {/* Área de Conteúdo (SÓ AQUI PODE ROLAR) */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 scroll-smooth">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 md:pb-6 md:p-6 scroll-smooth">
              {children}
           </main>
         </div>
