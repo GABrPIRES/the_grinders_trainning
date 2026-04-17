@@ -12,7 +12,7 @@ import {
 
 // --- Interfaces Atualizadas ---
 interface Section {
-  id: string; 
+  id: string;
   carga?: number | null;
   load_unit?: 'kg' | 'lb' | 'rir' | '%' | string | null;
   series?: number | null;
@@ -21,6 +21,8 @@ interface Section {
   rpe?: number | null;
   pr?: number | null;
   feito?: boolean | null;
+  actual_load?: number | null;
+  actual_rpe?: number | null;
   isNew?: boolean;     // Se é novo (não salvo no banco)
   deleted?: boolean;   // Se foi marcado para deletar
   [key: string]: any;
@@ -34,6 +36,8 @@ interface Exercise {
   deleted?: boolean; // Se foi marcado para deletar
 }
 
+type TreinoStatus = 'draft' | 'published' | 'in_progress' | 'completed';
+
 export default function EditWorkoutPage() {
   const { id: alunoId, treinoId } = useParams();
   const router = useRouter();
@@ -41,6 +45,7 @@ export default function EditWorkoutPage() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
+  const [treinoStatus, setTreinoStatus] = useState<TreinoStatus>('draft');
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,13 +59,14 @@ export default function EditWorkoutPage() {
         setTitle(data.name || "");
         setDate(data.day ? data.day.split('T')[0] : "");
         setDescription(data.description || "");
+        setTreinoStatus(data.status || 'draft');
 
         if (data.exercicios && Array.isArray(data.exercicios)) {
             const mappedExercises = data.exercicios.map((ex: any) => ({
                 id: ex.id,
                 name: ex.name,
-                isNew: false, 
-                deleted: false, // Inicialmente visível
+                isNew: false,
+                deleted: false,
                 sections: ex.sections.map((sec: any) => ({
                     id: sec.id,
                     carga: sec.carga,
@@ -71,6 +77,8 @@ export default function EditWorkoutPage() {
                     rpe: sec.rpe,
                     pr: sec.pr,
                     feito: sec.feito,
+                    actual_load: sec.actual_load,
+                    actual_rpe: sec.actual_rpe,
                     isNew: false,
                     deleted: false
                 }))
@@ -251,7 +259,17 @@ export default function EditWorkoutPage() {
           <span>{error}</span>
         </div>
       )}
-      
+
+      {(treinoStatus === 'in_progress' || treinoStatus === 'completed') && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-2 text-sm text-blue-800 flex items-center gap-2">
+          <FileText size={16} className="flex-shrink-0" />
+          <span>
+            {treinoStatus === 'completed' ? 'Treino concluído pelo aluno.' : 'Treino em andamento.'}
+            {' '}As colunas <strong>Carga Real</strong> e <strong>RPE Real</strong> mostram o que o atleta registrou.
+          </span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* INFO DO TREINO */}
@@ -303,13 +321,32 @@ export default function EditWorkoutPage() {
                     <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left border-collapse min-w-[600px]">
                             <thead>
+                                {(treinoStatus === 'in_progress' || treinoStatus === 'completed') && (
+                                  <tr>
+                                    <th colSpan={6} />
+                                    <th
+                                      colSpan={3}
+                                      className="text-center text-[9px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 border-l-2 border-blue-200 px-2 py-1"
+                                    >
+                                      Dados do Aluno
+                                    </th>
+                                    <th />
+                                  </tr>
+                                )}
                                 <tr className="text-xs text-neutral-400 font-bold uppercase border-b border-neutral-100">
-                                    <th className="p-2 w-[25%]">Carga</th>
-                                    <th className="p-2 w-[12%]">Séries</th>
-                                    <th className="p-2 w-[12%]">Reps</th>
-                                    <th className="p-2 w-[12%]">RPE</th>
-                                    <th className="p-2 w-[25%]">Equipamento</th>
-                                    <th className="p-2 w-[14%]">PR</th>
+                                    <th className="p-2 w-[18%]">Carga</th>
+                                    <th className="p-2 w-[9%]">Séries</th>
+                                    <th className="p-2 w-[9%]">Reps</th>
+                                    <th className="p-2 w-[9%]">RPE</th>
+                                    <th className="p-2 w-[18%]">Equipamento</th>
+                                    <th className="p-2 w-[9%]">PR</th>
+                                    {(treinoStatus === 'in_progress' || treinoStatus === 'completed') && (
+                                      <>
+                                        <th className="p-2 w-[10%] text-blue-500 border-l-2 border-blue-200">Carga Real</th>
+                                        <th className="p-2 w-[9%] text-blue-500">RPE Real</th>
+                                        <th className="p-2 w-[7%] text-blue-500">Feito</th>
+                                      </>
+                                    )}
                                     <th className="p-2 w-10"></th>
                                 </tr>
                             </thead>
@@ -334,6 +371,19 @@ export default function EditWorkoutPage() {
                                         <td className="p-2"><input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} /></td>
                                         <td className="p-2"><input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} /></td>
                                         <td className="p-2 text-center text-xs font-mono text-neutral-500">{section.pr || "-"}</td>
+                                        {(treinoStatus === 'in_progress' || treinoStatus === 'completed') && (
+                                          <>
+                                            <td className="p-2 text-center text-sm font-semibold text-blue-700 border-l-2 border-blue-100">
+                                              {section.actual_load != null ? `${section.actual_load}` : <span className="text-neutral-300">—</span>}
+                                            </td>
+                                            <td className="p-2 text-center text-sm font-semibold text-blue-700">
+                                              {section.actual_rpe != null ? section.actual_rpe : <span className="text-neutral-300">—</span>}
+                                            </td>
+                                            <td className="p-2 text-center text-base">
+                                              {section.feito ? '✅' : <span className="text-neutral-300">⬜</span>}
+                                            </td>
+                                          </>
+                                        )}
                                         <td className="p-2 text-center">
                                             <button type="button" onClick={() => handleRemoveSection(exIndex, secIndex)} className="text-neutral-300 hover:text-red-500 transition-colors"><X size={16}/></button>
                                         </td>
@@ -390,6 +440,19 @@ export default function EditWorkoutPage() {
                                             <input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} />
                                         </div>
                                     </div>
+
+                                    {(treinoStatus === 'in_progress' || treinoStatus === 'completed') && (
+                                      <div className="mt-2 pt-2 border-t border-blue-100 flex gap-4 text-sm">
+                                        <span className="text-neutral-400 text-xs uppercase font-bold">Real:</span>
+                                        <span className="text-blue-700 font-semibold">
+                                          {section.actual_load != null ? `${section.actual_load} ${section.load_unit || 'kg'}` : '—'}
+                                        </span>
+                                        <span className="text-blue-700 font-semibold">
+                                          {section.actual_rpe != null ? `RPE ${section.actual_rpe}` : '—'}
+                                        </span>
+                                        <span>{section.feito ? '✅' : '⬜'}</span>
+                                      </div>
+                                    )}
                                 </div>
                             );
                         })}
