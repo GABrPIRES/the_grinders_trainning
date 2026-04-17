@@ -11,45 +11,41 @@ export async function middleware(request: NextRequest) {
   const isCoachRoute = pathname.startsWith('/coach');
   const isAlunoRoute = pathname.startsWith('/aluno');
   const isLoginRoute = pathname === '/login';
+  const isRootRoute  = pathname === '/';
 
-  // 1. Se não tem token e tenta acessar rota protegida -> Login
+  // 1. Sem token: protege rotas privadas
   if (!token && (isAdminRoute || isCoachRoute || isAlunoRoute)) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 2. Se tem token, vamos verificar a integridade
+  // 2. Com token: verifica integridade e faz roteamento
   if (token) {
     try {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET_KEY);
       const { payload } = await jwtVerify(token, secret);
       const role = payload.role as string;
 
-      // Redirecionamento de segurança por Role
+      // Segurança por Role em rotas protegidas
       if (isAdminRoute && role !== 'admin') return redirectBasedOnRole(role, request);
       if (isCoachRoute && role !== 'personal') return redirectBasedOnRole(role, request);
       if (isAlunoRoute && role !== 'aluno') return redirectBasedOnRole(role, request);
 
-      // Se já está logado e tenta ir pro login, manda pro dashboard
-      if (isLoginRoute) {
+      // Usuário logado indo para /login ou / (landing page) → manda pro dashboard.
+      // Isso garante que o PWA (start_url="/") entre direto no dashboard.
+      if (isLoginRoute || isRootRoute) {
         return redirectBasedOnRole(role, request);
       }
 
     } catch (err) {
-      console.error("Erro de validação do JWT:", err);
-
-      // --- AQUI ESTÁ A CORREÇÃO DO LOOP ---
-      // Se o token for inválido, precisamos apagá-lo.
-      
-      // Se eu JÁ estou no login, NÃO redireciono (para evitar loop).
-      // Apenas apago o cookie e deixo a página carregar para o usuário tentar de novo.
-      if (isLoginRoute) {
+      // Token inválido ou expirado — limpa cookies
+      if (isLoginRoute || isRootRoute) {
+        // Já está numa rota pública: não redireciona (evita loop), apenas limpa
         const response = NextResponse.next();
         response.cookies.delete('jwt');
         response.cookies.delete('role');
         return response;
       }
 
-      // Se eu estou em outra página, aí sim mando pro login
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('jwt');
       response.cookies.delete('role');
