@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { 
-  ArrowLeft, Calendar, Plus, Dumbbell, 
+import {
+  ArrowLeft, Calendar, Plus, Dumbbell,
   MoreVertical, Edit, Trash2, Copy, X, Loader2,
-  ChevronRight, User, Layers
+  User, Layers, Bot, Eye, EyeOff, CheckCircle2, AlertTriangle
 } from "lucide-react";
+import AiReviewModal from "@/components/modals/AiReviewModal";
+import { coachReviewService } from "@/services/coachReviewService";
 
 // --- Interfaces ---
 interface Treino {
@@ -15,12 +17,18 @@ interface Treino {
   name: string;
   day?: string;
   description?: string;
+  status?: 'draft' | 'published' | 'in_progress' | 'completed';
+  has_pending_ai_suggestions?: boolean;
+  has_ai_observation?: boolean;
 }
+type PeriodizationGoal = 'overload' | 'maintenance' | 'deload';
+
 interface Week {
   id: string;
   week_number: number;
   start_date: string;
   end_date: string;
+  periodization_goal: PeriodizationGoal | null;
   treinos: Treino[];
 }
 // Interfaces para o dropdown de destino
@@ -34,6 +42,42 @@ export default function WeekDetailsPage() {
   const [week, setWeek] = useState<Week | null>(null);
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [reviewTreino, setReviewTreino] = useState<Treino | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [savingGoal, setSavingGoal] = useState(false);
+
+  const handlePublishToggle = async (treino: Treino, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPublishingId(treino.id);
+    try {
+      const result = await coachReviewService.publishTreino(treino.id);
+      setWeek((prev) =>
+        prev
+          ? { ...prev, treinos: prev.treinos.map((t) => t.id === treino.id ? { ...t, status: result.status } : t) }
+          : prev
+      );
+    } catch (err: any) {
+      alert(err.message || "Erro ao alterar status.");
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const handleGoalChange = async (goal: PeriodizationGoal) => {
+    if (!week) return;
+    setSavingGoal(true);
+    try {
+      await fetchWithAuth(`weeks/${week.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ week: { periodization_goal: goal } }),
+      });
+      setWeek((prev) => prev ? { ...prev, periodization_goal: goal } : prev);
+    } catch (err: any) {
+      alert(err.message || 'Erro ao salvar objetivo.');
+    } finally {
+      setSavingGoal(false);
+    }
+  };
 
   // --- Estados do Modal de Duplicação ---
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -214,8 +258,8 @@ export default function WeekDetailsPage() {
   return (
     <div className="max-w-4xl mx-auto pb-24 md:pb-8 text-neutral-800" onClick={() => setOpenMenuId(null)}>
       
-      {/* CABEÇALHO DA PÁGINA (Igual ao anterior) */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      {/* CABEÇALHO DA PÁGINA */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}`)} className="p-2 hover:bg-neutral-100 rounded-full text-neutral-500"><ArrowLeft size={24} /></button>
           <div>
@@ -226,36 +270,184 @@ export default function WeekDetailsPage() {
         <button onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}/week/${currentWeekId}/create`)} className="bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-red-800 transition-all shadow-md flex items-center gap-2 w-full md:w-auto justify-center"><Plus size={20} /> Novo Treino</button>
       </div>
 
+      {/* OBJETIVO DE PERIODIZAÇÃO */}
+      <div className="mb-5 bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
+        <p className="text-xs font-bold text-neutral-400 uppercase mb-3">Foco da Semana</p>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { value: 'overload',    label: 'Progressão de Carga', color: 'green'  },
+            { value: 'maintenance', label: 'Manter',              color: 'blue'   },
+            { value: 'deload',      label: 'Deload',              color: 'amber'  },
+          ] as { value: PeriodizationGoal; label: string; color: string }[]).map(({ value, label, color }) => {
+            const isActive = week.periodization_goal === value;
+            const colors: Record<string, string> = {
+              green: isActive
+                ? 'bg-green-600 text-white border-green-600'
+                : 'bg-white text-green-700 border-green-300 hover:bg-green-50',
+              blue: isActive
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50',
+              amber: isActive
+                ? 'bg-amber-500 text-white border-amber-500'
+                : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50',
+            };
+            return (
+              <button
+                key={value}
+                onClick={() => !isActive && handleGoalChange(value)}
+                disabled={savingGoal}
+                className={`px-4 py-2 rounded-xl border font-bold text-sm transition-colors disabled:opacity-50 ${colors[color]}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+          {savingGoal && <span className="text-xs text-neutral-400 self-center">Salvando...</span>}
+          {!week.periodization_goal && (
+            <span className="text-xs text-neutral-400 self-center italic">Nenhum foco definido — a IA usará "Manter" como padrão.</span>
+          )}
+        </div>
+      </div>
+
+      {/* BANNER DE STATUS DA SEMANA */}
+      {week.treinos && week.treinos.length > 0 && (() => {
+        const draftWithAI = week.treinos.filter((t) => t.status === 'draft' && t.has_pending_ai_suggestions);
+        const draftWithoutAI = week.treinos.filter((t) => t.status === 'draft' && !t.has_pending_ai_suggestions);
+        const allPublished = week.treinos.every((t) => t.status !== 'draft');
+        if (allPublished) return (
+          <div className="mb-5 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800 font-medium">
+            <CheckCircle2 size={16} className="text-green-600" /> Todos os treinos estão publicados.
+          </div>
+        );
+        return (
+          <div className="mb-5 flex flex-wrap gap-2">
+            {draftWithAI.length > 0 && (
+              <span className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full">
+                <Bot size={12} /> {draftWithAI.length} revisão{draftWithAI.length > 1 ? 'ões' : ''} de IA pendente{draftWithAI.length > 1 ? 's' : ''}
+              </span>
+            )}
+            {draftWithoutAI.length > 0 && (
+              <span className="flex items-center gap-1.5 bg-neutral-100 border border-neutral-300 text-neutral-700 text-xs font-bold px-3 py-1.5 rounded-full">
+                <AlertTriangle size={12} className="text-neutral-500" /> {draftWithoutAI.length} treino{draftWithoutAI.length > 1 ? 's' : ''} aguardando publicação
+              </span>
+            )}
+          </div>
+        );
+      })()}
+
       {/* LISTA DE TREINOS (Cards) */}
       {week.treinos && week.treinos.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-           {week.treinos.map((treino) => (
-             <div key={treino.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm hover:shadow-md transition-all group relative cursor-pointer" onClick={() => router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`)}>
-                <div className="flex justify-between items-start">
-                   <div className="flex-1">
+           {week.treinos.map((treino) => {
+             const isDraft = treino.status === 'draft';
+             const hasAI = treino.has_pending_ai_suggestions;
+             const hasAIObs = treino.has_ai_observation;
+             const isPublishing = publishingId === treino.id;
+             const statusColors = {
+               draft: 'border-neutral-300 bg-white',
+               published: 'border-neutral-200 bg-white',
+               in_progress: 'border-amber-200 bg-amber-50/30',
+               completed: 'border-green-200 bg-green-50/20',
+             };
+             const cardBorder = statusColors[treino.status ?? 'published'];
+
+             return (
+             <div key={treino.id} className={`p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all group relative cursor-pointer ${cardBorder}`} onClick={() => router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`)}>
+                <div className="flex justify-between items-start gap-3">
+                   <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                         <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center border border-red-100"><Dumbbell size={20} /></div>
-                         <div>
-                            <h3 className="text-lg font-bold text-neutral-900 group-hover:text-red-700 transition-colors">{treino.name}</h3>
+                         <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center border border-red-100 flex-shrink-0"><Dumbbell size={20} /></div>
+                         <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                              <h3 className="text-base font-bold text-neutral-900 group-hover:text-red-700 transition-colors truncate">{treino.name}</h3>
+                              {/* Status badge */}
+                              {treino.status === 'draft' && !hasAI && !hasAIObs && (
+                                <span className="text-[10px] font-bold bg-neutral-100 text-neutral-600 border border-neutral-300 px-2 py-0.5 rounded-full whitespace-nowrap">Rascunho</span>
+                              )}
+                              {treino.status === 'draft' && hasAI && (
+                                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                                  <Bot size={9} /> Revisão IA
+                                </span>
+                              )}
+                              {treino.status === 'draft' && !hasAI && hasAIObs && (
+                                <span className="text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                                  <Bot size={9} /> IA analisou
+                                </span>
+                              )}
+                              {treino.status === 'published' && (
+                                <span className="text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full whitespace-nowrap">Publicado</span>
+                              )}
+                              {treino.status === 'in_progress' && (
+                                <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap">Em andamento</span>
+                              )}
+                              {treino.status === 'completed' && (
+                                <span className="text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                                  <CheckCircle2 size={9} /> Concluído
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-neutral-500 font-medium uppercase tracking-wide">{treino.day ? formatDate(treino.day) : "Data não definida"}</p>
                          </div>
                       </div>
-                      {treino.description && <p className="text-sm text-neutral-600 pl-14 line-clamp-2">{treino.description}</p>}
+
+                      {/* Ações rápidas para treinos em rascunho */}
+                      {isDraft && (
+                        <div className="flex flex-wrap gap-2 mt-3 pl-13">
+                          {hasAI ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setReviewTreino(treino); }}
+                              className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+                            >
+                              <Bot size={12} /> Revisar sugestões da IA
+                            </button>
+                          ) : hasAIObs ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setReviewTreino(treino); }}
+                              className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <Bot size={12} /> Ver análise da IA
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => handlePublishToggle(treino, e)}
+                              disabled={isPublishing}
+                              className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+                            >
+                              {isPublishing ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
+                              Publicar treino
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {treino.status === 'published' && (
+                        <div className="flex gap-2 mt-3 pl-13">
+                          <button
+                            onClick={(e) => handlePublishToggle(treino, e)}
+                            disabled={isPublishing}
+                            className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {isPublishing ? <Loader2 size={12} className="animate-spin" /> : <EyeOff size={12} />}
+                            Despublicar
+                          </button>
+                        </div>
+                      )}
                    </div>
-                   <div className="relative">
+
+                   <div className="relative flex-shrink-0">
                       <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === treino.id ? null : treino.id); }} className="p-2 hover:bg-neutral-100 rounded-full text-neutral-400 hover:text-neutral-600 transition-colors z-10 relative"><MoreVertical size={20} /></button>
                       {openMenuId === treino.id && (
-                         <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-neutral-100 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                         <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-neutral-100 z-20 overflow-hidden">
                             <button onClick={(e) => { e.stopPropagation(); router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`); }} className="w-full text-left px-4 py-3 hover:bg-neutral-50 flex items-center gap-2 text-sm text-neutral-700 font-medium"><Edit size={16} /> Editar Treino</button>
                             <button onClick={(e) => { e.stopPropagation(); openDuplicateModal(treino); }} className="w-full text-left px-4 py-3 hover:bg-neutral-50 flex items-center gap-2 text-sm text-neutral-700 font-medium"><Copy size={16} /> Duplicar</button>
-                            <div className="h-px bg-neutral-100 my-0"></div>
+                            <div className="h-px bg-neutral-100" />
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteTreino(treino.id); }} className="w-full text-left px-4 py-3 hover:bg-red-50 flex items-center gap-2 text-sm text-red-600 font-medium"><Trash2 size={16} /> Excluir</button>
                          </div>
                       )}
                    </div>
                 </div>
              </div>
-           ))}
+           );
+           })}
         </div>
       ) : (
         <div className="bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-2xl p-12 text-center flex flex-col items-center">
@@ -263,6 +455,16 @@ export default function WeekDetailsPage() {
            <h3 className="text-lg font-bold text-neutral-700">Semana Vazia</h3>
            <button onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}/week/${currentWeekId}/create`)} className="text-red-700 font-bold hover:underline">Adicionar Treino Agora</button>
         </div>
+      )}
+
+      {/* MODAL DE REVISÃO DA IA */}
+      {reviewTreino && (
+        <AiReviewModal
+          treinoId={reviewTreino.id}
+          treinoName={reviewTreino.name}
+          onClose={() => setReviewTreino(null)}
+          onApproved={() => { setReviewTreino(null); window.location.reload(); }}
+        />
       )}
 
       {/* MODAL DE DUPLICAÇÃO AVANÇADA */}
