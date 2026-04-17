@@ -12,31 +12,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// 1. Configuração do Viewport (Trava o zoom e define cores do sistema)
+// 1. Configuração do Viewport
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // Evita aquele zoom chato ao clicar em inputs
+  maximumScale: 1,
   userScalable: false,
 };
 
 // 2. Metadados do PWA
 export const metadata: Metadata = {
   title: "The Grinders Training",
-  description: "Sistema de treino para coaches e alunos",
+  description: "Plataforma oficial de treino The Grinders Powerlifting.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/icons/icon-192x192.png", // Importante para iOS
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Grinders",
+    title: "The Grinders",
   },
   formatDetection: {
     telephone: false,
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
   },
 };
 
