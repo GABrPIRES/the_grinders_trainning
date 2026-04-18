@@ -66,6 +66,36 @@ export async function signup(data: any) {
   return res.json();
 }
 
+export async function forgotPassword(email: string) {
+  const res = await fetch(`${API_URL}/auth/forgot_password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Erro ao solicitar redefinição de senha');
+  }
+
+  return res.json();
+}
+
+export async function resetPassword(token: string, password: string, passwordConfirmation: string) {
+  const res = await fetch(`${API_URL}/auth/reset_password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password, password_confirmation: passwordConfirmation }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Erro ao redefinir senha');
+  }
+
+  return res.json();
+}
+
 export async function verifyEmail(token: string) {
   const res = await fetch(`${API_URL}/auth/verify_email`, {
     method: 'POST',
