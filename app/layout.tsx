@@ -49,16 +49,18 @@ export const metadata: Metadata = {
 };
 
 // Script inline que roda ANTES da hidratação para evitar flash de tema errado.
-// Lê a preferência salva no localStorage; se não houver, usa a do sistema operacional.
+// Padrão: dark mode (app original era sempre escuro).
+// Só aplica light se o usuário explicitamente escolheu light.
 const themeScript = `
 (function() {
   try {
     var saved = localStorage.getItem('tg-theme');
-    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (saved === 'dark' || (!saved && prefersDark)) {
+    if (saved !== 'light') {
       document.documentElement.classList.add('dark');
     }
-  } catch (e) {}
+  } catch (e) {
+    document.documentElement.classList.add('dark');
+  }
 })();
 `;
 
