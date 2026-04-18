@@ -1,5 +1,6 @@
 /* app/globals.css */
 @import "tailwindcss";
+@config "../tailwind.config.ts";
 
 /* ===========================
    DESIGN TOKENS — THE GRINDERS
@@ -18,8 +19,8 @@
   --tg-bg-page:            250 250 250;
   --tg-bg-subtle:          245 245 245;
   --tg-bg-elevated:        255 255 255;
-  --tg-bg-sidebar:         10 10 10;
-  --tg-bg-sidebar-hover:   38 38 38;
+  --tg-bg-sidebar:         255 255 255;  /* branco no light mode */
+  --tg-bg-sidebar-hover:   245 245 245;  /* hover suave */
 
   /* Text */
   --tg-text-primary:       23 23 23;
@@ -27,7 +28,7 @@
   --tg-text-tertiary:      115 115 115;
   --tg-text-muted:         163 163 163;
   --tg-text-on-brand:      255 255 255;
-  --tg-text-sidebar:       212 212 212;
+  --tg-text-sidebar:       23 23 23;    /* texto escuro no light mode */
 
   /* Borders */
   --tg-border:             229 229 229;

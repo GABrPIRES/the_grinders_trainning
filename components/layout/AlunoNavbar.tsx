@@ -38,13 +38,23 @@ export default function AlunoSidebar() {
   return (
     <div className="sidebar-hide-scroll w-64 h-screen bg-surface-sidebar text-content-sidebar flex flex-col justify-between">
       <div>
-        <div className="text-center py-6 border-b border-line/30">
+        <div className="text-center py-6 border-b border-line">
+          {/* Logo branca — dark mode */}
           <Image
             src="/images/logo-the-grinders-2-removebg-preview.png"
             alt="Logo The Grinders"
             width={250}
             height={50}
-            className="mx-auto"
+            className="mx-auto hidden dark:block"
+            priority
+          />
+          {/* Logo escura — light mode */}
+          <Image
+            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            alt="Logo The Grinders"
+            width={250}
+            height={50}
+            className="mx-auto block dark:hidden"
             priority
           />
         </div>

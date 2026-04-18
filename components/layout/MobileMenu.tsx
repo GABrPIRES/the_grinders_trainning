@@ -124,7 +124,7 @@ export default function MobileMenu() {
                 href={item.href}
                 className={`inline-flex flex-col items-center justify-center px-1 group ${active ? 'text-brand' : 'text-content-sidebar'}`}
               >
-                <Icon size={22} className={`mb-1 transition-transform group-active:scale-90 ${active ? 'text-brand' : 'group-hover:text-content-primary'}`} />
+                <Icon size={22} className={`mb-1 transition-colors group-active:scale-90 ${active ? 'text-brand' : 'group-hover:text-brand'}`} />
                 <span className="text-[10px] font-medium truncate w-full text-center">{item.name}</span>
               </Link>
             );
