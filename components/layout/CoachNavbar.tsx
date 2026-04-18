@@ -19,15 +19,15 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const navItems = [
-  { label: 'Home', href: '/coach', icon: <Home size={18} /> },
-  { label: 'Profile', href: '/coach/profile', icon: <User size={18} /> },
-  { label: 'Students', href: '/coach/students', icon: <Users size={18} /> },
-  { label: 'Treinos', href: '/coach/treinos', icon: <Dumbbell size={18} /> },
-  { label: 'Payments', href: '/coach/payments', icon: <CreditCard size={18} /> },
-  { label: 'Plans', href: '/coach/plans', icon: <ClipboardList size={18} /> },
-  { label: 'Importar Treino', href: '/coach/import', icon: <Upload size={18} /> }, // Ou FileUp, etc.
-  { label: 'Settings', href: '/coach/settings', icon: <Settings size={18} /> },
-  { label: 'Help', href: '/coach/help', icon: <HelpCircle size={18} /> },
+  { label: 'Home',           href: '/coach',          icon: <Home size={18} /> },
+  { label: 'Perfil',         href: '/coach/profile',  icon: <User size={18} /> },
+  { label: 'Alunos',         href: '/coach/students', icon: <Users size={18} /> },
+  { label: 'Treinos',        href: '/coach/treinos',  icon: <Dumbbell size={18} /> },
+  { label: 'Pagamentos',     href: '/coach/payments', icon: <CreditCard size={18} /> },
+  { label: 'Planos',         href: '/coach/plans',    icon: <ClipboardList size={18} /> },
+  { label: 'Importar Treino',href: '/coach/import',   icon: <Upload size={18} /> },
+  { label: 'Configurações',  href: '/coach/settings', icon: <Settings size={18} /> },
+  { label: 'Ajuda',          href: '/coach/help',     icon: <HelpCircle size={18} /> },
 ];
 
 export default function CoachSidebar() {
@@ -40,37 +40,33 @@ export default function CoachSidebar() {
   };
 
   return (
-    <div className="sidebar-hide-scroll w-64 h-screen bg-black text-white flex flex-col justify-between">
+    <div className="sidebar-hide-scroll w-64 h-screen bg-surface-sidebar text-content-sidebar flex flex-col justify-between">
       <div>
-        {/* Logo */}
-        <div className="text-center py-6 border-b border-gray-700">
-            <Image
-                src="/images/logo-the-grinders-2-removebg-preview.png"
-                alt="Logo The Grinders"
-                width={250}
-                height={50}
-                className="mx-auto"
-                priority
-            />
+        <div className="text-center py-6 border-b border-line/30">
+          <Image
+            src="/images/logo-the-grinders-2-removebg-preview.png"
+            alt="Logo The Grinders"
+            width={250}
+            height={50}
+            className="mx-auto"
+            priority
+          />
         </div>
-
-        {/* Menu */}
-        <nav className="mt-6 space-y-2 px-4">
+        <nav className="mt-6 space-y-1 px-4">
           {navItems.map((item) => {
             const isHome = item.href === '/coach';
-            
-            const isActive = isHome 
-                ? pathname === item.href 
-                : pathname?.startsWith(item.href);
+            const isActive = isHome
+              ? pathname === item.href
+              : pathname?.startsWith(item.href);
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md transition font-medium ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors font-medium text-sm ${
                   isActive
-                    ? 'bg-red-700 text-white'
-                    : 'hover:bg-gray-800 text-gray-300'
+                    ? 'bg-brand text-content-on-brand'
+                    : 'text-content-sidebar hover:bg-surface-sidebar-hover'
                 }`}
               >
                 {item.icon}
@@ -80,15 +76,13 @@ export default function CoachSidebar() {
           })}
         </nav>
       </div>
-
-      {/* Logout */}
       <div className="px-4 pb-6">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 text-gray-400 cursor-pointer hover:text-red-600 w-full"
+          className="flex items-center gap-3 text-content-tertiary cursor-pointer hover:text-brand transition-colors w-full text-sm"
         >
           <LogOut size={18} />
-          <span>Log out</span>
+          <span>Sair</span>
         </button>
       </div>
     </div>

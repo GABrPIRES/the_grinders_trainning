@@ -1,88 +1,148 @@
 /* app/globals.css */
 @import "tailwindcss";
 
+/* ===========================
+   DESIGN TOKENS — THE GRINDERS
+   Edite aqui para mudar o tema inteiro.
+   Nunca use cores brutas do Tailwind nos componentes.
+=========================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --background: 0 0% 8%; /* 0 0% 100% para light mode */
-  --foreground: 0 0% 98%; /* 0 0% 9% para light mode */
+  /* Brand */
+  --tg-brand:              185 28 28;    /* #B91C1C — red-700 */
+  --tg-brand-hover:        153 27 27;    /* #991B1B — red-800 */
+  --tg-brand-glow:         220 38 38;    /* #DC2626 — red-600 */
+  --tg-brand-surface:      254 242 242;  /* #FEF2F2 — red-50  */
 
-  --card: 0 0% 12%;
-  --card-foreground: 0 0% 98%;
+  /* Backgrounds */
+  --tg-bg-app:             255 255 255;  /* #FFFFFF */
+  --tg-bg-page:            250 250 250;  /* #FAFAFA */
+  --tg-bg-subtle:          245 245 245;  /* #F5F5F5 */
+  --tg-bg-elevated:        255 255 255;  /* #FFFFFF — cards, modais */
+  --tg-bg-sidebar:         10 10 10;     /* #0A0A0A */
+  --tg-bg-sidebar-hover:   38 38 38;     /* #262626 */
 
-  --popover: 0 0% 10%;
-  --popover-foreground: 0 0% 98%;
+  /* Text */
+  --tg-text-primary:       23 23 23;     /* #171717 */
+  --tg-text-secondary:     82 82 82;     /* #525252 */
+  --tg-text-tertiary:      115 115 115;  /* #737373 */
+  --tg-text-muted:         163 163 163;  /* #A3A3A3 */
+  --tg-text-on-brand:      255 255 255;  /* #FFFFFF */
+  --tg-text-sidebar:       212 212 212;  /* #D4D4D4 */
 
-  --primary: 0 74% 42%; /* Vermelho The Grinders */
-  --primary-foreground: 0 0% 100%;
-  
-  --primary-glow: 0 84% 52%;
+  /* Borders */
+  --tg-border:             229 229 229;  /* #E5E5E5 */
+  --tg-border-input:       212 212 212;  /* #D4D4D4 */
 
-  --secondary: 0 0% 18%;
-  --secondary-foreground: 0 0% 98%;
+  /* Semantic — Success */
+  --tg-success-bg:         240 253 244;  /* green-50  */
+  --tg-success-text:       21 128 61;    /* green-700 */
+  --tg-success-border:     187 247 208;  /* green-200 */
 
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 65%;
+  /* Semantic — Warning */
+  --tg-warning-bg:         255 251 235;  /* amber-50  */
+  --tg-warning-text:       180 83 9;     /* amber-700 */
+  --tg-warning-border:     253 230 138;  /* amber-200 */
 
-  --accent: 0 74% 42%;
-  --accent-foreground: 0 0% 100%;
+  /* Semantic — Error */
+  --tg-error-bg:           254 242 242;  /* red-50    */
+  --tg-error-text:         220 38 38;    /* red-600   */
+  --tg-error-border:       254 202 202;  /* red-200   */
 
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
+  /* Semantic — Info */
+  --tg-info-bg:            239 246 255;  /* blue-50   */
+  --tg-info-text:          29 78 216;    /* blue-700  */
+  --tg-info-border:        191 219 254;  /* blue-200  */
 
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
-  --ring: 0 74% 42%;
-
-  --radius: 0.5rem;
+  /* Radius */
+  --tg-radius:             0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  /* Brand (vermelho mais vibrante no escuro) */
+  --tg-brand:              220 38 38;    /* red-600 */
+  --tg-brand-hover:        239 68 68;    /* red-500 */
+  --tg-brand-glow:         248 113 113;  /* red-400 */
+  --tg-brand-surface:      69 10 10;     /* red-950 adaptado */
+
+  /* Backgrounds */
+  --tg-bg-app:             10 10 10;     /* #0A0A0A */
+  --tg-bg-page:            23 23 23;     /* #171717 */
+  --tg-bg-subtle:          38 38 38;     /* #262626 */
+  --tg-bg-elevated:        38 38 38;     /* #262626 */
+  --tg-bg-sidebar:         0 0 0;        /* #000000 */
+  --tg-bg-sidebar-hover:   38 38 38;     /* #262626 */
+
+  /* Text */
+  --tg-text-primary:       250 250 250;  /* #FAFAFA */
+  --tg-text-secondary:     163 163 163;  /* #A3A3A3 */
+  --tg-text-tertiary:      115 115 115;  /* #737373 */
+  --tg-text-muted:         82 82 82;     /* #525252 */
+  --tg-text-on-brand:      255 255 255;  /* #FFFFFF */
+  --tg-text-sidebar:       163 163 163;  /* #A3A3A3 */
+
+  /* Borders */
+  --tg-border:             38 38 38;     /* #262626 */
+  --tg-border-input:       64 64 64;     /* #404040 */
+
+  /* Semantic — Success */
+  --tg-success-bg:         20 83 45;     /* green-800 */
+  --tg-success-text:       134 239 172;  /* green-300 */
+  --tg-success-border:     22 101 52;    /* green-700 */
+
+  /* Semantic — Warning */
+  --tg-warning-bg:         120 53 15;    /* amber-800 */
+  --tg-warning-text:       252 211 77;   /* amber-300 */
+  --tg-warning-border:     146 64 14;    /* amber-700 */
+
+  /* Semantic — Error */
+  --tg-error-bg:           127 29 29;    /* red-800   */
+  --tg-error-text:         252 165 165;  /* red-300   */
+  --tg-error-border:       153 27 27;    /* red-700   */
+
+  /* Semantic — Info */
+  --tg-info-bg:            30 58 138;    /* blue-800  */
+  --tg-info-text:          147 197 253;  /* blue-300  */
+  --tg-info-border:        29 78 216;    /* blue-700  */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===========================
+   SCROLLBAR
+=========================== */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
+}
+
+/* ===========================
+   UTILITIES
+=========================== */
 
 html, body {
   height: 100%;
   width: 100%;
-  overflow: hidden; /* O segredo: o corpo não rola, quem rola é a div interna */
+  overflow: hidden;
   margin: 0;
   padding: 0;
-}
-
-/* 2. Customização SUAVE para Windows (Não afeta Mac se não forçar webkit agressivo) */
-/* Isso deixa a barra fina no Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent; /* Cor cinza suave e fundo transparente */
-}
-
-/* Isso estiliza Chrome/Edge no Windows, mas tentaremos não quebrar o Mac */
-::-webkit-scrollbar {
-  width: 6px;     /* Barra bem fina */
-  height: 6px;    /* Para rolagem horizontal se houver */
-}
-
-::-webkit-scrollbar-track {
-  background: transparent; /* Fundo invisível */
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5); /* Cinza translúcido */
-  border-radius: 20px; /* Redondo */
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(107, 114, 128, 0.8); /* Mais escuro ao passar o mouse */
 }
 
 .perspective-1000 {
@@ -95,22 +155,19 @@ html, body {
 
 .backface-hidden {
   backface-visibility: hidden;
-  -webkit-backface-visibility: hidden; /* Importante para Safari/iOS */
+  -webkit-backface-visibility: hidden;
 }
 
-/* Garante que o verso do cartão fique espelhado corretamente */
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
 .sidebar-hide-scroll::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
 .sidebar-hide-scroll {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
-  overflow-y: auto;          /* Always allow vertical scrolling */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overflow-y: auto;
 }

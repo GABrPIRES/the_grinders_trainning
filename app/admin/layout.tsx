@@ -5,7 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50"> {/* TRAVA TELA INTEIRA */}
+    <div className="flex h-screen w-full overflow-hidden bg-surface-page">
       <AuthProvider>
         <SidebarWrapper>
           <AdminSidebar />

@@ -1,13 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Search, User, Calendar } from "lucide-react";
+import { Bell, User } from "lucide-react";
 import Image from 'next/image';
+import DarkModeToggle from './DarkModeToggle';
 
 export default function HeaderBar() {
   const pathname = usePathname();
 
-  // Função simples para mostrar onde o usuário está
   const getPageTitle = (path: string) => {
     if (path.includes("/treinos")) return "Gestão de Treinos";
     if (path.includes("/students") || path.includes("/alunos")) return "Meus Alunos";
@@ -18,61 +18,54 @@ export default function HeaderBar() {
     return "The Grinders";
   };
 
-  const currentDate = new Date().toLocaleDateString("pt-BR", { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
+  const currentDate = new Date().toLocaleDateString("pt-BR", {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
   });
 
   return (
-    // 'sticky top-0' mantém a barra fixa no topo enquanto a página rola
-    // 'pl-14' no mobile garante que o texto não fique embaixo do botão preto do menu
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white border-b border-neutral-200 px-6 py-3 shadow-sm transition-all md:pl-8">
-      
-      {/* Lado Esquerdo: Título da Página */}
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-surface-elevated border-b border-line px-6 py-3 shadow-sm transition-all md:pl-8">
+
+      {/* Esquerda: logo (mobile) ou título/data (desktop) */}
       <div className="flex w-full justify-between">
-        {/* Logo: Aparece no mobile (sm), some no desktop (md+) */}
         <div className="md:hidden">
-          <Image 
-            src="/images/logo_the_grinders_dark-removebg-preview.png" 
-            alt="Logo" 
-            width={120} 
-            height={40} 
-            priority 
+          <Image
+            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            alt="Logo"
+            width={120}
+            height={40}
+            priority
           />
         </div>
-
-        {/* Título e Data: Aparecem só no desktop (md+) e centralizados */}
         <div className="hidden md:flex flex-col items-start">
-          <h1 className="text-xl font-bold text-neutral-800 leading-tight">
+          <h1 className="text-xl font-bold text-content-primary leading-tight">
             {getPageTitle(pathname)}
           </h1>
-          <p className="text-xs text-neutral-500 capitalize">
+          <p className="text-xs text-content-secondary capitalize">
             {currentDate}
           </p>
         </div>
-
-        {/* Div vazia no mobile para empurrar a logo para a esquerda via justify-between */}
-        <div className="md:hidden w-[120px]"></div>
+        {/* Espaçador mobile */}
+        <div className="md:hidden w-[120px]" />
       </div>
 
-      {/* Lado Direito: Ações */}
-      <div className="flex items-center gap-3 sm:gap-5">
+      {/* Direita: ações */}
+      <div className="flex items-center gap-2 sm:gap-3">
+
+        <DarkModeToggle />
 
         {/* Notificações */}
-        <button className="relative p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors">
+        <button className="relative p-2 text-content-secondary hover:bg-surface-subtle rounded-full transition-colors">
           <Bell size={20} />
-          {/* Bolinha vermelha de notificação */}
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-600 border border-white"></span>
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand border-2 border-surface-elevated" />
         </button>
 
-        <div className="h-6 w-px bg-neutral-200 hidden sm:block"></div>
+        <div className="h-6 w-px bg-line hidden sm:block" />
 
-        {/* Mini Perfil */}
-        <div className="flex items-center gap-3">
-           <div className="h-9 w-9 rounded-full bg-red-700 text-white flex items-center justify-center border-2 border-white shadow-sm">
-              <User size={18} />
-           </div>
+        {/* Avatar */}
+        <div className="h-9 w-9 rounded-full bg-brand text-content-on-brand flex items-center justify-center border-2 border-surface-elevated shadow-sm">
+          <User size={18} />
         </div>
 
       </div>

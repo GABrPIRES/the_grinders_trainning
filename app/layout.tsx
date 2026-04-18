@@ -48,15 +48,32 @@ export const metadata: Metadata = {
   },
 };
 
+// Script inline que roda ANTES da hidratação para evitar flash de tema errado.
+// Lê a preferência salva no localStorage; se não houver, usa a do sistema operacional.
+const themeScript = `
+(function() {
+  try {
+    var saved = localStorage.getItem('tg-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface-app text-content-primary`}
       >
         {children}
       </body>
