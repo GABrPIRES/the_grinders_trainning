@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Info,
   AlertCircle,
+  X,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -103,6 +104,8 @@ export default function AlunoTreinoDetalhesPage() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [pausing, setPausing] = useState(false);
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false);
   const [error, setError] = useState('');
 
   // Per-section log state: sectionId → { actual_load, actual_rpe, feito }
@@ -188,6 +191,36 @@ export default function AlunoTreinoDetalhesPage() {
       setError(err.message || 'Erro ao finalizar treino.');
     } finally {
       setFinishing(false);
+    }
+  };
+
+  // ── Pause ──────────────────────────────────────────────────────────────────
+
+  const executePause = async (force: boolean) => {
+    if (!treino) return;
+    setPausing(true);
+    setError('');
+    setShowPauseConfirm(false);
+    try {
+      await treinoService.pause(treino.id, force);
+      await fetchTreino();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao cancelar treino.');
+    } finally {
+      setPausing(false);
+    }
+  };
+
+  const handlePause = async () => {
+    if (!treino) return;
+    // Check locally if there's any data entered in state
+    const hasLocalData = Object.values(sectionLogs).some(
+      (log) => log.feito || log.actual_load !== '' || log.actual_rpe !== '',
+    );
+    if (hasLocalData) {
+      setShowPauseConfirm(true);
+    } else {
+      await executePause(false);
     }
   };
 
@@ -585,17 +618,60 @@ export default function AlunoTreinoDetalhesPage() {
         ))}
       </div>
 
-      {/* ── Finish button (active mode) ────────────────────────────────────── */}
+      {/* ── Active treino bottom bar ───────────────────────────────────────── */}
       {isActive && (
-        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 p-4 bg-white border-t border-neutral-200 shadow-lg z-20 flex justify-center">
-          <button
-            onClick={handleFinish}
-            disabled={finishing}
-            className="w-full max-w-md flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-colors disabled:opacity-50 text-base"
-          >
-            <CheckCircle2 size={20} />
-            {finishing ? 'Finalizando...' : 'Finalizar Treino'}
-          </button>
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 p-4 bg-white border-t border-neutral-200 shadow-lg z-20">
+          <div className="flex gap-3 max-w-md mx-auto">
+            <button
+              onClick={handlePause}
+              disabled={pausing || finishing}
+              className="flex items-center justify-center gap-2 border border-neutral-300 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 font-bold px-4 py-4 rounded-2xl transition-colors disabled:opacity-50 whitespace-nowrap"
+              title="Cancelar início do treino"
+            >
+              <X size={18} />
+              {pausing ? 'Cancelando...' : 'Cancelar'}
+            </button>
+            <button
+              onClick={handleFinish}
+              disabled={finishing || pausing}
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-colors disabled:opacity-50 text-base"
+            >
+              <CheckCircle2 size={20} />
+              {finishing ? 'Finalizando...' : 'Finalizar Treino'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Pause confirmation modal ───────────────────────────────────────── */}
+      {showPauseConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertCircle size={24} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-neutral-900 text-base">Cancelar início do treino?</h3>
+                <p className="text-sm text-neutral-600 mt-1">
+                  Você já registrou dados neste treino. Ao cancelar, eles serão perdidos e o treino voltará para o estado disponível.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPauseConfirm(false)}
+                className="flex-1 border border-neutral-300 text-neutral-700 font-bold py-3 rounded-xl hover:bg-neutral-50 transition-colors"
+              >
+                Continuar treino
+              </button>
+              <button
+                onClick={() => executePause(true)}
+                disabled={pausing}
+                className="flex-1 bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {pausing ? 'Cancelando...' : 'Sim, cancelar'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

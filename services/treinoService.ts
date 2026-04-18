@@ -9,6 +9,13 @@ export const treinoService = {
     return await fetchWithAuth(`treinos/${treinoId}/finish`, { method: 'POST' });
   },
 
+  async pause(treinoId: string, force: boolean = false) {
+    return await fetchWithAuth(`treinos/${treinoId}/pause`, {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    });
+  },
+
   async logSection(sectionId: string, payload: { actual_load?: number | null; actual_rpe?: number | null; feito?: boolean }) {
     return await fetchWithAuth(`sections/${sectionId}/log`, {
       method: 'PUT',
