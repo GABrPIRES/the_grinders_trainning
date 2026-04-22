@@ -38,41 +38,43 @@ export default function StudentSettingsPage() {
     }
   };
 
+  const inputClass = "w-full border border-line-input bg-surface-elevated text-content-primary placeholder:text-content-muted p-2.5 rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all";
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6 text-neutral-800 pb-20 md:pb-0">
-      
+    <div className="max-w-3xl mx-auto space-y-6 text-content-primary pb-20 md:pb-0">
+
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">Configurações</h1>
-        <p className="text-neutral-500 text-sm">Segurança da conta e preferências.</p>
+        <h1 className="text-2xl font-bold text-content-primary">Configurações</h1>
+        <p className="text-content-tertiary text-sm">Segurança da conta e preferências.</p>
       </div>
 
       <div className="space-y-6">
-        
+
         {/* SEGURANÇA */}
-        <section className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-neutral-100 bg-neutral-50/50">
-             <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800">
-               <Shield size={20} className="text-red-700" /> Alterar Senha
+        <section className="bg-surface-elevated rounded-xl border border-line shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-line bg-surface-subtle">
+             <h2 className="text-lg font-bold flex items-center gap-2 text-content-primary">
+               <Shield size={20} className="text-brand" /> Alterar Senha
              </h2>
           </div>
-          
+
           <div className="p-6">
              <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <div>
-                   <label className="block text-sm font-medium mb-1 text-neutral-600">Senha Atual</label>
-                   <input type="password" name="current_password" value={passForm.current_password} onChange={handlePassChange} className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" required />
+                   <label className="block text-sm font-medium mb-1 text-content-secondary">Senha Atual</label>
+                   <input type="password" name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                       <label className="block text-sm font-medium mb-1 text-neutral-600">Nova Senha</label>
-                       <input type="password" name="password" value={passForm.password} onChange={handlePassChange} className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" required />
+                       <label className="block text-sm font-medium mb-1 text-content-secondary">Nova Senha</label>
+                       <input type="password" name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required />
                     </div>
                     <div>
-                       <label className="block text-sm font-medium mb-1 text-neutral-600">Confirmar Senha</label>
-                       <input type="password" name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className="w-full border border-neutral-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" required />
+                       <label className="block text-sm font-medium mb-1 text-content-secondary">Confirmar Senha</label>
+                       <input type="password" name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required />
                     </div>
                 </div>
-                <button type="submit" disabled={savingPassword} className="mt-2 bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-red-800 transition-colors flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center">
+                <button type="submit" disabled={savingPassword} className="mt-2 bg-brand text-content-on-brand font-bold py-2.5 px-6 rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center">
                     {savingPassword ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
                     Atualizar Senha
                 </button>
@@ -80,16 +82,16 @@ export default function StudentSettingsPage() {
           </div>
         </section>
 
-        {/* NOTIFICAÇÕES (Visual) */}
-        <section className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden p-6 flex items-center justify-between">
+        {/* NOTIFICAÇÕES */}
+        <section className="bg-surface-elevated rounded-xl border border-line shadow-sm overflow-hidden p-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-50 text-red-700 rounded-lg"><Bell size={20}/></div>
+                <div className="p-2 bg-brand/10 text-brand rounded-lg"><Bell size={20}/></div>
                 <div>
-                    <p className="font-semibold text-neutral-800">Notificações de Treino</p>
-                    <p className="text-xs text-neutral-500">Receba lembretes e mensagens do coach (Em breve).</p>
+                    <p className="font-semibold text-content-primary">Notificações de Treino</p>
+                    <p className="text-xs text-content-tertiary">Receba lembretes e mensagens do coach (Em breve).</p>
                 </div>
             </div>
-            <button onClick={() => setNotifications(!notifications)} className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${notifications ? 'bg-red-700' : 'bg-neutral-300'}`}>
+            <button onClick={() => setNotifications(!notifications)} className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${notifications ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}>
                 <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${notifications ? 'translate-x-6' : 'translate-x-0'}`}></div>
             </button>
         </section>

@@ -14,7 +14,7 @@ import {
   TrendingUp,
   ClipboardList,
 } from "lucide-react";
-import { parseISO, isWithinInterval } from "date-fns"; // Mantido apenas para lógica
+import { parseISO, isWithinInterval } from "date-fns";
 import WeeklyFeedbackModal from "@/components/modals/WeeklyFeedbackModal";
 
 interface DashboardData {
@@ -33,21 +33,47 @@ interface PendingFeedback {
   week_id?: string;
 }
 
-function ShortcutCard({ title, subtitle, icon, href, colorClass, router }: any) {
+function ShortcutCard({ title, subtitle, icon, href, accentClass, router }: any) {
   return (
     <button
       onClick={() => router.push(href)}
-      className={`flex items-center p-4 bg-white border border-neutral-200 rounded-xl shadow-sm hover:shadow-md transition-all text-left group ${colorClass}`}
+      className={`flex items-center p-4 bg-surface-elevated border border-line rounded-xl shadow-sm hover:shadow-md transition-all text-left group ${accentClass}`}
     >
-      <div className="p-3 rounded-full bg-neutral-50 group-hover:bg-white transition-colors">
+      <div className="p-3 rounded-full bg-surface-subtle group-hover:bg-surface-elevated transition-colors flex-shrink-0">
         {icon}
       </div>
       <div className="ml-4">
-        <h3 className="font-bold text-neutral-800">{title}</h3>
-        <p className="text-xs text-neutral-500">{subtitle}</p>
+        <h3 className="font-bold text-content-primary">{title}</h3>
+        <p className="text-xs text-content-tertiary">{subtitle}</p>
       </div>
-      <ArrowRight className="ml-auto text-neutral-300 group-hover:text-current transition-colors" size={20} />
+      <ArrowRight className="ml-auto text-content-muted group-hover:text-current transition-colors" size={20} />
     </button>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="p-4 md:p-6 max-w-5xl mx-auto animate-pulse space-y-8 pb-24">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-2">
+          <div className="h-9 bg-surface-subtle rounded-lg w-48"></div>
+          <div className="h-4 bg-surface-subtle rounded w-40"></div>
+        </div>
+        <div className="h-8 bg-surface-subtle rounded-full w-44"></div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 h-64 bg-surface-subtle rounded-2xl"></div>
+        <div className="h-48 bg-surface-subtle rounded-xl"></div>
+      </div>
+      <div className="space-y-4">
+        <div className="h-6 bg-surface-subtle rounded w-36"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 bg-surface-subtle rounded-xl"></div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -76,59 +102,76 @@ export default function AlunoDashboardPage() {
     fetchData();
   }, []);
 
-  // --- CORREÇÃO DE DATA ---
-  // Usamos toLocaleDateString com UTC para garantir que a data não volte 1 dia
   const formatDate = (dateString: string) => {
     if (!dateString) return "Data não def.";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', { 
-      day: 'numeric', 
-      month: 'short', 
-      timeZone: 'UTC' // Força o uso da data UTC (original)
-    }).replace('.', ''); // Remove o ponto do mês abrev. (opcional)
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    }).replace('.', '');
   };
 
-  if (loading) return <div className="p-8 text-center animate-pulse">Carregando seu dashboard...</div>;
-  if (!data) return <div className="p-8 text-center text-red-600">Erro ao carregar dados.</div>;
+  if (loading) return <DashboardSkeleton />;
+
+  if (!data) return (
+    <div className="p-8 flex flex-col items-center justify-center text-center">
+      <AlertCircle size={48} className="text-content-muted mb-4" />
+      <h3 className="text-lg font-bold text-content-primary mb-1">Erro ao carregar dados</h3>
+      <p className="text-sm text-content-tertiary">Tente recarregar a página.</p>
+    </div>
+  );
+
+  const statusBadge = {
+    ativo: {
+      cls: 'bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border',
+      icon: <CheckCircle2 size={16} />,
+      label: 'Mensalidade em dia',
+    },
+    vencido: {
+      cls: 'bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border',
+      icon: <AlertCircle size={16} />,
+      label: 'Pagamento Pendente',
+    },
+    inativo: {
+      cls: 'bg-surface-subtle text-content-secondary border border-line',
+      icon: <AlertCircle size={16} />,
+      label: 'Sem Assinatura',
+    },
+  }[data.status_financeiro];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 text-neutral-800 pb-20">
-      
+    <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-8 text-content-primary pb-24 md:pb-6">
+
       {/* Cabeçalho de Boas-vindas */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Olá, {data.student_name.split(' ')[0]}!</h1>
-          <p className="text-neutral-500">Pronto para o treino de hoje?</p>
+          <h1 className="text-3xl font-bold text-content-primary">Olá, {data.student_name.split(' ')[0]}!</h1>
+          <p className="text-sm text-content-tertiary mt-1">Pronto para o treino de hoje?</p>
         </div>
-        
-        {/* Status Financeiro */}
-        <div className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${
-          data.status_financeiro === 'ativo' ? 'bg-green-100 text-green-700' : 
-          data.status_financeiro === 'vencido' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
-        }`}>
-          {data.status_financeiro === 'ativo' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {data.status_financeiro === 'ativo' ? 'Mensalidade em dia' : 
-           data.status_financeiro === 'vencido' ? 'Pagamento Pendente' : 'Sem Assinatura'}
+
+        <div className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${statusBadge.cls}`}>
+          {statusBadge.icon}
+          {statusBadge.label}
         </div>
       </div>
 
       {/* Formulário Semanal Pendente */}
       {pendingFeedback?.pending && pendingFeedback.week_id && (
-        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="bg-semantic-warning-bg border border-semantic-warning-border rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-100 rounded-xl flex-shrink-0">
-              <ClipboardList size={22} className="text-amber-700" />
+            <div className="p-2.5 bg-semantic-warning-border/30 rounded-xl flex-shrink-0">
+              <ClipboardList size={22} className="text-semantic-warning-text" />
             </div>
             <div>
-              <p className="font-bold text-amber-900">Formulário semanal pendente</p>
-              <p className="text-sm text-amber-700 mt-0.5">
+              <p className="font-bold text-content-primary">Formulário semanal pendente</p>
+              <p className="text-sm text-semantic-warning-text mt-0.5">
                 Você completou todos os treinos da semana! Preencha a avaliação para o coach ajustar sua próxima semana.
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowFeedbackModal(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover text-content-on-brand font-bold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
           >
             <ClipboardList size={16} />
             Preencher agora
@@ -147,43 +190,39 @@ export default function AlunoDashboardPage() {
         />
       )}
 
-      {/* 1. CARD DESTAQUE */}
+      {/* CARD DESTAQUE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna Esquerda */}
+        {/* Coluna Esquerda — Hero card */}
         <div className="lg:col-span-2 space-y-6">
-          
           {data.active_block ? (
             <div className="bg-gradient-to-br from-red-700 to-red-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
                 <Dumbbell size={150} />
               </div>
-
               <div className="relative z-10">
-                <p className="text-red-100 text-sm font-medium mb-1 uppercase tracking-wider">
+                <p className="text-red-100 text-xs font-bold uppercase tracking-wider mb-1">
                   {data.active_block.title}
                 </p>
-                
                 {data.current_week ? (
-                   <div className="mb-6">
-                     <h2 className="text-3xl font-bold mb-2">Semana {data.current_week.number}</h2>
-                     <p className="text-red-100 flex items-center gap-2">
-                       <Calendar size={18} />
-                       {formatDate(data.current_week.start_date)} - {formatDate(data.current_week.end_date)}
-                     </p>
-                   </div>
+                  <div className="mb-6">
+                    <h2 className="text-3xl font-bold mb-2">Semana {data.current_week.number}</h2>
+                    <p className="text-red-100 flex items-center gap-2 text-sm">
+                      <Calendar size={16} />
+                      {formatDate(data.current_week.start_date)} – {formatDate(data.current_week.end_date)}
+                    </p>
+                  </div>
                 ) : (
-                   <h2 className="text-2xl font-bold mb-6">Nenhuma semana ativa hoje</h2>
+                  <h2 className="text-2xl font-bold mb-6">Nenhuma semana ativa hoje</h2>
                 )}
-
                 {data.next_workout ? (
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                    <p className="text-red-100 text-xs uppercase mb-1">Próxima Sessão</p>
+                    <p className="text-red-100 text-xs font-bold uppercase mb-2">Próxima Sessão</p>
                     <div className="flex justify-between items-center">
                       <div>
                         <h3 className="text-xl font-bold">{data.next_workout.name}</h3>
-                        <p className="text-sm opacity-90">{formatDate(data.next_workout.day)}</p>
+                        <p className="text-sm opacity-80 mt-0.5">{formatDate(data.next_workout.day)}</p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => router.push(`/aluno/treinos/${data.next_workout!.id}`)}
                         className="bg-white text-red-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-red-50 transition-colors"
                       >
@@ -193,67 +232,68 @@ export default function AlunoDashboardPage() {
                   </div>
                 ) : (
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                    <p>Você completou todos os treinos agendados!</p>
+                    <p className="text-sm">Você completou todos os treinos agendados!</p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <div className="bg-neutral-100 p-8 rounded-2xl text-center border border-neutral-200">
-               <p className="text-neutral-500">Seu coach ainda não definiu um bloco de treinos.</p>
+            <div className="bg-surface-subtle p-8 rounded-2xl text-center border border-line">
+              <Dumbbell size={40} className="text-content-muted mx-auto mb-3" />
+              <p className="text-content-tertiary text-sm">Seu coach ainda não definiu um bloco de treinos.</p>
             </div>
           )}
         </div>
 
-        {/* Coluna Direita */}
+        {/* Coluna Direita — Resumo */}
         <div className="space-y-6">
-           <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
-              <h3 className="font-bold text-neutral-700 mb-4 flex items-center gap-2">
-                <TrendingUp size={20} className="text-blue-600"/>
-                Resumo do Bloco
-              </h3>
-              <div className="space-y-4">
-                 <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
-                    <span className="text-sm text-neutral-500">Treinos Realizados</span>
-                    <span className="text-xl font-bold text-neutral-800">{data.treinos_concluidos}</span>
-                 </div>
-                 <div className="flex justify-between items-center">
-                    <span className="text-sm text-neutral-500">Plano Atual</span>
-                    <span className="text-sm font-bold text-neutral-800 bg-neutral-100 px-2 py-1 rounded">{data.plano_nome}</span>
-                 </div>
+          <div className="bg-surface-elevated p-6 rounded-xl border border-line shadow-sm">
+            <h3 className="font-bold text-content-primary mb-4 flex items-center gap-2">
+              <TrendingUp size={20} className="text-brand" />
+              Resumo do Bloco
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-4 border-b border-line">
+                <span className="text-sm text-content-tertiary">Treinos Realizados</span>
+                <span className="text-2xl font-bold text-content-primary">{data.treinos_concluidos}</span>
               </div>
-           </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-content-tertiary">Plano Atual</span>
+                <span className="text-sm font-bold text-content-primary bg-surface-subtle px-2 py-1 rounded-lg">
+                  {data.plano_nome}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 2. ATALHOS */}
+      {/* ATALHOS */}
       <div>
-        <h2 className="text-xl font-bold mb-4 text-neutral-800">Acesso Rápido</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ShortcutCard 
-            title="Ver Treinos" 
-            subtitle="Seu programa completo" 
-            icon={<Dumbbell size={24} />} 
+        <h2 className="text-xl font-bold text-content-primary mb-4">Acesso Rápido</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ShortcutCard
+            title="Ver Treinos"
+            subtitle="Seu programa completo"
+            icon={<Dumbbell size={22} className="text-brand" />}
             href="/aluno/treinos"
-            colorClass="hover:border-red-500 text-red-700"
+            accentClass="hover:border-brand"
             router={router}
           />
-          
-          <ShortcutCard 
-            title="Meu Coach" 
-            subtitle="Contato e infos" 
-            icon={<User size={24} />} 
+          <ShortcutCard
+            title="Meu Coach"
+            subtitle="Contato e informações"
+            icon={<User size={22} className="text-content-secondary" />}
             href="/aluno/coach"
-            colorClass="hover:border-blue-500 text-blue-700"
+            accentClass="hover:border-line-input"
             router={router}
           />
-
-          <ShortcutCard 
-            title="Financeiro" 
-            subtitle="Pagamentos e plano" 
-            icon={<CreditCard size={24} />} 
+          <ShortcutCard
+            title="Financeiro"
+            subtitle="Pagamentos e plano"
+            icon={<CreditCard size={22} className="text-content-secondary" />}
             href="/aluno/payment"
-            colorClass="hover:border-green-500 text-green-700"
+            accentClass="hover:border-line-input"
             router={router}
           />
         </div>

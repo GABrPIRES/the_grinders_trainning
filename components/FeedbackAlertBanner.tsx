@@ -30,15 +30,15 @@ export default function FeedbackAlertBanner() {
 
   return (
     <>
-      <div className="bg-amber-50 border-b border-amber-300 px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0">
+      <div className="bg-semantic-warning-bg border-b border-semantic-warning-border px-4 py-3 flex items-center justify-between gap-3 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <ClipboardList size={18} className="text-amber-600 flex-shrink-0" />
+          <ClipboardList size={18} className="text-semantic-warning-text flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-amber-900">
+            <p className="text-sm font-semibold text-content-primary">
               Você tem um formulário semanal para preencher!
             </p>
             {pending.incomplete_treinos && pending.incomplete_treinos.length > 0 && (
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-xs text-semantic-warning-text mt-0.5">
                 Treinos pendentes: <span className="font-medium">{pending.incomplete_treinos.join(', ')}</span>
               </p>
             )}
@@ -53,7 +53,7 @@ export default function FeedbackAlertBanner() {
           </button>
           <button
             onClick={() => setDismissed(true)}
-            className="text-amber-500 hover:text-amber-700 transition-colors"
+            className="text-semantic-warning-text hover:text-content-primary transition-colors"
             aria-label="Dispensar"
           >
             <X size={16} />
