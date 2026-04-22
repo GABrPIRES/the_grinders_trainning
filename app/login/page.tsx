@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import Cookies from "js-cookie";
+import DarkModeToggle from "@/components/layout/DarkModeToggle";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -40,6 +41,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-surface-app">
+      <div className="fixed top-4 right-4 z-50">
+        <DarkModeToggle />
+      </div>
 
       {/* Imagem — desktop */}
       <div className="hidden md:block relative w-1/2 h-screen">
@@ -59,7 +63,7 @@ export default function LoginPage() {
 
         <div className="flex justify-center mb-8">
           <Image
-            src="/images/logo-the-grinders-2-removebg-preview.png"
+            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
             alt="The Grinders Logo"
             width={280}
             height={50}

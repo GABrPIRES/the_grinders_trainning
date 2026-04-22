@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
 import { resetPassword } from "@/services/authService";
+import DarkModeToggle from "@/components/layout/DarkModeToggle";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -55,6 +56,9 @@ function ResetPasswordForm() {
 
   return (
     <div className="flex min-h-screen bg-surface-app">
+      <div className="fixed top-4 right-4 z-50">
+        <DarkModeToggle />
+      </div>
 
       {/* Imagem — desktop */}
       <div className="hidden md:block relative w-1/2 h-screen">
@@ -74,7 +78,7 @@ function ResetPasswordForm() {
 
         <div className="flex justify-center mb-8">
           <Image
-            src="/images/logo-the-grinders-2-removebg-preview.png"
+            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
             alt="The Grinders Logo"
             width={280}
             height={50}

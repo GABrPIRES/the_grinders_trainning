@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Loader2, Eye, EyeOff, User, Mail, Lock, Phone, Key, CheckCircle } from "lucide-react";
+import DarkModeToggle from "@/components/layout/DarkModeToggle";
 
 function SignupFormContent() {
   const searchParams = useSearchParams();
@@ -79,30 +80,30 @@ function SignupFormContent() {
   }
 
   return (
-    <div className="max-w-md w-full mx-auto space-y-5">
+    <div className="max-w-md w-full mx-auto space-y-4">
       <div className="flex justify-center">
         <Image
-          src="/images/logo-the-grinders-2-removebg-preview.png"
+          src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
           alt="The Grinders Logo"
-          width={280}
-          height={50}
+          width={240}
+          height={44}
           className="object-contain hidden dark:block"
         />
         <Image
           src="/images/logo_the_grinders_dark-removebg-preview.png"
           alt="The Grinders Logo"
-          width={280}
-          height={50}
+          width={240}
+          height={44}
           className="object-contain block dark:hidden"
         />
       </div>
 
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-content-primary">Criar conta</h1>
-        <p className="text-sm text-content-secondary mt-1">Preencha seus dados para começar.</p>
+        <h1 className="text-xl font-bold text-content-primary">Criar conta</h1>
+        <p className="text-sm text-content-secondary">Preencha seus dados para começar.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-3" onSubmit={handleSubmit}>
         <div className="relative">
           <User className="absolute left-3 top-3.5 text-content-muted" size={20} />
           <input
@@ -214,6 +215,9 @@ function SignupFormContent() {
 export default function SignupPage() {
   return (
     <div className="flex min-h-screen bg-surface-app">
+      <div className="fixed top-4 right-4 z-50">
+        <DarkModeToggle />
+      </div>
       <div className="hidden md:block relative w-1/2 h-screen">
         <Image
           src="/images/davi-cardoso.png"
@@ -225,7 +229,7 @@ export default function SignupPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 z-10 pointer-events-none" />
       </div>
-      <div className="w-full md:w-1/2 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12 bg-surface-page overflow-y-auto">
+      <div className="w-full md:w-1/2 flex flex-col justify-center px-8 sm:px-12 lg:px-20 py-8 bg-surface-page overflow-y-auto">
         <Suspense fallback={<div className="text-center"><Loader2 className="animate-spin mx-auto text-brand" /></div>}>
           <SignupFormContent />
         </Suspense>
