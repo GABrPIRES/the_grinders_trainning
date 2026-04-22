@@ -36,6 +36,15 @@ export default function HeaderBar() {
             width={120}
             height={40}
             priority
+            className="hidden dark:block"
+          />
+          <Image
+            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            alt="Logo"
+            width={120}
+            height={40}
+            priority
+            className="block dark:hidden"
           />
         </div>
         <div className="hidden md:flex flex-col items-start">
