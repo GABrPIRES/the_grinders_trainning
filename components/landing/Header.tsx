@@ -9,10 +9,10 @@ const Header = () => {
         {/* Logo - Agora usando a imagem completa */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/images/logo-the-grinders-2-removebg-preview.png" // Caminho para a logo que você já adicionou
+            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
             alt="The Grinders Logo"
-            width={140} // Tamanho ajustado para o cabeçalho
-            height={30} 
+            width={140}
+            height={30}
             className="object-contain"
           />
         </Link>

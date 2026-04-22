@@ -25,13 +25,13 @@ export default function HeaderBar() {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-surface-elevated border-b border-line px-6 py-3 shadow-sm transition-all md:pl-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-surface-sidebar border-b border-line px-6 py-3 shadow-sm transition-all md:pl-8 md:bg-surface-elevated">
 
       {/* Esquerda: logo (mobile) ou título/data (desktop) */}
       <div className="flex w-full justify-between">
         <div className="md:hidden">
           <Image
-            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
             alt="Logo"
             width={120}
             height={40}
