@@ -5,8 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import {
   ArrowLeft, User, Mail, Phone, Calendar,
-  Activity, AlertCircle, Dumbbell, Trophy, Edit, CreditCard,
+  Activity, AlertCircle, Dumbbell, Trophy, Edit,
+  PowerOff, Power, Loader2,
 } from "lucide-react";
+
+type AccountStatus = "ativo" | "inativo" | string;
 
 interface StudentDetails {
   id: string;
@@ -23,7 +26,7 @@ interface StudentDetails {
   pr_supino: number;
   pr_terra: number;
   pr_agachamento: number;
-  user: { name: string; email: string };
+  user: { name: string; email: string; status: AccountStatus };
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -64,9 +67,10 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 export default function StudentDetailsPage() {
   const { id } = useParams();
   const router  = useRouter();
-  const [student, setStudent] = useState<StudentDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [student, setStudent]   = useState<StudentDetails | null>(null);
+  const [loading, setLoading]   = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
     fetchWithAuth(`alunos/${id}`)
@@ -74,6 +78,24 @@ export default function StudentDetailsPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleToggleStatus = async () => {
+    if (!student) return;
+    const isAtivo  = student.user.status === "ativo";
+    const newStatus = isAtivo ? "inativo" : "ativo";
+    setToggling(true);
+    try {
+      await fetchWithAuth(`alunos/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ aluno: { status: newStatus } }),
+      });
+      setStudent(prev => prev ? { ...prev, user: { ...prev.user, status: newStatus } } : prev);
+    } catch (err) {
+      console.error("Erro ao alterar status:", err);
+    } finally {
+      setToggling(false);
+    }
+  };
 
   const formatDate = (d: string) =>
     d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
@@ -118,7 +140,18 @@ export default function StudentDetailsPage() {
             <ArrowLeft size={22} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-content-primary">{student.user.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-content-primary">{student.user.name}</h1>
+              {student.user.status === "inativo" ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border">
+                  Inativo
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border">
+                  Ativo
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 text-content-tertiary mt-0.5 text-sm">
               <Mail size={14} />
               <span>{student.user.email}</span>
@@ -126,7 +159,26 @@ export default function StudentDetailsPage() {
           </div>
         </div>
 
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex gap-3 w-full md:w-auto flex-wrap">
+          {/* Toggle ativo/inativo */}
+          <button
+            onClick={handleToggleStatus}
+            disabled={toggling}
+            className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50 ${
+              student.user.status === "ativo"
+                ? "bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border hover:bg-semantic-error-text hover:text-white"
+                : "bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border hover:bg-semantic-success-text hover:text-white"
+            }`}
+          >
+            {toggling
+              ? <Loader2 size={15} className="animate-spin" />
+              : student.user.status === "ativo"
+                ? <PowerOff size={15} />
+                : <Power size={15} />}
+            {toggling
+              ? "Aguarde..."
+              : student.user.status === "ativo" ? "Desativar" : "Reativar"}
+          </button>
           <button
             onClick={() => router.push(`/coach/payments/${student.id}`)}
             className="flex-1 md:flex-none px-4 py-2 bg-surface-elevated border border-line rounded-lg font-bold text-content-secondary hover:bg-surface-subtle hover:text-content-primary transition-colors text-sm"

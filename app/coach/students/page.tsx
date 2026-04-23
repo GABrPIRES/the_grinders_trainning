@@ -10,7 +10,7 @@ import {
 
 interface Student {
   id: string;
-  user: { name: string; email: string };
+  user: { name: string; email: string; status: string };
   pagamento: { vencimento: string | null; status: string | null };
   plano: { nome: string | null };
   treino_info: { proximo_treino: string | null; ultima_atualizacao: string | null };
@@ -190,19 +190,26 @@ export default function CoachStudentsPage() {
         <>
           {/* Mobile — cards */}
           <div className="grid grid-cols-1 gap-3 md:hidden">
-            {students.map(student => (
+            {students.map(student => {
+              const isInactive = student.user.status === "inativo";
+              return (
               <div
                 key={student.id}
                 onClick={() => router.push(`/coach/students/${student.id}`)}
-                className="bg-surface-elevated border border-line rounded-xl p-4 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
+                className={`bg-surface-elevated border rounded-xl p-4 shadow-sm active:scale-[0.98] transition-transform cursor-pointer ${isInactive ? "border-line opacity-60" : "border-line"}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-content-primary text-surface-app flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${isInactive ? "bg-surface-subtle text-content-muted" : "bg-content-primary text-surface-app"}`}>
                       {getInitials(student.user.name)}
                     </div>
                     <div>
-                      <p className="font-bold text-content-primary">{student.user.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-content-primary">{student.user.name}</p>
+                        {isInactive && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-surface-subtle text-content-muted border border-line">Inativo</span>
+                        )}
+                      </div>
                       <p className="text-xs text-content-tertiary">{student.user.email}</p>
                     </div>
                   </div>
@@ -219,7 +226,7 @@ export default function CoachStudentsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
 
           {/* Desktop — table */}
@@ -235,21 +242,28 @@ export default function CoachStudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {students.map(student => (
+                  {students.map(student => {
+                    const isInactive = student.user.status === "inativo";
+                    return (
                     <tr
                       key={student.id}
                       onClick={() => router.push(`/coach/students/${student.id}`)}
-                      className="hover:bg-surface-page transition-colors cursor-pointer group"
+                      className={`hover:bg-surface-page transition-colors cursor-pointer group ${isInactive ? "opacity-60" : ""}`}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-content-primary text-surface-app flex items-center justify-center font-bold text-xs flex-shrink-0">
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${isInactive ? "bg-surface-subtle text-content-muted" : "bg-content-primary text-surface-app"}`}>
                             {getInitials(student.user.name)}
                           </div>
                           <div>
-                            <p className="font-bold text-content-primary group-hover:text-brand transition-colors text-sm">
-                              {student.user.name}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-content-primary group-hover:text-brand transition-colors text-sm">
+                                {student.user.name}
+                              </p>
+                              {isInactive && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-surface-subtle text-content-muted border border-line">Inativo</span>
+                              )}
+                            </div>
                             <p className="text-xs text-content-tertiary">{student.user.email}</p>
                           </div>
                         </div>
@@ -280,7 +294,7 @@ export default function CoachStudentsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  );})}
                 </tbody>
               </table>
             </div>
