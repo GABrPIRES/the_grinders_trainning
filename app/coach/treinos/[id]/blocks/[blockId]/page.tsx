@@ -6,7 +6,7 @@ import { fetchWithAuth } from "@/lib/api";
 import {
   ArrowLeft, Calendar, Edit, Trash2,
   Dumbbell, Clock, AlertCircle, CheckCircle2,
-  MoreVertical, Copy, Bot, Eye, X, Save, Loader2, Plus,
+  MoreVertical, Copy, Bot, Eye, X, Save, Loader2, Plus, User,
 } from "lucide-react";
 import DuplicateWeekModal from "@/components/modals/DuplicateWeekModal";
 import WeekAiReviewModal from "@/components/modals/WeekAiReviewModal";
@@ -77,6 +77,13 @@ export default function BlockDetailsPage() {
 
   const [duplicateWeek, setDuplicateWeek] = useState<{ id: string; number: number } | null>(null);
   const [aiReviewWeek, setAiReviewWeek] = useState<{ id: string; number: number } | null>(null);
+
+  // Duplicate block modal
+  const [duplicatingBlock, setDuplicatingBlock] = useState(false);
+  const [blockDupOpen, setBlockDupOpen] = useState(false);
+  const [blockDupTitle, setBlockDupTitle] = useState("");
+  const [blockDupAlunoId, setBlockDupAlunoId] = useState("");
+  const [blockDupStudents, setBlockDupStudents] = useState<{ id: string; name: string }[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [addingWeek, setAddingWeek] = useState(false);
   const [editingWeek, setEditingWeek] = useState<Week | null>(null);
@@ -98,6 +105,36 @@ export default function BlockDetailsPage() {
     }
     loadBlock();
   }, [blockId]);
+
+  const openBlockDupModal = async () => {
+    setBlockDupTitle(`${block?.title || ''} (Cópia)`);
+    setBlockDupAlunoId(id as string);
+    if (blockDupStudents.length === 0) {
+      try {
+        const data = await fetchWithAuth("alunos?limit=100");
+        setBlockDupStudents((data.alunos || []).map((a: any) => ({ id: a.id, name: a.user.name })));
+      } catch (err) { console.error(err); }
+    }
+    setBlockDupOpen(true);
+  };
+
+  const handleDuplicateBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blockDupAlunoId) return;
+    setDuplicatingBlock(true);
+    try {
+      await fetchWithAuth(`training_blocks/${blockId}/duplicate`, {
+        method: 'POST',
+        body: JSON.stringify({ aluno_id: blockDupAlunoId, title: blockDupTitle }),
+      });
+      alert("Bloco duplicado com sucesso!");
+      setBlockDupOpen(false);
+    } catch (err: any) {
+      alert("Erro ao duplicar bloco: " + (err.message || ""));
+    } finally {
+      setDuplicatingBlock(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm("Tem certeza que deseja excluir este bloco? Isso apagará todas as semanas e treinos dele.")) return;
@@ -204,10 +241,16 @@ export default function BlockDetailsPage() {
             </div>
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex gap-2 w-full md:w-auto flex-wrap">
+            <button
+              onClick={openBlockDupModal}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated border border-line rounded-lg hover:bg-surface-subtle hover:text-brand transition-colors font-bold text-sm text-content-secondary"
+            >
+              <Copy size={15} /> Duplicar
+            </button>
             <button
               onClick={() => router.push(`/coach/treinos/${id}/blocks/${blockId}/edit`)}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-line rounded-lg hover:bg-surface-subtle transition-colors font-bold text-sm text-content-secondary"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-surface-elevated border border-line rounded-lg hover:bg-surface-subtle hover:text-content-primary transition-colors font-bold text-sm text-content-secondary"
             >
               <Edit size={15} /> Editar
             </button>
@@ -459,7 +502,7 @@ export default function BlockDetailsPage() {
         />
       )}
 
-      {/* Modal de Duplicação */}
+      {/* Modal de Duplicação de Semana */}
       {duplicateWeek && (
         <DuplicateWeekModal
           sourceWeekId={duplicateWeek.id}
@@ -470,6 +513,75 @@ export default function BlockDetailsPage() {
             setDuplicateWeek(null);
           }}
         />
+      )}
+
+      {/* Modal de Duplicar Bloco */}
+      {blockDupOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dup-block-title"
+        >
+          <div className="bg-surface-elevated rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-line">
+            <div className="p-5 border-b border-line flex justify-between items-center">
+              <h3 id="dup-block-title" className="font-bold text-content-primary flex items-center gap-2">
+                <Copy size={16} className="text-brand" /> Duplicar Bloco
+              </h3>
+              <button onClick={() => setBlockDupOpen(false)} className="text-content-muted hover:text-content-secondary transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleDuplicateBlock} className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-content-muted uppercase block mb-1">Aluno de Destino</label>
+                <select
+                  className="w-full border border-line-input rounded-lg px-3 py-2 bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none text-sm"
+                  value={blockDupAlunoId}
+                  onChange={e => setBlockDupAlunoId(e.target.value)}
+                  required
+                >
+                  <option value="">Selecione o aluno...</option>
+                  {blockDupStudents.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}{s.id === id ? " (mesmo aluno)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-content-muted uppercase block mb-1">Título do Bloco</label>
+                <input
+                  type="text"
+                  className="w-full border border-line-input rounded-lg px-3 py-2 bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none text-sm"
+                  value={blockDupTitle}
+                  onChange={e => setBlockDupTitle(e.target.value)}
+                  required
+                />
+              </div>
+              <p className="text-xs text-content-muted">
+                Todas as semanas e treinos serão copiados para o aluno selecionado.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setBlockDupOpen(false)}
+                  className="flex-1 py-2.5 bg-surface-subtle text-content-secondary font-bold rounded-xl hover:bg-surface-page transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={duplicatingBlock || !blockDupAlunoId}
+                  className="flex-1 py-2.5 bg-brand text-content-on-brand font-bold rounded-xl hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                >
+                  {duplicatingBlock ? <Loader2 size={15} className="animate-spin" /> : <Copy size={15} />}
+                  {duplicatingBlock ? 'Copiando...' : 'Duplicar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -105,7 +105,7 @@ export default function CoachStudentBlocksPage() {
         );
       default:
         return (
-          <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-surface-subtle text-content-muted border border-line">
+          <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border">
             <CheckCircle2 size={12} /> Concluído
           </span>
         );
@@ -177,11 +177,7 @@ export default function CoachStudentBlocksPage() {
               >
                 {/* Indicador lateral de status */}
                 <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full ${
-                  status === 'active'
-                    ? 'bg-semantic-success-text'
-                    : status === 'future'
-                    ? 'bg-semantic-info-text'
-                    : 'bg-line'
+                  status === 'completed' ? 'bg-semantic-success-text' : 'bg-brand'
                 }`} />
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pl-3">

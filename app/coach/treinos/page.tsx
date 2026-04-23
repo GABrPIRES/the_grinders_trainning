@@ -104,7 +104,7 @@ export default function CoachWorkoutsSelectionPage() {
             placeholder="Buscar aluno..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className={`${inputClass} pl-10`}
+            className="w-full pl-10 pr-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all text-content-primary bg-surface-app placeholder:text-content-tertiary text-sm"
           />
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">

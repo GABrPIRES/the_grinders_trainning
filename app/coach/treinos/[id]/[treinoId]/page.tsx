@@ -7,7 +7,7 @@ import { calculatePR } from "@/lib/calculatePR";
 import { fetchWithAuth } from "@/lib/api";
 import {
   ArrowLeft, Save, Loader2, Dumbbell, Calendar,
-  Trash2, Plus, AlertCircle, X, FileText,
+  Trash2, Plus, AlertCircle, X, FileText, Lock, CheckCircle2,
 } from "lucide-react";
 
 // --- Interfaces ---
@@ -57,6 +57,124 @@ function EditTreinoSkeleton() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── Read-only exercise table (in_progress / completed) ───────────────────────
+
+function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; showStudentData: boolean }) {
+  const visibleSections = exercise.sections.filter(s => !s.deleted);
+  return (
+    <div className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
+      {/* Título do exercício */}
+      <div className="px-5 pt-4 pb-3 border-b border-line flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-surface-subtle text-brand flex items-center justify-center border border-line flex-shrink-0">
+          <Dumbbell size={15} />
+        </div>
+        <h3 className="font-bold text-content-primary">{exercise.name}</h3>
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            {showStudentData && (
+              <tr>
+                <th colSpan={6} className="bg-surface-page border-b border-line px-3 py-1.5">
+                  <span className="text-[10px] font-bold text-content-muted uppercase tracking-wide">Prescrito</span>
+                </th>
+                <th colSpan={3} className="bg-semantic-info-bg border-b border-semantic-info-border border-l-2 border-l-semantic-info-border px-3 py-1.5 text-center">
+                  <span className="text-[10px] font-bold text-semantic-info-text uppercase tracking-wide">Realizado pelo Aluno</span>
+                </th>
+              </tr>
+            )}
+            <tr className="bg-surface-page border-b border-line text-xs text-content-muted font-bold uppercase">
+              <th className="px-3 py-2 w-[20%]">Carga</th>
+              <th className="px-3 py-2 w-[8%]">Sér.</th>
+              <th className="px-3 py-2 w-[8%]">Reps</th>
+              <th className="px-3 py-2 w-[8%]">RPE</th>
+              <th className="px-3 py-2 w-[20%]">Equipamento</th>
+              <th className="px-3 py-2 w-[8%]">1RM Est.</th>
+              {showStudentData && (
+                <>
+                  <th className="px-3 py-2 w-[12%] text-semantic-info-text border-l-2 border-semantic-info-border">Carga Real</th>
+                  <th className="px-3 py-2 w-[8%] text-semantic-info-text">RPE Real</th>
+                  <th className="px-3 py-2 w-[8%] text-semantic-info-text text-center">Feito</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {visibleSections.map(sec => (
+              <tr key={sec.id} className="hover:bg-surface-subtle/50">
+                <td className="px-3 py-3 font-bold text-content-primary text-sm">
+                  {sec.carga != null ? `${sec.carga} ${sec.load_unit || 'kg'}` : '—'}
+                </td>
+                <td className="px-3 py-3 text-sm text-content-secondary">{sec.series ?? '—'}</td>
+                <td className="px-3 py-3 text-sm text-content-secondary">{sec.reps ?? '—'}</td>
+                <td className="px-3 py-3 text-sm text-content-secondary">{sec.rpe ?? '—'}</td>
+                <td className="px-3 py-3 text-sm text-content-secondary">{sec.equip || '—'}</td>
+                <td className="px-3 py-3 text-xs font-bold text-content-muted">{sec.pr || '—'}</td>
+                {showStudentData && (
+                  <>
+                    <td className="px-3 py-3 font-bold text-semantic-info-text text-sm border-l-2 border-semantic-info-border/30">
+                      {sec.actual_load != null ? `${sec.actual_load} ${sec.load_unit || 'kg'}` : <span className="text-content-muted font-medium">—</span>}
+                    </td>
+                    <td className="px-3 py-3 font-bold text-semantic-info-text text-sm">
+                      {sec.actual_rpe != null ? sec.actual_rpe : <span className="text-content-muted font-medium">—</span>}
+                    </td>
+                    <td className="px-3 py-3 text-center text-base">
+                      {sec.feito ? '✅' : <span className="text-content-muted">⬜</span>}
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden divide-y divide-line">
+        {visibleSections.map((sec, i) => (
+          <div key={sec.id} className="px-4 py-3 space-y-2">
+            <p className="text-[10px] font-bold text-content-muted uppercase">Série {i + 1}</p>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <p className="text-[10px] font-bold text-content-muted uppercase mb-0.5">Carga</p>
+                <p className="font-bold text-content-primary">{sec.carga != null ? `${sec.carga} ${sec.load_unit || 'kg'}` : '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-content-muted uppercase mb-0.5">Sér. × Reps</p>
+                <p className="font-bold text-content-primary">{sec.series ?? '—'} × {sec.reps ?? '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-content-muted uppercase mb-0.5">RPE</p>
+                <p className="font-bold text-content-primary">{sec.rpe ?? '—'}</p>
+              </div>
+            </div>
+            {showStudentData && (
+              <div className="mt-2 pt-2 border-t border-semantic-info-border/40 grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-[10px] font-bold text-semantic-info-text uppercase mb-0.5">Carga Real</p>
+                  <p className="font-bold text-semantic-info-text">
+                    {sec.actual_load != null ? `${sec.actual_load} ${sec.load_unit || 'kg'}` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-semantic-info-text uppercase mb-0.5">RPE Real</p>
+                  <p className="font-bold text-semantic-info-text">{sec.actual_rpe ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-semantic-info-text uppercase mb-0.5">Feito</p>
+                  <p className="text-base">{sec.feito ? '✅' : '⬜'}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -119,7 +237,12 @@ export default function EditWorkoutPage() {
     loadWorkout();
   }, [treinoId]);
 
-  // --- Manipulação ---
+  // Status flags
+  const isDraft = treinoStatus === 'draft';
+  const isPublished = treinoStatus === 'published';
+  const isLocked = treinoStatus === 'in_progress' || treinoStatus === 'completed';
+
+  // --- Manipulação (apenas quando editável) ---
 
   const handleAddExercise = () =>
     setExercises(prev => [...prev, { id: uuid(), name: "", isNew: true, deleted: false, sections: [{ id: uuid(), isNew: true, deleted: false, carga: null, load_unit: 'kg', series: null, reps: null, equip: "", rpe: null, pr: null, feito: false }] }]);
@@ -191,6 +314,16 @@ export default function EditWorkoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Treino publicado: confirmar antes de salvar (apaga dados do aluno)
+    if (isPublished) {
+      if (!confirm(
+        "Este treino está publicado para o aluno.\n\nSalvar as alterações irá despublicar o treino e apagar todos os dados registrados pelo aluno (cargas reais, RPEs e marcações).\n\nDeseja continuar?"
+      )) {
+        return;
+      }
+    }
+
     setError("");
     setSaving(true);
     try {
@@ -242,13 +375,65 @@ export default function EditWorkoutPage() {
     "border border-line-input rounded px-2 py-2 w-full text-sm focus:ring-2 focus:ring-brand-glow outline-none bg-surface-app text-content-primary";
   const labelClass = "text-[10px] uppercase font-bold text-content-muted mb-1 block";
 
-  const isActive = treinoStatus === 'in_progress' || treinoStatus === 'completed';
-
   if (loading) return (
     <div className="max-w-5xl mx-auto pb-32 md:pb-8 p-4 md:p-0">
       <EditTreinoSkeleton />
     </div>
   );
+
+  // ─── VIEW: Treino em andamento ou concluído (Read-only) ───────────────────
+
+  if (isLocked) {
+    const isCompleted = treinoStatus === 'completed';
+    return (
+      <div className="max-w-5xl mx-auto pb-24 md:pb-8 text-content-primary">
+        {/* Cabeçalho */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.back()} className="p-2 hover:bg-surface-subtle rounded-lg text-content-secondary transition-colors">
+              <ArrowLeft size={22} />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-content-primary">{title || "Treino"}</h1>
+              <p className="text-sm text-content-tertiary hidden md:block">
+                {date ? new Date(date).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: 'long', year: 'numeric' }) : ""}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleDelete}
+            className="text-semantic-error-text flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-semantic-error-bg transition-colors font-bold text-sm"
+          >
+            <Trash2 size={15} /> Excluir Treino
+          </button>
+        </div>
+
+        {/* Banner de status */}
+        <div className={`flex items-start gap-3 rounded-xl px-4 py-3 mb-6 text-sm font-bold border ${
+          isCompleted
+            ? 'bg-semantic-success-bg border-semantic-success-border text-semantic-success-text'
+            : 'bg-semantic-warning-bg border-semantic-warning-border text-semantic-warning-text'
+        }`}>
+          <Lock size={16} className="flex-shrink-0 mt-0.5" />
+          <div>
+            <p>{isCompleted ? 'Treino concluído pelo aluno.' : 'Treino em andamento.'}</p>
+            <p className="font-medium mt-0.5 text-xs opacity-80">
+              Para editar, despublique o treino na lista de treinos da semana. Os dados registrados pelo aluno serão perdidos.
+            </p>
+          </div>
+        </div>
+
+        {/* Exercises read-only */}
+        <div className="space-y-4">
+          {exercises.filter(ex => !ex.deleted).map(ex => (
+            <ReadOnlyExercise key={ex.id} exercise={ex} showStudentData={true} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── VIEW: Treino editável (draft ou published) ───────────────────────────
 
   return (
     <div className="max-w-5xl mx-auto pb-32 md:pb-8 text-content-primary">
@@ -256,10 +441,7 @@ export default function EditWorkoutPage() {
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-surface-subtle rounded-lg text-content-secondary transition-colors"
-          >
+          <button onClick={() => router.back()} className="p-2 hover:bg-surface-subtle rounded-lg text-content-secondary transition-colors">
             <ArrowLeft size={22} />
           </button>
           <div>
@@ -267,10 +449,9 @@ export default function EditWorkoutPage() {
             <p className="text-sm text-content-tertiary hidden md:block">Gerencie os exercícios e cargas.</p>
           </div>
         </div>
-
         <button
           onClick={handleDelete}
-          className="text-semantic-error-text hover:text-semantic-error-text flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-semantic-error-bg transition-colors font-bold text-sm"
+          className="text-semantic-error-text flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-semantic-error-bg transition-colors font-bold text-sm"
         >
           <Trash2 size={15} /> Excluir Treino
         </button>
@@ -283,19 +464,19 @@ export default function EditWorkoutPage() {
         </div>
       )}
 
-      {isActive && (
-        <div className="bg-semantic-info-bg border border-semantic-info-border rounded-xl px-4 py-3 mb-4 text-sm text-semantic-info-text flex items-center gap-2">
+      {/* Banner de publicado */}
+      {isPublished && (
+        <div className="bg-semantic-warning-bg border border-semantic-warning-border rounded-xl px-4 py-3 mb-4 text-sm text-semantic-warning-text flex items-center gap-2">
           <FileText size={15} className="flex-shrink-0" />
           <span>
-            {treinoStatus === 'completed' ? 'Treino concluído pelo aluno.' : 'Treino em andamento.'}
-            {' '}As colunas <strong>Carga Real</strong> e <strong>RPE Real</strong> mostram o que o atleta registrou.
+            <strong>Treino publicado.</strong> Salvar alterações irá despublicar o treino e apagar os dados registrados pelo aluno.
           </span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Info do treino */}
+        {/* Info */}
         <div className="bg-surface-elevated p-5 rounded-xl border border-line shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-3">
             <label className="block text-sm font-bold mb-1 text-content-secondary flex items-center gap-2">
@@ -324,14 +505,14 @@ export default function EditWorkoutPage() {
           </div>
         </div>
 
-        {/* Lista de exercícios */}
+        {/* Exercícios */}
         <div className="space-y-6 md:pb-0 pb-12">
           {exercises.map((exercise, exIndex) => {
             if (exercise.deleted) return null;
             return (
               <div key={exercise.id} className="bg-surface-elevated p-5 rounded-xl border border-line shadow-sm relative group">
 
-                {/* Nome do exercício */}
+                {/* Nome */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1 mr-4">
                     <label className="block text-xs font-bold text-content-muted uppercase mb-1">Exercício {exIndex + 1}</label>
@@ -344,46 +525,23 @@ export default function EditWorkoutPage() {
                       required
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveExercise(exIndex)}
-                    className="text-content-muted hover:text-semantic-error-text p-2 hover:bg-semantic-error-bg rounded-lg transition-colors"
-                  >
+                  <button type="button" onClick={() => handleRemoveExercise(exIndex)} className="text-content-muted hover:text-semantic-error-text p-2 hover:bg-semantic-error-bg rounded-lg transition-colors">
                     <Trash2 size={18} />
                   </button>
                 </div>
 
-                {/* Desktop (tabela) */}
+                {/* Desktop table */}
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[600px]">
+                  <table className="w-full text-left border-collapse min-w-[560px]">
                     <thead>
-                      {isActive && (
-                        <tr>
-                          <th colSpan={6} />
-                          <th
-                            colSpan={3}
-                            className="text-center text-[9px] font-bold text-semantic-info-text uppercase tracking-wider bg-semantic-info-bg border-l-2 border-semantic-info-border px-2 py-1"
-                          >
-                            Dados do Aluno
-                          </th>
-                          <th />
-                        </tr>
-                      )}
                       <tr className="text-xs text-content-muted font-bold uppercase border-b border-line">
-                        <th className="p-2 w-[18%]">Carga</th>
+                        <th className="p-2 w-[20%]">Carga</th>
                         <th className="p-2 w-[9%]">Séries</th>
                         <th className="p-2 w-[9%]">Reps</th>
                         <th className="p-2 w-[9%]">RPE</th>
-                        <th className="p-2 w-[18%]">Equipamento</th>
-                        <th className="p-2 w-[9%]">PR</th>
-                        {isActive && (
-                          <>
-                            <th className="p-2 w-[10%] text-semantic-info-text border-l-2 border-semantic-info-border">Carga Real</th>
-                            <th className="p-2 w-[9%] text-semantic-info-text">RPE Real</th>
-                            <th className="p-2 w-[7%] text-semantic-info-text">Feito</th>
-                          </>
-                        )}
-                        <th className="p-2 w-10"></th>
+                        <th className="p-2 w-[22%]">Equipamento</th>
+                        <th className="p-2 w-[9%]">1RM Est.</th>
+                        <th className="p-2 w-8"></th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -393,8 +551,8 @@ export default function EditWorkoutPage() {
                           <tr key={section.id} className="border-b border-line/50 last:border-0 hover:bg-surface-subtle/50">
                             <td className="p-2">
                               <div className="flex gap-1">
-                                <input type="number" step="0.5" placeholder="0" className={inputClass} value={section.carga ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
-                                <select className="border border-line-input rounded px-1 text-xs bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none" value={section.load_unit || 'kg'} onChange={(e) => handleSectionChange(exIndex, secIndex, "load_unit", e.target.value)}>
+                                <input type="number" step="0.5" placeholder="0" className={inputClass} value={section.carga ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
+                                <select className="border border-line-input rounded px-1 text-xs bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none" value={section.load_unit || 'kg'} onChange={e => handleSectionChange(exIndex, secIndex, "load_unit", e.target.value)}>
                                   <option value="kg">kg</option>
                                   <option value="lb">lb</option>
                                   <option value="rir">RIR</option>
@@ -402,24 +560,11 @@ export default function EditWorkoutPage() {
                                 </select>
                               </div>
                             </td>
-                            <td className="p-2"><input type="number" placeholder="1" className={inputClass} value={section.series ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "series", e.target.value)} /></td>
-                            <td className="p-2"><input type="number" placeholder="1" className={inputClass} value={section.reps ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} /></td>
-                            <td className="p-2"><input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} /></td>
-                            <td className="p-2"><input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} /></td>
-                            <td className="p-2 text-center text-xs font-bold text-content-muted">{section.pr || "-"}</td>
-                            {isActive && (
-                              <>
-                                <td className="p-2 text-center text-sm font-bold text-semantic-info-text border-l-2 border-semantic-info-border/30">
-                                  {section.actual_load != null ? `${section.actual_load}` : <span className="text-content-muted">—</span>}
-                                </td>
-                                <td className="p-2 text-center text-sm font-bold text-semantic-info-text">
-                                  {section.actual_rpe != null ? section.actual_rpe : <span className="text-content-muted">—</span>}
-                                </td>
-                                <td className="p-2 text-center text-base">
-                                  {section.feito ? '✅' : <span className="text-content-muted">⬜</span>}
-                                </td>
-                              </>
-                            )}
+                            <td className="p-2"><input type="number" placeholder="1" className={inputClass} value={section.series ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "series", e.target.value)} /></td>
+                            <td className="p-2"><input type="number" placeholder="1" className={inputClass} value={section.reps ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} /></td>
+                            <td className="p-2"><input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} /></td>
+                            <td className="p-2"><input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} /></td>
+                            <td className="p-2 text-center text-xs font-bold text-content-muted">{section.pr || "—"}</td>
                             <td className="p-2 text-center">
                               <button type="button" onClick={() => handleRemoveSection(exIndex, secIndex)} className="text-content-muted hover:text-semantic-error-text transition-colors">
                                 <X size={15} />
@@ -432,26 +577,21 @@ export default function EditWorkoutPage() {
                   </table>
                 </div>
 
-                {/* Mobile (cards) */}
+                {/* Mobile cards */}
                 <div className="md:hidden space-y-3">
                   {exercise.sections.map((section, secIndex) => {
                     if (section.deleted) return null;
                     return (
                       <div key={section.id} className="bg-surface-subtle p-3 rounded-lg border border-line relative">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSection(exIndex, secIndex)}
-                          className="absolute top-2 right-2 text-content-muted hover:text-semantic-error-text p-1 transition-colors"
-                        >
+                        <button type="button" onClick={() => handleRemoveSection(exIndex, secIndex)} className="absolute top-2 right-2 text-content-muted hover:text-semantic-error-text p-1 transition-colors">
                           <X size={15} />
                         </button>
-
                         <div className="grid grid-cols-2 gap-3 pr-6">
                           <div>
                             <span className={labelClass}>Carga</span>
                             <div className="flex gap-1">
-                              <input type="number" step="0.5" placeholder="0" className={inputClass} value={section.carga ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
-                              <select className="border border-line-input rounded px-1 text-xs bg-surface-app h-[38px] text-content-primary" value={section.load_unit || 'kg'} onChange={(e) => handleSectionChange(exIndex, secIndex, "load_unit", e.target.value)}>
+                              <input type="number" step="0.5" placeholder="0" className={inputClass} value={section.carga ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "carga", e.target.value)} />
+                              <select className="border border-line-input rounded px-1 text-xs bg-surface-app h-[38px] text-content-primary" value={section.load_unit || 'kg'} onChange={e => handleSectionChange(exIndex, secIndex, "load_unit", e.target.value)}>
                                 <option value="kg">kg</option>
                                 <option value="lb">lb</option>
                                 <option value="rir">RIR</option>
@@ -462,33 +602,25 @@ export default function EditWorkoutPage() {
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <span className={labelClass}>Séries</span>
-                              <input type="number" placeholder="1" className={inputClass} value={section.series ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "series", e.target.value)} />
+                              <input type="number" placeholder="1" className={inputClass} value={section.series ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "series", e.target.value)} />
                             </div>
                             <div>
                               <span className={labelClass}>Reps</span>
-                              <input type="number" placeholder="1" className={inputClass} value={section.reps ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} />
+                              <input type="number" placeholder="1" className={inputClass} value={section.reps ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "reps", e.target.value)} />
                             </div>
                           </div>
                           <div>
                             <span className={labelClass}>RPE</span>
-                            <input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} />
+                            <input type="number" step="0.5" placeholder="-" className={inputClass} value={section.rpe ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "rpe", e.target.value)} />
                           </div>
                           <div>
                             <span className={labelClass}>Equip</span>
-                            <input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={(e) => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} />
+                            <input type="text" placeholder="-" className={inputClass} value={section.equip ?? ""} onChange={e => handleSectionChange(exIndex, secIndex, "equip", e.target.value)} />
                           </div>
                         </div>
-
-                        {isActive && (
-                          <div className="mt-2 pt-2 border-t border-semantic-info-border/30 flex gap-4 text-sm">
-                            <span className="text-content-muted text-xs uppercase font-bold">Real:</span>
-                            <span className="text-semantic-info-text font-bold">
-                              {section.actual_load != null ? `${section.actual_load} ${section.load_unit || 'kg'}` : '—'}
-                            </span>
-                            <span className="text-semantic-info-text font-bold">
-                              {section.actual_rpe != null ? `RPE ${section.actual_rpe}` : '—'}
-                            </span>
-                            <span>{section.feito ? '✅' : '⬜'}</span>
+                        {section.pr && (
+                          <div className="mt-2 text-xs text-center text-content-muted font-bold bg-surface-page rounded py-1">
+                            1RM Estimado: {section.pr}
                           </div>
                         )}
                       </div>
@@ -496,11 +628,7 @@ export default function EditWorkoutPage() {
                   })}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleAddSection(exercise.id)}
-                  className="mt-4 text-sm font-bold text-brand hover:text-brand-hover flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-surface-subtle w-full md:w-auto justify-center"
-                >
+                <button type="button" onClick={() => handleAddSection(exercise.id)} className="mt-4 text-sm font-bold text-brand hover:text-brand-hover flex items-center gap-1 transition-colors px-2 py-1 rounded hover:bg-surface-subtle w-full md:w-auto justify-center">
                   <Plus size={15} /> Adicionar Série
                 </button>
               </div>
@@ -508,23 +636,14 @@ export default function EditWorkoutPage() {
           })}
         </div>
 
-        {/* Ações flutuantes */}
+        {/* Ações */}
         <div className="fixed bottom-10 left-0 right-0 p-4 pb-8 bg-surface-elevated border-t border-line md:static md:bg-transparent md:border-0 md:p-0 flex flex-col md:flex-row gap-3 z-30 shadow-up md:shadow-none">
-          <button
-            type="button"
-            onClick={handleAddExercise}
-            className="w-full md:flex-1 py-3 border-2 border-dashed border-line rounded-xl text-content-muted font-bold hover:border-brand/40 hover:text-brand transition-all flex items-center justify-center gap-2"
-          >
+          <button type="button" onClick={handleAddExercise} className="w-full md:flex-1 py-3 border-2 border-dashed border-line rounded-xl text-content-muted font-bold hover:border-brand/40 hover:text-brand transition-all flex items-center justify-center gap-2">
             <Plus size={18} /> Novo Exercício
           </button>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full md:flex-1 py-3 bg-brand text-content-on-brand font-bold rounded-xl hover:bg-brand-hover transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className="w-full md:flex-1 py-3 bg-brand text-content-on-brand font-bold rounded-xl hover:bg-brand-hover transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50">
             {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-            {saving ? "Salvando..." : "Salvar Alterações"}
+            {saving ? "Salvando..." : isPublished ? "Salvar e Despublicar" : "Salvar Alterações"}
           </button>
         </div>
       </form>
