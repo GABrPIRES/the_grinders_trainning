@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { fetchWithAuth } from '@/lib/api';
-import { ArrowLeft, Trash, Save } from 'lucide-react';
+import { ArrowLeft, Trash2, Save, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface Pagamento {
   id: string;
@@ -14,19 +14,33 @@ interface Pagamento {
   aluno: { user: { name: string } };
 }
 
+function Skeleton() {
+  return (
+    <div className="animate-pulse space-y-6 max-w-lg mx-auto">
+      <div className="h-8 bg-surface-subtle rounded w-48"></div>
+      <div className="bg-surface-elevated border border-line rounded-xl p-6 space-y-4">
+        <div className="h-5 bg-surface-subtle rounded w-32"></div>
+        <div className="h-10 bg-surface-subtle rounded"></div>
+        <div className="h-10 bg-surface-subtle rounded"></div>
+        <div className="h-10 bg-surface-subtle rounded"></div>
+      </div>
+    </div>
+  );
+}
+
 export default function EditPaymentPage() {
   const router = useRouter();
   const { idAluno, idPagamento } = useParams();
-  
+
   const [payment, setPayment] = useState<Pagamento | null>(null);
   const [formData, setFormData] = useState({ amount: '', due_date: '' });
-  
-  // NOVO ESTADO: Data do pagamento (padrão: hoje)
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
-  
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [createNext, setCreateNext] = useState(true);
+
+  const inputClass = "w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all bg-surface-app text-content-primary text-sm";
 
   const fetchPayment = async () => {
     if (!idPagamento) return;
@@ -38,10 +52,7 @@ export default function EditPaymentPage() {
         amount: data.amount.toString(),
         due_date: new Date(data.due_date).toISOString().split('T')[0],
       });
-      // Se já estiver pago, preenche com a data real, senão mantém hoje
-      if (data.paid_at) {
-          setPaymentDate(new Date(data.paid_at).toISOString().split('T')[0]);
-      }
+      if (data.paid_at) setPaymentDate(new Date(data.paid_at).toISOString().split('T')[0]);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -49,46 +60,30 @@ export default function EditPaymentPage() {
     }
   };
 
-  useEffect(() => {
-    fetchPayment();
-  }, [idPagamento]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  useEffect(() => { fetchPayment(); }, [idPagamento]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     try {
       await fetchWithAuth(`pagamentos/${idPagamento}`, {
         method: 'PATCH',
-        body: JSON.stringify({
-          pagamento: {
-            amount: parseFloat(formData.amount),
-            due_date: formData.due_date,
-          },
-        }),
+        body: JSON.stringify({ pagamento: { amount: parseFloat(formData.amount), due_date: formData.due_date } }),
       });
-      alert('Pagamento atualizado com sucesso!');
       router.push(`/coach/payments/${idAluno}`);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleMarkAsPaid = async () => {
     try {
-      // CORREÇÃO: Agora enviamos o 'paid_at' escolhido pelo usuário
       await fetchWithAuth(`pagamentos/${idPagamento}?create_next=${createNext}`, {
         method: 'PATCH',
-        body: JSON.stringify({ 
-            pagamento: { 
-                status: 'pago',
-                paid_at: paymentDate // Envia a data selecionada
-            } 
-        }),
+        body: JSON.stringify({ pagamento: { status: 'pago', paid_at: paymentDate } }),
       });
-      alert('Pagamento conciliado com sucesso! ' + (createNext ? 'A próxima cobrança foi gerada.' : ''));
       router.push(`/coach/payments/${idAluno}`);
     } catch (err: any) {
       alert(err.message);
@@ -96,114 +91,152 @@ export default function EditPaymentPage() {
   };
 
   const handleUnmarkAsPaid = async () => {
-    if (window.confirm('Tem certeza que deseja desconciliar este pagamento? Ele voltará ao status "pendente".')) {
-      try {
-        await fetchWithAuth(`pagamentos/${idPagamento}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ pagamento: { status: 'pendente', paid_at: null } }),
-        });
-        alert('Pagamento revertido para "pendente".');
-        fetchPayment(); 
-      } catch (err: any) {
-        alert(err.message);
-      }
+    if (!window.confirm('Tem certeza que deseja desconciliar este pagamento? Ele voltará ao status "pendente".')) return;
+    try {
+      await fetchWithAuth(`pagamentos/${idPagamento}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ pagamento: { status: 'pendente', paid_at: null } }),
+      });
+      fetchPayment();
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
   const handleDelete = async () => {
     if (payment?.status === 'pago') {
-      alert('Você precisa desconciliar o pagamento antes de poder excluí-lo.');
+      alert('Desconcilie o pagamento antes de excluí-lo.');
       return;
     }
-    if (window.confirm('Tem certeza que deseja excluir este pagamento? A ação não pode ser desfeita.')) {
-      try {
-        await fetchWithAuth(`pagamentos/${idPagamento}`, { method: 'DELETE' });
-        alert('Pagamento excluído com sucesso!');
-        router.push(`/coach/payments/${idAluno}`);
-      } catch (err: any) {
-        alert(err.message);
-      }
+    if (!window.confirm('Tem certeza que deseja excluir este pagamento?')) return;
+    try {
+      await fetchWithAuth(`pagamentos/${idPagamento}`, { method: 'DELETE' });
+      router.push(`/coach/payments/${idAluno}`);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
-  if (loading) return <p className="p-6">Carregando...</p>;
-  if (error || !payment) return <p className="text-red-600 p-6">{error || "Pagamento não encontrado."}</p>;
+  if (loading) return <div className="max-w-lg mx-auto p-4 md:p-6 pb-24 text-content-primary"><Skeleton /></div>;
+  if (error || !payment) return (
+    <div className="max-w-lg mx-auto p-6 text-content-primary">
+      <p className="text-semantic-error-text">{error || 'Pagamento não encontrado.'}</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-lg mx-auto bg-white p-6 shadow rounded-md">
-      <div className="border-b pb-4 mb-6">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 mb-2">
-          <ArrowLeft size={16} />
-          Voltar para o histórico
+    <div className="max-w-lg mx-auto p-4 md:p-6 pb-24 md:pb-6 text-content-primary">
+
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={() => router.back()} className="p-2 hover:bg-surface-subtle rounded-lg transition-colors text-content-secondary">
+          <ArrowLeft size={20} />
         </button>
-        <h1 className="text-2xl font-bold text-gray-800">Detalhes do Pagamento</h1>
-        <p className="text-neutral-600">Aluno: {payment.aluno.user.name}</p>
+        <div>
+          <h1 className="text-xl font-bold text-content-primary">Detalhes do Pagamento</h1>
+          <p className="text-sm text-content-tertiary">Aluno: <span className="font-bold text-content-secondary">{payment.aluno.user.name}</span></p>
+        </div>
       </div>
 
       {payment.status === 'pago' ? (
-        <div className="space-y-4">
-          <p><strong>Status:</strong> <span className="text-green-600 font-bold">Pago</span></p>
-          <p><strong>Valor:</strong> R$ {payment.amount.toFixed(2).replace('.', ',')}</p>
-          <p><strong>Vencimento:</strong> {new Date(payment.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
-          {/* Exibe a data real do pagamento */}
-          <p><strong>Pago em:</strong> {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'}</p>
-          <button onClick={handleUnmarkAsPaid} className="w-full bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 mt-4">
+        /* View: pago */
+        <div className="bg-surface-elevated border border-line rounded-xl shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2 text-semantic-success-text mb-2">
+            <CheckCircle2 size={20} />
+            <span className="font-bold text-lg">Pago</span>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between border-b border-line pb-3">
+              <span className="text-content-tertiary font-bold">Valor</span>
+              <span className="font-bold text-content-primary">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(payment.amount)}
+              </span>
+            </div>
+            <div className="flex justify-between border-b border-line pb-3">
+              <span className="text-content-tertiary font-bold">Vencimento</span>
+              <span className="font-bold text-content-primary">{new Date(payment.due_date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-content-tertiary font-bold">Pago em</span>
+              <span className="font-bold text-semantic-success-text">
+                {payment.paid_at ? new Date(payment.paid_at).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleUnmarkAsPaid}
+            className="w-full mt-4 bg-semantic-warning-bg border border-semantic-warning-border text-semantic-warning-text py-2.5 rounded-xl font-bold hover:opacity-80 transition-opacity"
+          >
             Desconciliar Pagamento
           </button>
         </div>
       ) : (
-        <form onSubmit={handleUpdate} className="space-y-4">
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-neutral-700">Valor (R$)</label>
-            <input id="amount" type="number" name="amount" step="0.01" value={formData.amount} onChange={handleChange} className="mt-1 w-full border p-2 rounded text-neutral-600" required />
-          </div>
-          <div>
-            <label htmlFor="due_date" className="block text-sm font-medium text-neutral-700">Data de Vencimento</label>
-            <input id="due_date" type="date" name="due_date" value={formData.due_date} onChange={handleChange} className="mt-1 w-full border p-2 rounded text-neutral-600" required />
-          </div>
-          
-          <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2">
-            <Save size={16} /> Salvar Alterações
-          </button>
-
-          <hr className="my-4"/>
-
-          <div className="bg-gray-50 p-4 rounded-md space-y-3">
-            <h3 className="text-lg font-semibold text-center text-neutral-700">Conciliação</h3>
-            
-            {/* NOVO CAMPO: Data do Pagamento */}
+        /* View: pendente / atrasado */
+        <div className="space-y-4">
+          <form onSubmit={handleUpdate} className="bg-surface-elevated border border-line rounded-xl shadow-sm p-6 space-y-4">
+            <h2 className="font-bold text-content-primary mb-2">Dados do Pagamento</h2>
             <div>
-                <label htmlFor="paymentDate" className="block text-sm font-medium text-neutral-700 mb-1">Data do Pagamento</label>
-                <input 
-                  id="paymentDate" 
-                  type="date" 
-                  value={paymentDate} 
-                  onChange={(e) => setPaymentDate(e.target.value)} 
-                  className="w-full border p-2 rounded text-neutral-600"
-                />
+              <label className="block text-xs font-bold text-content-muted uppercase mb-1">Valor (R$)</label>
+              <input
+                type="number" step="0.01" required
+                value={formData.amount}
+                onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                className={inputClass}
+              />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-content-muted uppercase mb-1">Data de Vencimento</label>
+              <input
+                type="date" required
+                value={formData.due_date}
+                onChange={e => setFormData({ ...formData, due_date: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <button type="submit" disabled={saving} className="w-full bg-brand text-content-on-brand py-2.5 rounded-xl font-bold hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {saving ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          </form>
 
-            <div className="flex items-center pt-2">
-              <input 
-                id="createNext"
+          {/* Conciliação */}
+          <div className="bg-surface-elevated border border-line rounded-xl shadow-sm p-6 space-y-4">
+            <h2 className="font-bold text-content-primary">Conciliação</h2>
+            <div>
+              <label className="block text-xs font-bold text-content-muted uppercase mb-1">Data do Pagamento</label>
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={e => setPaymentDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <label className="flex items-center gap-3 text-sm text-content-secondary cursor-pointer">
+              <input
                 type="checkbox"
                 checked={createNext}
-                onChange={(e) => setCreateNext(e.target.checked)}
-                className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                onChange={e => setCreateNext(e.target.checked)}
+                className="w-4 h-4 accent-brand"
               />
-              <label htmlFor="createNext" className="ml-2 block text-sm text-neutral-700">
-                Criar a cobrança do próximo mês?
-              </label>
-            </div>
-            <button type="button" onClick={handleMarkAsPaid} className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">
-              Conciliar (Marcar como Pago)
+              Criar cobrança do próximo mês?
+            </label>
+            <button
+              type="button"
+              onClick={handleMarkAsPaid}
+              className="w-full bg-semantic-success-bg border border-semantic-success-border text-semantic-success-text py-2.5 rounded-xl font-bold hover:opacity-80 transition-opacity flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 size={16} /> Conciliar (Marcar como Pago)
             </button>
           </div>
 
-          <button type="button" onClick={handleDelete} className="w-full text-red-600 hover:text-red-800 flex items-center justify-center gap-2 py-2 mt-4">
-            <Trash size={16} /> Excluir Este Pagamento
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="w-full text-semantic-error-text hover:bg-semantic-error-bg flex items-center justify-center gap-2 py-2.5 rounded-xl transition-colors font-bold text-sm border border-transparent hover:border-semantic-error-border"
+          >
+            <Trash2 size={15} /> Excluir Este Pagamento
           </button>
-        </form>
+        </div>
       )}
     </div>
   );
