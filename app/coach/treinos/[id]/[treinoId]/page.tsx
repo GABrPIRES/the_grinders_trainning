@@ -77,7 +77,7 @@ function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; s
 
       {/* Desktop table */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse table-fixed">
           <thead>
             {showStudentData && (
               <tr>
@@ -90,17 +90,26 @@ function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; s
               </tr>
             )}
             <tr className="bg-surface-page border-b border-line text-xs text-content-muted font-bold uppercase">
-              <th className="px-3 py-2 w-[20%]">Carga</th>
-              <th className="px-3 py-2 w-[8%]">Sér.</th>
-              <th className="px-3 py-2 w-[8%]">Reps</th>
-              <th className="px-3 py-2 w-[8%]">RPE</th>
-              <th className="px-3 py-2 w-[20%]">Equipamento</th>
-              <th className="px-3 py-2 w-[8%]">1RM Est.</th>
-              {showStudentData && (
+              {showStudentData ? (
                 <>
-                  <th className="px-3 py-2 w-[12%] text-semantic-info-text border-l-2 border-semantic-info-border">Carga Real</th>
-                  <th className="px-3 py-2 w-[8%] text-semantic-info-text">RPE Real</th>
-                  <th className="px-3 py-2 w-[8%] text-semantic-info-text text-center">Feito</th>
+                  <th className="px-3 py-2 w-[18%]">Carga</th>
+                  <th className="px-3 py-2 w-[7%]">Sér.</th>
+                  <th className="px-3 py-2 w-[7%]">Reps</th>
+                  <th className="px-3 py-2 w-[7%]">RPE</th>
+                  <th className="px-3 py-2 w-[18%]">Equipamento</th>
+                  <th className="px-3 py-2 w-[8%]">1RM Est.</th>
+                  <th className="px-3 py-2 w-[14%] text-semantic-info-text border-l-2 border-semantic-info-border">Carga Real</th>
+                  <th className="px-3 py-2 w-[10%] text-semantic-info-text">RPE Real</th>
+                  <th className="px-3 py-2 w-[11%] text-semantic-info-text text-center">Feito</th>
+                </>
+              ) : (
+                <>
+                  <th className="px-3 py-2 w-[25%]">Carga</th>
+                  <th className="px-3 py-2 w-[10%]">Sér.</th>
+                  <th className="px-3 py-2 w-[10%]">Reps</th>
+                  <th className="px-3 py-2 w-[10%]">RPE</th>
+                  <th className="px-3 py-2 w-[30%]">Equipamento</th>
+                  <th className="px-3 py-2 w-[15%]">1RM Est.</th>
                 </>
               )}
             </tr>
@@ -139,7 +148,6 @@ function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; s
       <div className="md:hidden divide-y divide-line">
         {visibleSections.map((sec, i) => (
           <div key={sec.id} className="px-4 py-3 space-y-2">
-            <p className="text-[10px] font-bold text-content-muted uppercase">Série {i + 1}</p>
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-[10px] font-bold text-content-muted uppercase mb-0.5">Carga</p>
@@ -192,6 +200,7 @@ export default function EditWorkoutPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [unpublishing, setUnpublishing] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
 
   useEffect(() => {
@@ -312,13 +321,28 @@ export default function EditWorkoutPage() {
     });
   };
 
+  const handleUnpublish = async () => {
+    if (!confirm(
+      "Despublicar este treino?\n\nOs dados registrados pelo aluno (cargas reais, RPEs e marcações) serão apagados."
+    )) return;
+    setUnpublishing(true);
+    try {
+      await fetchWithAuth(`coach/treinos/${treinoId}/publish`, { method: 'POST' });
+      window.location.reload();
+    } catch (err: any) {
+      alert("Erro ao despublicar: " + (err.message || ""));
+    } finally {
+      setUnpublishing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Treino publicado: confirmar antes de salvar (apaga dados do aluno)
     if (isPublished) {
       if (!confirm(
-        "Este treino está publicado para o aluno.\n\nSalvar as alterações irá despublicar o treino e apagar todos os dados registrados pelo aluno (cargas reais, RPEs e marcações).\n\nDeseja continuar?"
+        "Este treino está publicado para o aluno.\n\nSalvar irá despublicar o treino e apagar todos os dados registrados pelo aluno (cargas reais, RPEs e marcações).\n\nDeseja continuar?"
       )) {
         return;
       }
@@ -351,6 +375,12 @@ export default function EditWorkoutPage() {
         },
       };
       await fetchWithAuth(`treinos/${treinoId}`, { method: "PUT", body: JSON.stringify(payload) });
+
+      // Se estava publicado, despublica (published → draft) após salvar
+      if (isPublished) {
+        await fetchWithAuth(`coach/treinos/${treinoId}/publish`, { method: 'POST' });
+      }
+
       alert("Treino atualizado com sucesso!");
       window.location.reload();
     } catch (err: any) {
@@ -400,12 +430,22 @@ export default function EditWorkoutPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleDelete}
-            className="text-semantic-error-text flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-semantic-error-bg transition-colors font-bold text-sm"
-          >
-            <Trash2 size={15} /> Excluir Treino
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleUnpublish}
+              disabled={unpublishing}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-semantic-warning-border bg-semantic-warning-bg text-semantic-warning-text hover:opacity-80 transition-opacity font-bold text-sm disabled:opacity-50"
+            >
+              {unpublishing ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
+              Despublicar
+            </button>
+            <button
+              onClick={handleDelete}
+              className="text-semantic-error-text flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-semantic-error-bg transition-colors font-bold text-sm"
+            >
+              <Trash2 size={15} /> Excluir
+            </button>
+          </div>
         </div>
 
         {/* Banner de status */}
