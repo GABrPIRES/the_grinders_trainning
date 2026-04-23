@@ -3,38 +3,27 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { 
-  ArrowLeft, User, Mail, Lock, Phone, 
-  Save, Loader2, GraduationCap, Shield, ChevronDown
+import {
+  ArrowLeft, User, Mail, Lock, Phone,
+  Save, Loader2, GraduationCap, Shield, ChevronDown, AlertCircle,
 } from "lucide-react";
 
 interface Coach {
   id: string;
-  user: {
-    name: string;
-  };
+  user: { name: string };
 }
 
 export default function CreateStudentPage() {
   const router = useRouter();
-  const [student, setStudent] = useState({
-    name: "",
-    email: "",
-    password: "",
-    phone_number: "",
-    personal_id: "", // Novo campo para o Coach
-  });
+  const [student, setStudent] = useState({ name: "", email: "", password: "", phone_number: "", personal_id: "" });
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Busca os coaches para preencher o select
   useEffect(() => {
     async function loadCoaches() {
       try {
-        // Trazemos uma lista maior para garantir que todos apareçam
-        const data = await fetchWithAuth("admin/coaches?limit=100"); 
-        // Tratamento para garantir array (caso venha { coaches: [], total: ... })
+        const data = await fetchWithAuth("admin/coaches?limit=100");
         setCoaches(Array.isArray(data) ? data : (data.coaches || []));
       } catch (err) {
         console.error("Erro ao carregar lista de coaches", err);
@@ -51,14 +40,11 @@ export default function CreateStudentPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
-      // MUDANÇA IMPORTANTE: 
-      // Usamos a rota específica de criação de alunos do Admin, que aceita 'personal_id'
       await fetchWithAuth("admin/alunos", {
         method: "POST",
         body: JSON.stringify({
-          aluno: { // Estrutura aninhada que o Admin::AlunosController espera
+          aluno: {
             name: student.name,
             email: student.email,
             password: student.password,
@@ -67,7 +53,6 @@ export default function CreateStudentPage() {
           },
         }),
       });
-
       alert("Aluno cadastrado e vinculado com sucesso!");
       router.push("/admin/students");
     } catch (err: any) {
@@ -77,140 +62,97 @@ export default function CreateStudentPage() {
     }
   };
 
+  const inputClass = "w-full pl-10 pr-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all bg-surface-app text-content-primary placeholder:text-content-tertiary text-sm";
+
   return (
-    <div className="max-w-2xl mx-auto pb-20 md:pb-0 text-neutral-800">
-      
-      {/* CABEÇALHO */}
+    <div className="max-w-2xl mx-auto pb-24 md:pb-6 text-content-primary">
+
+      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button 
-          onClick={() => router.back()} 
-          className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-600"
-        >
-          <ArrowLeft size={24} />
+        <button onClick={() => router.back()} className="p-2 hover:bg-surface-subtle rounded-lg transition-colors text-content-secondary">
+          <ArrowLeft size={22} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Novo Aluno</h1>
-          <p className="text-neutral-500 text-sm">Cadastre um aluno e vincule-o a um coach.</p>
+          <h1 className="text-2xl font-bold text-content-primary">Novo Aluno</h1>
+          <p className="text-sm text-content-tertiary">Cadastre um aluno e vincule-o a um coach.</p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm border border-red-100 flex items-center gap-2">
-          <span className="font-bold">Erro:</span> {error}
+        <div className="bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border p-4 rounded-xl mb-6 text-sm flex items-center gap-2">
+          <AlertCircle size={16} className="shrink-0" /> {error}
         </div>
       )}
 
-      {/* FORMULÁRIO */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-xl border border-neutral-200 shadow-sm space-y-6">
-        
+      <form onSubmit={handleSubmit} className="bg-surface-elevated border border-line p-6 md:p-8 rounded-xl shadow-sm space-y-6">
         <div className="space-y-4">
-            <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800 border-b border-neutral-100 pb-2 mb-4">
-               <GraduationCap size={20} className="text-red-700"/> Dados Cadastrais
-            </h2>
+          <h2 className="text-base font-bold flex items-center gap-2 text-content-primary border-b border-line pb-3 mb-4">
+            <GraduationCap size={18} className="text-brand" /> Dados Cadastrais
+          </h2>
 
-            {/* Coach Responsável (NOVO) */}
+          {/* Coach */}
+          <div>
+            <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Coach Responsável</label>
+            <div className="relative">
+              <Shield className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+              <select name="personal_id" value={student.personal_id} onChange={handleChange} className={`${inputClass} appearance-none cursor-pointer`}>
+                <option value="">Selecione um Coach (Opcional)</option>
+                {coaches.map((coach) => (
+                  <option key={coach.id} value={coach.id}>{coach.user.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted pointer-events-none" size={15} />
+            </div>
+            <p className="text-xs text-content-muted mt-1">O aluno aparecerá na lista deste coach imediatamente.</p>
+          </div>
+
+          {/* Nome */}
+          <div>
+            <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Nome Completo</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+              <input type="text" name="name" value={student.name} onChange={handleChange} className={inputClass} placeholder="Ex: João da Silva" required />
+            </div>
+          </div>
+
+          {/* Email e Telefone */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-               <label className="block text-sm font-medium mb-1 text-neutral-600">Coach Responsável</label>
-               <div className="relative">
-                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <select
-                    name="personal_id"
-                    value={student.personal_id}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-10 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all bg-white appearance-none cursor-pointer text-neutral-700"
-                  >
-                    <option value="">Selecione um Coach (Opcional)</option>
-                    {coaches.map((coach) => (
-                      <option key={coach.id} value={coach.id}>
-                        {coach.user.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" size={16}/>
-               </div>
-               <p className="text-xs text-neutral-400 mt-1">O aluno aparecerá na lista deste coach imediatamente.</p>
+              <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+                <input type="email" name="email" value={student.email} onChange={handleChange} className={inputClass} placeholder="email@exemplo.com" required />
+              </div>
             </div>
-
-            {/* Nome */}
             <div>
-               <label className="block text-sm font-medium mb-1 text-neutral-600">Nome Completo</label>
-               <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <input
-                    type="text"
-                    name="name"
-                    value={student.name}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                    placeholder="Ex: João da Silva"
-                    required
-                  />
-               </div>
+              <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Telefone / WhatsApp</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+                <input type="text" name="phone_number" value={student.phone_number} onChange={handleChange} className={inputClass} placeholder="(00) 00000-0000" />
+              </div>
             </div>
+          </div>
 
-            {/* Email e Telefone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                   <label className="block text-sm font-medium mb-1 text-neutral-600">Email</label>
-                   <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                      <input
-                        type="email"
-                        name="email"
-                        value={student.email}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                        placeholder="email@exemplo.com"
-                        required
-                      />
-                   </div>
-                </div>
-                <div>
-                   <label className="block text-sm font-medium mb-1 text-neutral-600">Telefone / WhatsApp</label>
-                   <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                      <input
-                        type="text"
-                        name="phone_number"
-                        value={student.phone_number}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                        placeholder="(00) 00000-0000"
-                      />
-                   </div>
-                </div>
+          {/* Senha */}
+          <div>
+            <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Senha Inicial</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+              <input type="password" name="password" value={student.password} onChange={handleChange} className={inputClass} placeholder="Mínimo 6 caracteres" required />
             </div>
-
-            {/* Senha */}
-            <div>
-               <label className="block text-sm font-medium mb-1 text-neutral-600">Senha Inicial</label>
-               <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <input
-                    type="password"
-                    name="password"
-                    value={student.password}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                  />
-               </div>
-               <p className="text-xs text-neutral-400 mt-1">O aluno poderá alterar essa senha no primeiro acesso.</p>
-            </div>
+            <p className="text-xs text-content-muted mt-1">O aluno poderá alterar essa senha no primeiro acesso.</p>
+          </div>
         </div>
 
-        <div className="pt-4 flex justify-end">
+        <div className="pt-2 flex justify-end">
           <button
-            type="submit"
-            disabled={loading}
-            className="bg-neutral-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-black transition-colors shadow-md flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center"
+            type="submit" disabled={loading}
+            className="bg-brand text-content-on-brand font-bold py-3 px-8 rounded-xl hover:bg-brand-hover transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50 w-full md:w-auto justify-center"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
             {loading ? "Salvando..." : "Cadastrar Aluno"}
           </button>
         </div>
-
       </form>
     </div>
   );
