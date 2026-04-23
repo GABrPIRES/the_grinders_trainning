@@ -234,6 +234,7 @@ export default function CoachDashboardPage() {
   // Training stats
   const [trainStats, setTrainStats]     = useState<TrainingStats | null>(null);
   const [trainLoading, setTrainLoading] = useState(true);
+  const [trainError, setTrainError]     = useState(false);
   const [trainPreset, setTrainPreset]   = useState<TrainPreset>(30);
   const [customStart, setCustomStart]   = useState("");
   const [customEnd,   setCustomEnd]     = useState("");
@@ -250,6 +251,7 @@ export default function CoachDashboardPage() {
 
   const fetchTrainingStats = useCallback(async () => {
     setTrainLoading(true);
+    setTrainError(false);
     try {
       let qs = "";
       if (trainPreset === "custom" && customStart && customEnd) {
@@ -261,7 +263,7 @@ export default function CoachDashboardPage() {
       }
       if (filterAluno) qs += `&aluno_id=${filterAluno}`;
       setTrainStats(await fetchWithAuth(`coach_dashboard/training_stats?${qs}`));
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); setTrainError(true); }
     finally { setTrainLoading(false); }
   }, [trainPreset, customStart, customEnd, filterAluno]);
 
@@ -487,204 +489,243 @@ export default function CoachDashboardPage() {
         </div>
 
         {/* Conteúdo dos insights */}
-        {trainLoading ? <TrainingSkeleton /> : trainStats && (
+        {trainLoading ? <TrainingSkeleton /> : (
           <div className="space-y-5">
 
-            {/* KPI cards de treino */}
+            {/* Erro de carregamento */}
+            {trainError && (
+              <div className="flex items-center gap-3 bg-semantic-error-bg border border-semantic-error-border rounded-xl px-5 py-4">
+                <AlertCircle size={18} className="text-semantic-error-text shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-semantic-error-text">Erro ao carregar insights de treino</p>
+                  <p className="text-xs text-semantic-error-text opacity-70 mt-0.5">Verifique a conexão com a API ou tente novamente.</p>
+                </div>
+                <button
+                  onClick={fetchTrainingStats}
+                  className="ml-auto text-xs font-bold text-semantic-error-text border border-semantic-error-border rounded-lg px-3 py-1.5 hover:bg-semantic-error-border/20 transition-colors"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+
+            {/* KPI cards de treino — sempre visíveis */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KpiCard
                 title="Sem treino no período"
-                value={trainStats.students_without_workouts_count}
+                value={trainStats?.students_without_workouts_count ?? 0}
                 subtitle="alunos sem treino publicado"
-                icon={<AlertCircle size={18} className={trainStats.students_without_workouts_count > 0 ? "text-semantic-warning-text" : "text-content-muted"} />}
-                urgency={trainStats.students_without_workouts_count > 0 ? "warning" : undefined}
+                icon={<AlertCircle size={18} className={(trainStats?.students_without_workouts_count ?? 0) > 0 ? "text-semantic-warning-text" : "text-content-muted"} />}
+                urgency={(trainStats?.students_without_workouts_count ?? 0) > 0 ? "warning" : undefined}
               />
               <KpiCard
                 title="Sem engajamento"
-                value={trainStats.workouts_without_engagement_count}
+                value={trainStats?.workouts_without_engagement_count ?? 0}
                 subtitle="treinos sem nenhum dado"
-                icon={<Activity size={18} className={trainStats.workouts_without_engagement_count > 0 ? "text-semantic-error-text" : "text-content-muted"} />}
-                urgency={trainStats.workouts_without_engagement_count > 0 ? "error" : undefined}
+                icon={<Activity size={18} className={(trainStats?.workouts_without_engagement_count ?? 0) > 0 ? "text-semantic-error-text" : "text-content-muted"} />}
+                urgency={(trainStats?.workouts_without_engagement_count ?? 0) > 0 ? "error" : undefined}
               />
               <KpiCard
                 title="Séries no período"
-                value={trainStats.engagement_global.total_sections.toLocaleString("pt-BR")}
+                value={(trainStats?.engagement_global.total_sections ?? 0).toLocaleString("pt-BR")}
                 subtitle="em treinos ativos/concluídos"
                 icon={<Dumbbell size={18} className="text-content-muted" />}
               />
               <KpiCard
                 title="Feito (média)"
-                value={`${trainStats.engagement_global.feito_pct}%`}
+                value={`${trainStats?.engagement_global.feito_pct ?? 0}%`}
                 subtitle="séries marcadas como feitas"
                 icon={<CheckCircle2 size={18} className="text-content-muted" />}
-                urgency={trainStats.engagement_global.feito_pct >= 75 ? "success" : trainStats.engagement_global.feito_pct >= 50 ? "warning" : "error"}
+                urgency={
+                  !trainStats ? undefined :
+                  trainStats.engagement_global.feito_pct >= 75 ? "success" :
+                  trainStats.engagement_global.feito_pct >= 50 ? "warning" : "error"
+                }
               />
             </div>
 
-            {/* Barras de engagement global */}
-            {trainStats.engagement_global.total_sections > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <EngagementBar
-                  label="Feito"
-                  icon={<CheckCircle2 size={14} />}
-                  pct={trainStats.engagement_global.feito_pct}
-                  total={trainStats.engagement_global.total_sections}
-                />
-                <EngagementBar
-                  label="Carga registrada"
-                  icon={<Weight size={14} />}
-                  pct={trainStats.engagement_global.load_pct}
-                  total={trainStats.engagement_global.total_sections}
-                />
-                <EngagementBar
-                  label="RPE registrado"
-                  icon={<Activity size={14} />}
-                  pct={trainStats.engagement_global.rpe_pct}
-                  total={trainStats.engagement_global.total_sections}
-                />
-              </div>
-            )}
+            {trainStats && (
+              <>
+                {/* Barras de engagement global */}
+                {trainStats.engagement_global.total_sections > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <EngagementBar
+                      label="Feito"
+                      icon={<CheckCircle2 size={14} />}
+                      pct={trainStats.engagement_global.feito_pct}
+                      total={trainStats.engagement_global.total_sections}
+                    />
+                    <EngagementBar
+                      label="Carga registrada"
+                      icon={<Weight size={14} />}
+                      pct={trainStats.engagement_global.load_pct}
+                      total={trainStats.engagement_global.total_sections}
+                    />
+                    <EngagementBar
+                      label="RPE registrado"
+                      icon={<Activity size={14} />}
+                      pct={trainStats.engagement_global.rpe_pct}
+                      total={trainStats.engagement_global.total_sections}
+                    />
+                  </div>
+                ) : (
+                  <div className="bg-surface-elevated border border-line rounded-xl px-5 py-6 text-center">
+                    <Dumbbell size={24} className="text-content-muted mx-auto mb-2" />
+                    <p className="text-sm font-bold text-content-secondary">Nenhum treino ativo ou concluído no período</p>
+                    <p className="text-xs text-content-muted mt-1">Publique treinos para os alunos para ver o engajamento aqui.</p>
+                  </div>
+                )}
 
-            {/* Tabela de engajamento por aluno */}
-            {trainStats.students_engagement.length > 0 && (
-              <div className="bg-surface-elevated border border-line rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-line bg-surface-page flex items-center justify-between">
-                  <h3 className="font-bold text-content-primary text-sm">Engajamento por Aluno</h3>
-                  <span className="text-xs text-content-muted">Ordenado do menor para o maior</span>
-                </div>
+                {/* Tabela de engajamento por aluno */}
+                <div className="bg-surface-elevated border border-line rounded-2xl shadow-sm overflow-hidden">
+                  <div className="px-6 py-4 border-b border-line bg-surface-subtle flex items-center justify-between">
+                    <h3 className="font-bold text-content-primary text-sm">Engajamento por Aluno</h3>
+                    <span className="text-xs text-content-muted">Ordenado do menor para o maior</span>
+                  </div>
 
-                {/* Desktop */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="min-w-full divide-y divide-line text-left">
-                    <thead className="bg-surface-page">
-                      <tr>
-                        <th className="px-6 py-3 text-xs font-bold text-content-muted uppercase">Aluno</th>
-                        <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Feito</th>
-                        <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Carga</th>
-                        <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">RPE</th>
-                        <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Em prog.</th>
-                        <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Concluídos</th>
-                        <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Séries</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-line bg-surface-elevated">
-                      {trainStats.students_engagement.map(s => (
-                        <tr key={s.aluno_id}
-                          onClick={() => router.push(`/coach/students/${s.aluno_id}`)}
-                          className="hover:bg-surface-subtle transition-colors cursor-pointer"
-                        >
-                          <td className="px-6 py-3 font-bold text-content-primary text-sm">{s.name}</td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`text-sm font-bold ${pctColor(s.feito_pct)}`}>{s.feito_pct}%</span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`text-sm font-bold ${pctColor(s.load_pct)}`}>{s.load_pct}%</span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`text-sm font-bold ${pctColor(s.rpe_pct)}`}>{s.rpe_pct}%</span>
-                          </td>
-                          <td className="px-4 py-3 text-center text-sm text-content-secondary">{s.treinos_in_progress}</td>
-                          <td className="px-4 py-3 text-center text-sm text-content-secondary">{s.treinos_completed}</td>
-                          <td className="px-4 py-3 text-center text-sm text-content-muted">{s.total_sections}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                  {trainStats.students_engagement.length > 0 ? (
+                    <>
+                      {/* Desktop */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="min-w-full divide-y divide-line text-left">
+                          <thead className="bg-surface-subtle">
+                            <tr>
+                              <th className="px-6 py-3 text-xs font-bold text-content-muted uppercase">Aluno</th>
+                              <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Feito</th>
+                              <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Carga</th>
+                              <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">RPE</th>
+                              <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Em prog.</th>
+                              <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Concluídos</th>
+                              <th className="px-4 py-3 text-xs font-bold text-content-muted uppercase text-center">Séries</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-line bg-surface-elevated">
+                            {trainStats.students_engagement.map(s => (
+                              <tr key={s.aluno_id}
+                                onClick={() => router.push(`/coach/students/${s.aluno_id}`)}
+                                className="hover:bg-surface-subtle transition-colors cursor-pointer"
+                              >
+                                <td className="px-6 py-3 font-bold text-content-primary text-sm">{s.name}</td>
+                                <td className="px-4 py-3 text-center"><span className={`text-sm font-bold ${pctColor(s.feito_pct)}`}>{s.feito_pct}%</span></td>
+                                <td className="px-4 py-3 text-center"><span className={`text-sm font-bold ${pctColor(s.load_pct)}`}>{s.load_pct}%</span></td>
+                                <td className="px-4 py-3 text-center"><span className={`text-sm font-bold ${pctColor(s.rpe_pct)}`}>{s.rpe_pct}%</span></td>
+                                <td className="px-4 py-3 text-center text-sm text-content-secondary">{s.treinos_in_progress}</td>
+                                <td className="px-4 py-3 text-center text-sm text-content-secondary">{s.treinos_completed}</td>
+                                <td className="px-4 py-3 text-center text-sm text-content-muted">{s.total_sections}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
 
-                {/* Mobile cards */}
-                <div className="md:hidden divide-y divide-line">
-                  {trainStats.students_engagement.map(s => (
-                    <div key={s.aluno_id}
-                      onClick={() => router.push(`/coach/students/${s.aluno_id}`)}
-                      className="p-4 space-y-3 cursor-pointer active:bg-surface-subtle"
-                    >
-                      <p className="font-bold text-content-primary text-sm">{s.name}</p>
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        {[
-                          { label: "Feito", v: s.feito_pct },
-                          { label: "Carga", v: s.load_pct },
-                          { label: "RPE",   v: s.rpe_pct },
-                        ].map(({ label, v }) => (
-                          <div key={label} className="bg-surface-subtle rounded-lg p-2">
-                            <p className="text-[10px] text-content-muted font-bold uppercase">{label}</p>
-                            <p className={`text-base font-bold ${pctColor(v)}`}>{v}%</p>
+                      {/* Mobile cards */}
+                      <div className="md:hidden divide-y divide-line">
+                        {trainStats.students_engagement.map(s => (
+                          <div key={s.aluno_id}
+                            onClick={() => router.push(`/coach/students/${s.aluno_id}`)}
+                            className="p-4 space-y-3 cursor-pointer active:bg-surface-subtle"
+                          >
+                            <p className="font-bold text-content-primary text-sm">{s.name}</p>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              {[
+                                { label: "Feito", v: s.feito_pct },
+                                { label: "Carga", v: s.load_pct },
+                                { label: "RPE",   v: s.rpe_pct },
+                              ].map(({ label, v }) => (
+                                <div key={label} className="bg-surface-subtle rounded-lg p-2">
+                                  <p className="text-[10px] text-content-muted font-bold uppercase">{label}</p>
+                                  <p className={`text-base font-bold ${pctColor(v)}`}>{v}%</p>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-xs text-content-muted">{s.treinos_in_progress} em andamento · {s.treinos_completed} concluídos · {s.total_sections} séries</p>
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-content-muted">{s.treinos_in_progress} em andamento · {s.treinos_completed} concluídos · {s.total_sections} séries</p>
+                    </>
+                  ) : (
+                    <div className="px-6 py-8 text-center">
+                      <Users size={24} className="text-content-muted mx-auto mb-2" />
+                      <p className="text-sm font-bold text-content-secondary">Nenhum aluno com dados de engajamento</p>
+                      <p className="text-xs text-content-muted mt-1">Aparecerá aqui quando alunos iniciarem ou concluírem treinos.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+
+                {/* Grid inferior: sem treino + sem engajamento */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                  {trainStats.students_without_workouts.length > 0 ? (
+                    <div className="bg-surface-elevated border border-semantic-warning-border rounded-2xl shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 bg-semantic-warning-bg border-b border-semantic-warning-border flex items-center gap-2">
+                        <AlertCircle size={15} className="text-semantic-warning-text" />
+                        <h3 className="font-bold text-semantic-warning-text text-sm">
+                          Alunos sem treino publicado ({trainStats.students_without_workouts_count})
+                        </h3>
+                      </div>
+                      <div className="divide-y divide-line">
+                        {trainStats.students_without_workouts.map(a => (
+                          <div key={a.id}
+                            onClick={() => router.push(`/coach/students/${a.id}`)}
+                            className="flex items-center justify-between px-5 py-3 hover:bg-surface-subtle transition-colors cursor-pointer"
+                          >
+                            <div>
+                              <p className="text-sm font-bold text-content-primary">{a.name}</p>
+                              <p className="text-xs text-content-tertiary">{a.email}</p>
+                            </div>
+                            <span className="text-xs text-brand font-bold">Ver →</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-surface-elevated border border-line rounded-2xl p-6 flex items-center gap-3">
+                      <CheckCircle2 size={20} className="text-semantic-success-text shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-content-primary">Todos com treino publicado</p>
+                        <p className="text-xs text-content-muted mt-0.5">Nenhum aluno sem treino no período.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {trainStats.workouts_without_engagement.length > 0 ? (
+                    <div className="bg-surface-elevated border border-semantic-error-border rounded-2xl shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 bg-semantic-error-bg border-b border-semantic-error-border flex items-center gap-2">
+                        <Activity size={15} className="text-semantic-error-text" />
+                        <h3 className="font-bold text-semantic-error-text text-sm">
+                          Treinos sem nenhum dado ({trainStats.workouts_without_engagement_count})
+                        </h3>
+                      </div>
+                      <div className="divide-y divide-line">
+                        {trainStats.workouts_without_engagement.slice(0, 10).map(w => (
+                          <div key={w.treino_id} className="flex items-center justify-between px-5 py-3">
+                            <div>
+                              <p className="text-sm font-bold text-content-primary">{w.treino_name}</p>
+                              <p className="text-xs text-content-tertiary">{w.aluno_name} · {w.day}</p>
+                            </div>
+                            <StatusBadge status={w.status} />
+                          </div>
+                        ))}
+                        {trainStats.workouts_without_engagement_count > 10 && (
+                          <p className="text-xs text-center text-content-muted py-3">
+                            +{trainStats.workouts_without_engagement_count - 10} treinos adicionais
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-surface-elevated border border-line rounded-2xl p-6 flex items-center gap-3">
+                      <CheckCircle2 size={20} className="text-semantic-success-text shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-content-primary">Todos os treinos com dados</p>
+                        <p className="text-xs text-content-muted mt-0.5">Nenhum treino sem registro de engajamento.</p>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </>
             )}
-
-            {/* Grid inferior: sem treino + sem engajamento */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-              {/* Alunos sem treino */}
-              {trainStats.students_without_workouts.length > 0 && (
-                <div className="bg-surface-elevated border border-semantic-warning-border rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 bg-semantic-warning-bg border-b border-semantic-warning-border flex items-center gap-2">
-                    <AlertCircle size={15} className="text-semantic-warning-text" />
-                    <h3 className="font-bold text-semantic-warning-text text-sm">
-                      Alunos sem treino publicado ({trainStats.students_without_workouts_count})
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-line">
-                    {trainStats.students_without_workouts.map(a => (
-                      <div key={a.id}
-                        onClick={() => router.push(`/coach/students/${a.id}`)}
-                        className="flex items-center justify-between px-5 py-3 hover:bg-surface-subtle transition-colors cursor-pointer"
-                      >
-                        <div>
-                          <p className="text-sm font-bold text-content-primary">{a.name}</p>
-                          <p className="text-xs text-content-tertiary">{a.email}</p>
-                        </div>
-                        <span className="text-xs text-brand font-bold">Ver →</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Treinos sem engajamento */}
-              {trainStats.workouts_without_engagement.length > 0 && (
-                <div className="bg-surface-elevated border border-semantic-error-border rounded-2xl shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 bg-semantic-error-bg border-b border-semantic-error-border flex items-center gap-2">
-                    <Activity size={15} className="text-semantic-error-text" />
-                    <h3 className="font-bold text-semantic-error-text text-sm">
-                      Treinos sem nenhum dado ({trainStats.workouts_without_engagement_count})
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-line">
-                    {trainStats.workouts_without_engagement.slice(0, 10).map(w => (
-                      <div key={w.treino_id} className="flex items-center justify-between px-5 py-3">
-                        <div>
-                          <p className="text-sm font-bold text-content-primary">{w.treino_name}</p>
-                          <p className="text-xs text-content-tertiary">{w.aluno_name} · {w.day}</p>
-                        </div>
-                        <StatusBadge status={w.status} />
-                      </div>
-                    ))}
-                    {trainStats.workouts_without_engagement_count > 10 && (
-                      <p className="text-xs text-center text-content-muted py-3">
-                        +{trainStats.workouts_without_engagement_count - 10} treinos adicionais
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Estado vazio — tudo OK */}
-              {trainStats.students_without_workouts.length === 0 && trainStats.workouts_without_engagement.length === 0 && (
-                <div className="lg:col-span-2 bg-semantic-success-bg border border-semantic-success-border rounded-2xl p-8 text-center">
-                  <CheckCircle2 size={32} className="text-semantic-success-text mx-auto mb-2" />
-                  <p className="font-bold text-semantic-success-text">Tudo em ordem no período!</p>
-                  <p className="text-sm text-semantic-success-text opacity-70 mt-1">Todos os alunos têm treinos e estão registrando dados.</p>
-                </div>
-              )}
-            </div>
 
           </div>
         )}
