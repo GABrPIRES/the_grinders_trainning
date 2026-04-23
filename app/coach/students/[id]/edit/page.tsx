@@ -3,19 +3,43 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { ArrowLeft, Save, Loader2, Lock, User, Mail, Phone, CreditCard } from "lucide-react";
+import {
+  ArrowLeft, Save, Loader2, Lock, User,
+  Mail, Phone, CreditCard, AlertCircle,
+} from "lucide-react";
 
 interface Plan {
   id: string;
   name: string;
 }
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function EditSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto animate-pulse space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-surface-subtle rounded-lg flex-shrink-0"></div>
+        <div className="h-7 bg-surface-subtle rounded-lg w-56"></div>
+      </div>
+      <div className="bg-surface-elevated border border-line rounded-xl p-8 space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-11 bg-surface-subtle rounded-lg"></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 export default function EditStudentAccountPage() {
   const { id } = useParams();
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const router  = useRouter();
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [error, setError]       = useState("");
+  const [plans, setPlans]       = useState<Plan[]>([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -23,32 +47,26 @@ export default function EditStudentAccountPage() {
     phone_number: "",
     password: "",
     password_confirmation: "",
-    plano_id: "" // Novo campo
+    plano_id: "",
   });
 
   useEffect(() => {
     async function loadData() {
       try {
-        // Carrega dados do aluno E lista de planos em paralelo
         const [studentData, plansData] = await Promise.all([
-            fetchWithAuth(`alunos/${id}`),
-            fetchWithAuth('planos')
+          fetchWithAuth(`alunos/${id}`),
+          fetchWithAuth("planos"),
         ]);
-
         setForm(prev => ({
           ...prev,
-          name: studentData.user.name || "",
-          email: studentData.user.email || "",
-          phone_number: studentData.phone_number || "",
-          plano_id: studentData.current_plano_id || "", // Usa o campo novo que criamos na API
-          password: "", 
-          password_confirmation: ""
+          name:         studentData.user.name         || "",
+          email:        studentData.user.email        || "",
+          phone_number: studentData.phone_number      || "",
+          plano_id:     studentData.current_plano_id  || "",
         }));
-
         setPlans(Array.isArray(plansData) ? plansData : []);
-
-      } catch (error) {
-        console.error("Erro ao carregar dados", error);
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
       } finally {
         setLoading(false);
       }
@@ -56,128 +74,199 @@ export default function EditStudentAccountPage() {
     loadData();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-
+    setError("");
     if (form.password && form.password !== form.password_confirmation) {
-        alert("As senhas não coincidem.");
-        setSaving(false);
-        return;
+      setError("As senhas não coincidem.");
+      return;
     }
-
+    setSaving(true);
     try {
       await fetchWithAuth(`alunos/${id}`, {
         method: "PUT",
-        body: JSON.stringify({ 
-            aluno: {
-                name: form.name,
-                email: form.email,
-                phone_number: form.phone_number,
-                password: form.password,
-                password_confirmation: form.password_confirmation,
-                plano_id: form.plano_id // Envia o ID do plano selecionado
-            } 
+        body: JSON.stringify({
+          aluno: {
+            name:                  form.name,
+            email:                 form.email,
+            phone_number:          form.phone_number,
+            password:              form.password,
+            password_confirmation: form.password_confirmation,
+            plano_id:              form.plano_id,
+          },
         }),
       });
-      alert("Conta do aluno atualizada!");
       router.push(`/coach/students/${id}`);
-    } catch (error: any) {
-      alert("Erro ao atualizar: " + error.message);
+    } catch (err: any) {
+      setError(err.message || "Erro ao salvar alterações.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Carregando formulário...</div>;
+  const inputClass =
+    "w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all text-content-primary bg-surface-app placeholder:text-content-tertiary text-sm";
+
+  const labelClass = "block text-sm font-medium text-content-secondary mb-1";
+
+  if (loading) return (
+    <div className="max-w-2xl mx-auto p-4 md:p-6">
+      <EditSkeleton />
+    </div>
+  );
 
   return (
-    <div className="max-w-2xl mx-auto p-6 text-neutral-800">
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => router.back()} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
-          <ArrowLeft size={24} />
+    <div className="max-w-2xl mx-auto p-4 md:p-6 pb-24 md:pb-6 text-content-primary">
+
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          onClick={() => router.back()}
+          className="p-2 hover:bg-surface-subtle rounded-lg transition-colors text-content-secondary"
+          aria-label="Voltar"
+        >
+          <ArrowLeft size={22} />
         </button>
-        <h1 className="text-2xl font-bold">Editar Conta do Aluno</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-content-primary">Editar Conta do Aluno</h1>
+          <p className="text-sm text-content-tertiary">Altere os dados de acesso e plano.</p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border border-neutral-200 shadow-sm space-y-6">
-        
-        {/* Dados Pessoais */}
-        <div className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2">
-                <User size={20} /> Informações Básicas
-            </h2>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-neutral-600">Nome Completo</label>
-                <input name="name" value={form.name} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Mail size={14}/> Email</label>
-                    <input name="email" value={form.email} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" required />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-neutral-600 flex items-center gap-2"><Phone size={14}/> Telefone</label>
-                    <input name="phone_number" value={form.phone_number} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" />
-                </div>
-            </div>
+      {/* Error banner */}
+      {error && (
+        <div className="bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border p-4 rounded-xl mb-6 text-sm flex items-center gap-2">
+          <AlertCircle size={16} className="flex-shrink-0" />
+          <span>{error}</span>
         </div>
+      )}
 
-        {/* Assinatura (NOVO) */}
-        <div className="pt-2">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2 mb-4">
-                <CreditCard size={20} /> Plano & Assinatura
-            </h2>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-neutral-600">Plano Atual</label>
-                <select 
-                    name="plano_id" 
-                    value={form.plano_id} 
-                    onChange={handleChange} 
-                    className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600 bg-white"
-                >
-                    <option value="">Sem plano ativo</option>
-                    {plans.map(plan => (
-                        <option key={plan.id} value={plan.id}>{plan.name}</option>
-                    ))}
-                </select>
-                <p className="text-xs text-neutral-400 mt-1">Ao alterar o plano, uma nova assinatura será criada iniciando hoje.</p>
-            </div>
-        </div>
+      <form onSubmit={handleSubmit} className="bg-surface-elevated border border-line rounded-xl shadow-sm p-6 md:p-8 space-y-8">
 
-        {/* Alterar Senha */}
-        <div className="pt-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2 text-neutral-700 border-b pb-2 mb-4">
-                <Lock size={20} /> Segurança
-            </h2>
-            <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded mb-4 border border-yellow-100">
-                Preencha abaixo apenas se quiser alterar a senha do aluno.
+        {/* Informações básicas */}
+        <section className="space-y-4">
+          <h2 className="text-base font-bold text-content-primary flex items-center gap-2 border-b border-line pb-3">
+            <User size={17} className="text-brand" /> Informações Básicas
+          </h2>
+
+          <div>
+            <label htmlFor="name" className={labelClass}>Nome Completo</label>
+            <input
+              id="name"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              className={inputClass}
+              placeholder="Nome completo"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="email" className={labelClass}>
+                <span className="flex items-center gap-1.5"><Mail size={13} /> Email</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="email@exemplo.com"
+                required
+              />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-neutral-600">Nova Senha</label>
-                    <input type="password" name="password" value={form.password} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" placeholder="Mínimo 6 caracteres" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-neutral-600">Confirmar Senha</label>
-                    <input type="password" name="password_confirmation" value={form.password_confirmation} onChange={handleChange} className="w-full border border-neutral-300 p-3 rounded-lg outline-none focus:border-red-600" placeholder="Repita a senha" />
-                </div>
+            <div>
+              <label htmlFor="phone_number" className={labelClass}>
+                <span className="flex items-center gap-1.5"><Phone size={13} /> Telefone</span>
+              </label>
+              <input
+                id="phone_number"
+                name="phone_number"
+                value={form.phone_number}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="(11) 99999-9999"
+              />
             </div>
-        </div>
+          </div>
+        </section>
+
+        {/* Plano & assinatura */}
+        <section className="space-y-4">
+          <h2 className="text-base font-bold text-content-primary flex items-center gap-2 border-b border-line pb-3">
+            <CreditCard size={17} className="text-brand" /> Plano & Assinatura
+          </h2>
+          <div>
+            <label htmlFor="plano_id" className={labelClass}>Plano Atual</label>
+            <select
+              id="plano_id"
+              name="plano_id"
+              value={form.plano_id}
+              onChange={handleChange}
+              className={`${inputClass} appearance-none cursor-pointer`}
+            >
+              <option value="">Sem plano ativo</option>
+              {plans.map(plan => (
+                <option key={plan.id} value={plan.id}>{plan.name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-content-muted mt-1.5">
+              Ao alterar o plano, uma nova assinatura será criada iniciando hoje.
+            </p>
+          </div>
+        </section>
+
+        {/* Segurança */}
+        <section className="space-y-4">
+          <h2 className="text-base font-bold text-content-primary flex items-center gap-2 border-b border-line pb-3">
+            <Lock size={17} className="text-brand" /> Segurança
+          </h2>
+
+          <div className="bg-semantic-warning-bg border border-semantic-warning-border text-semantic-warning-text text-xs p-3 rounded-lg">
+            Preencha abaixo apenas se quiser alterar a senha do aluno.
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="password" className={labelClass}>Nova Senha</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+            <div>
+              <label htmlFor="password_confirmation" className={labelClass}>Confirmar Senha</label>
+              <input
+                id="password_confirmation"
+                type="password"
+                name="password_confirmation"
+                value={form.password_confirmation}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Repita a senha"
+              />
+            </div>
+          </div>
+        </section>
 
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-red-700 text-white font-bold py-3.5 rounded-xl hover:bg-red-800 transition-colors flex items-center justify-center gap-2 mt-8 shadow-lg"
+          className="w-full bg-brand text-content-on-brand font-bold py-3 px-6 rounded-lg hover:bg-brand-hover transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {saving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+          {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
           {saving ? "Salvando..." : "Salvar Alterações"}
         </button>
-
       </form>
     </div>
   );

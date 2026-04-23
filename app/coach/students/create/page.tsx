@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { fetchWithAuth } from '@/lib/api';
-import { 
-  ArrowLeft, User, Mail, Phone, Lock, 
-  CreditCard, Save, Loader2, GraduationCap 
-} from 'lucide-react';
-import Cleave from 'cleave.js/react';
-import 'cleave.js/dist/addons/cleave-phone.br';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { fetchWithAuth } from "@/lib/api";
+import {
+  ArrowLeft, User, Mail, Phone, Lock,
+  CreditCard, Save, Loader2, GraduationCap, AlertCircle,
+} from "lucide-react";
+import Cleave from "cleave.js/react";
+import "cleave.js/dist/addons/cleave-phone.br";
 
 interface Plan {
   id: string;
@@ -16,209 +16,202 @@ interface Plan {
 }
 
 export default function AddStudentPage() {
-  const [student, setStudent] = useState({
-    name: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-    planoId: '',
-  });
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [student, setStudent] = useState({
+    name: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    planoId: "",
+  });
+  const [plans, setPlans]   = useState<Plan[]>([]);
+  const [error, setError]   = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const data = await fetchWithAuth('planos');
-        setPlans(data);
-      } catch (err) {
-        console.error("Falha ao carregar planos:", err);
-      }
-    };
-    fetchPlans();
+    fetchWithAuth("planos")
+      .then(setPlans)
+      .catch(err => console.error("Falha ao carregar planos:", err));
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setStudent({ ...student, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
-
     try {
-      await fetchWithAuth('alunos', {
-        method: 'POST',
+      await fetchWithAuth("alunos", {
+        method: "POST",
         body: JSON.stringify({
           aluno: {
-            name: student.name,
-            email: student.email,
-            password: student.password,
+            name:         student.name,
+            email:        student.email,
+            password:     student.password,
             phone_number: student.phoneNumber,
-            plano_id: student.planoId || null,
+            plano_id:     student.planoId || null,
           },
         }),
       });
-
-      alert('Aluno adicionado com sucesso!');
-      router.push('/coach/students');
+      router.push("/coach/students");
     } catch (err: any) {
-      setError(err.message || 'Erro ao adicionar aluno');
+      setError(err.message || "Erro ao adicionar aluno.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Classes comuns para inputs
-  const inputClassName = "w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all text-neutral-700";
+  const inputClass =
+    "w-full pl-10 pr-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all text-content-primary bg-surface-app placeholder:text-content-tertiary text-sm";
+
+  const labelClass = "block text-sm font-medium text-content-secondary mb-1";
 
   return (
-    <div className="max-w-2xl mx-auto pb-20 md:pb-0">
-      
-      {/* CABEÇALHO */}
-      <div className="flex items-center gap-4 mb-8">
-        <button 
-          onClick={() => router.back()} 
-          className="p-2 hover:bg-neutral-100 rounded-full transition-colors text-neutral-600"
+    <div className="max-w-2xl mx-auto pb-24 md:pb-6 text-content-primary">
+
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          onClick={() => router.back()}
+          className="p-2 hover:bg-surface-subtle rounded-lg transition-colors text-content-secondary"
+          aria-label="Voltar"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Novo Aluno</h1>
-          <p className="text-neutral-500 text-sm">Cadastre um aluno para começar a gerenciar seus treinos.</p>
+          <h1 className="text-2xl font-bold text-content-primary">Novo Aluno</h1>
+          <p className="text-sm text-content-tertiary">Cadastre um aluno para gerenciar seus treinos.</p>
         </div>
       </div>
 
+      {/* Error banner */}
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm border border-red-100 flex items-center gap-2">
-          <span className="font-bold">Erro:</span> {error}
+        <div className="bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border p-4 rounded-xl mb-6 text-sm flex items-center gap-2">
+          <AlertCircle size={16} className="flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* FORMULÁRIO */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 md:p-8 rounded-xl border border-neutral-200 shadow-sm space-y-6">
-        
-        <div className="space-y-4">
-            <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800 border-b border-neutral-100 pb-2 mb-4">
-               <GraduationCap size={20} className="text-red-700"/> Dados Pessoais
-            </h2>
+      <form onSubmit={handleSubmit} className="bg-surface-elevated border border-line rounded-xl shadow-sm p-6 md:p-8 space-y-8">
 
-            {/* Nome */}
+        {/* Dados pessoais */}
+        <section className="space-y-4">
+          <h2 className="text-base font-bold text-content-primary flex items-center gap-2 border-b border-line pb-3">
+            <GraduationCap size={18} className="text-brand" /> Dados Pessoais
+          </h2>
+
+          <div>
+            <label htmlFor="name" className={labelClass}>Nome Completo</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+              <input
+                id="name"
+                type="text"
+                name="name"
+                value={student.name}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Ex: João da Silva"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-               <label className="block text-sm font-medium mb-1 text-neutral-600">Nome Completo</label>
-               <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <input
-                    type="text"
-                    name="name"
-                    value={student.name}
-                    onChange={handleChange}
-                    className={inputClassName}
-                    placeholder="Ex: João da Silva"
-                    required
-                  />
-               </div>
+              <label htmlFor="email" className={labelClass}>Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={student.email}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="aluno@email.com"
+                  required
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Email */}
-                <div>
-                   <label className="block text-sm font-medium mb-1 text-neutral-600">Email</label>
-                   <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                      <input
-                        type="email"
-                        name="email"
-                        value={student.email}
-                        onChange={handleChange}
-                        className={inputClassName}
-                        placeholder="aluno@email.com"
-                        required
-                      />
-                   </div>
-                </div>
-
-                {/* Telefone */}
-                <div>
-                   <label className="block text-sm font-medium mb-1 text-neutral-600">WhatsApp / Telefone</label>
-                   <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                      <Cleave
-                        name="phoneNumber"
-                        value={student.phoneNumber}
-                        onChange={handleChange}
-                        className={inputClassName}
-                        placeholder="(11) 99999-9999"
-                        options={{ phone: true, phoneRegionCode: 'BR' }}
-                        required
-                      />
-                   </div>
-                </div>
-            </div>
-
-            {/* Senha */}
             <div>
-               <label className="block text-sm font-medium mb-1 text-neutral-600">Senha de Acesso</label>
-               <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <input
-                    type="password"
-                    name="password"
-                    value={student.password}
-                    onChange={handleChange}
-                    className={inputClassName}
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                  />
-               </div>
-               <p className="text-xs text-neutral-400 mt-1">O aluno poderá alterar esta senha no primeiro login.</p>
+              <label htmlFor="phoneNumber" className={labelClass}>WhatsApp / Telefone</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+                <Cleave
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={student.phoneNumber}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="(11) 99999-9999"
+                  options={{ phone: true, phoneRegionCode: "BR" }}
+                  required
+                />
+              </div>
             </div>
-        </div>
+          </div>
 
-        {/* Financeiro / Plano */}
-        <div className="pt-2">
-            <h2 className="text-lg font-bold flex items-center gap-2 text-neutral-800 border-b border-neutral-100 pb-2 mb-4">
-               <CreditCard size={20} className="text-red-700"/> Assinatura
-            </h2>
-            
-            <div>
-               <label className="block text-sm font-medium mb-1 text-neutral-600">Selecionar Plano</label>
-               <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                  <select
-                    name="planoId"
-                    value={student.planoId}
-                    onChange={handleChange}
-                    className={`${inputClassName} bg-white appearance-none cursor-pointer`}
-                  >
-                    <option value="">Sem plano (Apenas cadastro)</option>
-                    {plans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name}
-                      </option>
-                    ))}
-                  </select>
-               </div>
-               <p className="text-xs text-neutral-400 mt-1">
-                 Selecionar um plano irá gerar uma assinatura ativa imediatamente.
-               </p>
+          <div>
+            <label htmlFor="password" className={labelClass}>Senha de Acesso</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+              <input
+                id="password"
+                type="password"
+                name="password"
+                value={student.password}
+                onChange={handleChange}
+                className={inputClass}
+                placeholder="Mínimo 6 caracteres"
+                required
+              />
             </div>
-        </div>
+            <p className="text-xs text-content-muted mt-1.5">O aluno poderá alterar esta senha no primeiro login.</p>
+          </div>
+        </section>
 
-        <div className="pt-4 flex justify-end">
+        {/* Assinatura */}
+        <section className="space-y-4">
+          <h2 className="text-base font-bold text-content-primary flex items-center gap-2 border-b border-line pb-3">
+            <CreditCard size={18} className="text-brand" /> Assinatura
+          </h2>
+
+          <div>
+            <label htmlFor="planoId" className={labelClass}>Selecionar Plano</label>
+            <div className="relative">
+              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
+              <select
+                id="planoId"
+                name="planoId"
+                value={student.planoId}
+                onChange={handleChange}
+                className={`${inputClass} appearance-none cursor-pointer`}
+              >
+                <option value="">Sem plano (apenas cadastro)</option>
+                {plans.map(plan => (
+                  <option key={plan.id} value={plan.id}>{plan.name}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-content-muted mt-1.5">
+              Selecionar um plano irá gerar uma assinatura ativa imediatamente.
+            </p>
+          </div>
+        </section>
+
+        <div className="flex justify-end pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="bg-red-700 text-white font-bold py-3 px-8 rounded-xl hover:bg-red-800 transition-colors shadow-md flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center"
+            className="w-full md:w-auto bg-brand text-content-on-brand font-bold py-3 px-8 rounded-lg hover:bg-brand-hover transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
             {loading ? "Salvando..." : "Cadastrar Aluno"}
           </button>
         </div>
-
       </form>
     </div>
   );

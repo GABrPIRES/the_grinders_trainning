@@ -1,265 +1,283 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
-import { 
-  Search, 
-  Plus, 
-  MoreHorizontal, 
-  ChevronLeft, 
-  ChevronRight, 
-  User, 
-  CreditCard,
-  Calendar,
-  Clock
+import {
+  Search, Plus, ChevronLeft, ChevronRight,
+  User, CreditCard, Calendar, MoreHorizontal,
 } from "lucide-react";
 
 interface Student {
   id: string;
-  user: { name: string; email: string; };
-  pagamento: { vencimento: string | null; status: string | null; };
-  plano: { nome: string | null; };
-  treino_info: { proximo_treino: string | null; ultima_atualizacao: string | null; };
+  user: { name: string; email: string };
+  pagamento: { vencimento: string | null; status: string | null };
+  plano: { nome: string | null };
+  treino_info: { proximo_treino: string | null; ultima_atualizacao: string | null };
 }
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function StudentsSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="h-10 bg-surface-subtle rounded-xl w-72"></div>
+      <div className="bg-surface-elevated border border-line rounded-xl overflow-hidden">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-line last:border-0">
+            <div className="w-10 h-10 rounded-full bg-surface-subtle flex-shrink-0"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-surface-subtle rounded w-40"></div>
+              <div className="h-3 bg-surface-subtle rounded w-56"></div>
+            </div>
+            <div className="h-6 bg-surface-subtle rounded-full w-16 hidden md:block"></div>
+            <div className="h-4 bg-surface-subtle rounded w-20 hidden md:block"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Status badge ──────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (status === "ativo" || status === "pago") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border">
+        Em dia
+      </span>
+    );
+  }
+  if (status === "atrasado") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border">
+        Atrasado
+      </span>
+    );
+  }
+  if (status === "pendente") {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-semantic-warning-bg text-semantic-warning-text border border-semantic-warning-border">
+        Pendente
+      </span>
+    );
+  }
+  return (
+    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-surface-subtle text-content-muted border border-line">
+      Sem Plano
+    </span>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function CoachStudentsPage() {
   const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [total, setTotal] = useState(0);
+  const [search, setSearch]   = useState("");
+  const [page, setPage]       = useState(1);
+  const [limit, setLimit]     = useState(10);
+  const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchStudents();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [search, page, limit]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ 
-        search, 
-        page: page.toString(), 
-        limit: limit.toString() 
-      });
+      const params = new URLSearchParams({ search, page: page.toString(), limit: limit.toString() });
       const data = await fetchWithAuth(`alunos?${params}`);
       setStudents(data.alunos);
       setTotal(data.total);
-    } catch (error) {
-      console.error("Erro ao buscar alunos:", error);
+    } catch (err) {
+      console.error("Erro ao buscar alunos:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, page, limit]);
+
+  useEffect(() => {
+    const timer = setTimeout(fetchStudents, 400);
+    return () => clearTimeout(timer);
+  }, [fetchStudents]);
 
   const totalPages = Math.ceil(total / limit);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC', day: '2-digit', month: 'short' });
-  };
+  const formatDate = (d: string | null) =>
+    d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "short" }) : "—";
 
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case 'ativo': 
-      case 'pago':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Em dia</span>;
-      case 'atrasado':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">Atrasado</span>;
-      case 'pendente':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">Pendente</span>;
-      default:
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">Sem Plano</span>;
-    }
-  };
+  const inputClass =
+    "w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all text-content-primary bg-surface-app placeholder:text-content-tertiary text-sm";
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 text-neutral-800 pb-20 md:pb-0">
-      
-      {/* CABEÇALHO RESPONSIVO */}
+    <div className="max-w-7xl mx-auto space-y-5 pb-24 md:pb-6 text-content-primary">
+
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Meus Alunos</h1>
-          <p className="text-neutral-500 text-sm">Gerencie o progresso e assinaturas.</p>
+          <h1 className="text-2xl font-bold text-content-primary">Meus Alunos</h1>
+          <p className="text-sm text-content-tertiary mt-0.5">Gerencie o progresso e assinaturas.</p>
         </div>
         <button
           onClick={() => router.push("/coach/students/create")}
-          className="w-full sm:w-auto bg-red-700 text-white px-4 py-2.5 rounded-lg font-bold hover:bg-red-800 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+          className="w-full sm:w-auto bg-brand text-content-on-brand px-4 py-2.5 rounded-lg font-bold hover:bg-brand-hover transition-colors shadow-sm flex items-center justify-center gap-2"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           Novo Aluno
         </button>
       </div>
 
-      {/* BARRA DE FILTROS RESPONSIVA */}
-      <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-        
-        {/* Busca */}
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={20} />
+      {/* Filter bar */}
+      <div className="bg-surface-elevated border border-line rounded-xl shadow-sm p-4 flex flex-col md:flex-row gap-3 justify-between items-center">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={18} />
           <input
             type="text"
             placeholder="Buscar aluno..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            className={`${inputClass} pl-10`}
           />
         </div>
 
-        {/* Controles de Paginação */}
-        <div className="flex flex-col sm:flex-row w-full md:w-auto items-center gap-4">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <select
             value={limit}
-            onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-            className="w-full sm:w-auto border border-neutral-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-red-500 outline-none bg-white"
+            onChange={e => { setLimit(Number(e.target.value)); setPage(1); }}
+            className={`${inputClass} w-full md:w-auto cursor-pointer`}
           >
             <option value="10">10 por pág</option>
             <option value="20">20 por pág</option>
             <option value="50">50 por pág</option>
           </select>
-          
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
+
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
-            <span className="text-sm font-medium text-neutral-600 whitespace-nowrap">
+            <span className="text-sm font-bold text-content-secondary whitespace-nowrap">
               {page} / {totalPages || 1}
             </span>
             <button
-              onClick={() => setPage((p) => (p < totalPages ? p + 1 : p))}
+              onClick={() => setPage(p => (p < totalPages ? p + 1 : p))}
               disabled={page >= totalPages}
-              className="p-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando lista de alunos...</div>
+        <StudentsSkeleton />
       ) : students.length === 0 ? (
-        <div className="bg-white p-12 rounded-xl border border-neutral-200 text-center flex flex-col items-center shadow-sm">
-          <User size={48} className="text-neutral-300 mb-4" />
-          <h3 className="text-lg font-bold text-neutral-700">Nenhum aluno encontrado</h3>
-          <p className="text-neutral-500">Tente buscar por outro termo.</p>
+        <div className="bg-surface-elevated border border-line rounded-xl shadow-sm p-12 text-center flex flex-col items-center">
+          <User size={48} className="text-content-muted mb-4" />
+          <h3 className="text-lg font-bold text-content-primary mb-1">Nenhum aluno encontrado</h3>
+          <p className="text-sm text-content-tertiary">
+            {search ? "Tente buscar por outro termo." : "Adicione seu primeiro aluno para começar."}
+          </p>
         </div>
       ) : (
         <>
-          {/* --- VISÃO MOBILE (CARDS) --- */}
-          <div className="grid grid-cols-1 gap-4 md:hidden">
-            {students.map((student) => (
-              <div 
+          {/* Mobile — cards */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {students.map(student => (
+              <div
                 key={student.id}
                 onClick={() => router.push(`/coach/students/${student.id}`)}
-                className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm active:scale-[0.98] transition-transform"
+                className="bg-surface-elevated border border-line rounded-xl p-4 shadow-sm active:scale-[0.98] transition-transform cursor-pointer"
               >
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                       {getInitials(student.user.name)}
+                    <div className="w-11 h-11 rounded-full bg-content-primary text-surface-app flex items-center justify-center font-bold text-sm flex-shrink-0">
+                      {getInitials(student.user.name)}
                     </div>
                     <div>
-                      <p className="font-bold text-neutral-900 text-lg">{student.user.name}</p>
-                      <p className="text-xs text-neutral-500">{student.user.email}</p>
+                      <p className="font-bold text-content-primary">{student.user.name}</p>
+                      <p className="text-xs text-content-tertiary">{student.user.email}</p>
                     </div>
                   </div>
-                  {getStatusBadge(student.pagamento.status)}
+                  <StatusBadge status={student.pagamento.status} />
                 </div>
-
-                <div className="space-y-3 pt-3 border-t border-neutral-100">
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-neutral-500 flex items-center gap-2"><CreditCard size={14}/> Plano</span>
-                      <span className="font-medium">{student.plano.nome || "—"}</span>
-                   </div>
-                   <div className="flex justify-between items-center text-sm">
-                      <span className="text-neutral-500 flex items-center gap-2"><Calendar size={14}/> Próx. Treino</span>
-                      <span className="font-medium">
-                        {student.treino_info.proximo_treino ? formatDate(student.treino_info.proximo_treino) : "—"}
-                      </span>
-                   </div>
+                <div className="space-y-2 pt-3 border-t border-line text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-content-muted flex items-center gap-1.5"><CreditCard size={13} /> Plano</span>
+                    <span className="font-bold text-content-secondary">{student.plano.nome || "—"}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-content-muted flex items-center gap-1.5"><Calendar size={13} /> Próx. Treino</span>
+                    <span className="font-bold text-content-secondary">{formatDate(student.treino_info.proximo_treino)}</span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* --- VISÃO DESKTOP (TABELA) --- */}
-          <div className="hidden md:block bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
+          {/* Desktop — table */}
+          <div className="hidden md:block bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase text-neutral-500 font-semibold tracking-wider">
-                    <th className="px-6 py-4">Aluno</th>
-                    <th className="px-6 py-4">Status / Plano</th>
-                    <th className="px-6 py-4">Próximo Treino</th>
-                    <th className="px-6 py-4 text-right">Ações</th>
+                  <tr className="bg-surface-page border-b border-line">
+                    <th className="px-6 py-3 text-xs font-bold text-content-tertiary uppercase tracking-wide">Aluno</th>
+                    <th className="px-6 py-3 text-xs font-bold text-content-tertiary uppercase tracking-wide">Status / Plano</th>
+                    <th className="px-6 py-3 text-xs font-bold text-content-tertiary uppercase tracking-wide">Próximo Treino</th>
+                    <th className="px-6 py-3 text-xs font-bold text-content-tertiary uppercase tracking-wide text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {students.map((student) => (
-                    <tr 
-                      key={student.id} 
+                <tbody className="divide-y divide-line">
+                  {students.map(student => (
+                    <tr
+                      key={student.id}
                       onClick={() => router.push(`/coach/students/${student.id}`)}
-                      className="hover:bg-neutral-50 transition-colors cursor-pointer group"
+                      className="hover:bg-surface-page transition-colors cursor-pointer group"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                          <div className="w-9 h-9 rounded-full bg-content-primary text-surface-app flex items-center justify-center font-bold text-xs flex-shrink-0">
                             {getInitials(student.user.name)}
                           </div>
                           <div>
-                            <p className="font-bold text-neutral-900 group-hover:text-red-700 transition-colors">
+                            <p className="font-bold text-content-primary group-hover:text-brand transition-colors text-sm">
                               {student.user.name}
                             </p>
-                            <p className="text-xs text-neutral-500">{student.user.email}</p>
+                            <p className="text-xs text-content-tertiary">{student.user.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col items-start gap-1">
-                          {getStatusBadge(student.pagamento.status)}
-                          <span className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                            <CreditCard size={12}/> {student.plano.nome || "Sem plano"}
+                          <StatusBadge status={student.pagamento.status} />
+                          <span className="text-xs text-content-muted flex items-center gap-1">
+                            <CreditCard size={11} /> {student.plano.nome || "Sem plano"}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                         <div className="flex items-center gap-2 text-sm text-neutral-700">
-                            <Calendar size={16} className="text-neutral-400"/>
-                            {student.treino_info.proximo_treino 
-                              ? formatDate(student.treino_info.proximo_treino) 
-                              : <span className="text-neutral-400 italic">Sem treino</span>
-                            }
-                         </div>
+                        <div className="flex items-center gap-2 text-sm text-content-secondary">
+                          <Calendar size={14} className="text-content-muted" />
+                          {student.treino_info.proximo_treino
+                            ? formatDate(student.treino_info.proximo_treino)
+                            : <span className="text-content-muted italic">Sem treino</span>}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                         <button 
-                           onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/coach/students/${student.id}`);
-                           }}
-                           className="text-neutral-400 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition-all"
-                         >
-                           <MoreHorizontal size={20} />
-                         </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); router.push(`/coach/students/${student.id}`); }}
+                          className="p-2 rounded-lg text-content-muted hover:text-brand hover:bg-brand-surface/30 transition-all"
+                          aria-label="Ver detalhes do aluno"
+                        >
+                          <MoreHorizontal size={18} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -267,14 +285,12 @@ export default function CoachStudentsPage() {
               </table>
             </div>
           </div>
-        </>
-      )}
-      
-      {/* Resumo no rodapé */}
-      {!loading && students.length > 0 && (
-          <p className="text-xs text-center text-neutral-400 hidden md:block">
+
+          {/* Footer count */}
+          <p className="text-xs text-center text-content-muted hidden md:block">
             Mostrando {students.length} de {total} alunos cadastrados.
           </p>
+        </>
       )}
     </div>
   );
