@@ -12,7 +12,7 @@ import {
   TrendingUp, TrendingDown, Minus,
   Users, AlertCircle, Cpu,
   UserPlus, ClipboardList, CreditCard,
-  Upload, ArrowRight, DollarSign,
+  Upload, DollarSign,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -156,17 +156,14 @@ function QuickAction({
   return (
     <button
       onClick={() => router.push(href)}
-      className="group flex items-center justify-between gap-3 p-4 bg-surface-elevated border border-line rounded-xl hover:border-brand/40 hover:bg-brand-surface/30 transition-all"
+      className="group flex flex-col items-start gap-2 p-4 bg-surface-subtle border border-line rounded-xl hover:border-brand/40 hover:bg-brand-surface/30 transition-all text-left"
     >
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-surface-subtle rounded-lg group-hover:bg-brand-surface transition-colors">
-          {icon}
-        </div>
-        <span className="text-sm font-bold text-content-primary group-hover:text-brand transition-colors">
-          {label}
-        </span>
+      <div className="p-2 bg-surface-elevated rounded-lg group-hover:bg-brand-surface transition-colors">
+        {icon}
       </div>
-      <ArrowRight size={14} className="text-content-muted group-hover:text-brand transition-colors flex-shrink-0" />
+      <span className="text-xs font-bold text-content-secondary group-hover:text-brand transition-colors leading-tight">
+        {label}
+      </span>
     </button>
   );
 }
@@ -375,7 +372,7 @@ export default function CoachDashboardPage() {
         {/* Quick actions */}
         <div className="bg-surface-elevated border border-line rounded-2xl shadow-sm p-6">
           <h2 className="text-base font-bold text-content-primary mb-4">Acesso rápido</h2>
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <QuickAction label="Gerenciar Alunos"  href="/coach/students"        icon={<Users         size={16} className="text-content-secondary" />} router={router} />
             <QuickAction label="Adicionar Aluno"   href="/coach/students/create" icon={<UserPlus      size={16} className="text-content-secondary" />} router={router} />
             <QuickAction label="Gerenciar Planos"  href="/coach/plans"           icon={<ClipboardList size={16} className="text-content-secondary" />} router={router} />
