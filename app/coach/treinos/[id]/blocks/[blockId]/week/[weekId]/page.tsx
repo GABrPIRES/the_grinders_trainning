@@ -6,7 +6,7 @@ import { fetchWithAuth } from "@/lib/api";
 import {
   ArrowLeft, Calendar, Plus, Dumbbell,
   MoreVertical, Edit, Trash2, Copy, X, Loader2,
-  User, Layers, Bot, Eye, EyeOff, CheckCircle2, AlertTriangle
+  User, Layers, Bot, Eye, EyeOff, CheckCircle2, AlertTriangle,
 } from "lucide-react";
 import AiReviewModal from "@/components/modals/AiReviewModal";
 import { coachReviewService } from "@/services/coachReviewService";
@@ -31,14 +31,36 @@ interface Week {
   periodization_goal: PeriodizationGoal | null;
   treinos: Treino[];
 }
-// Interfaces para o dropdown de destino
 interface DropdownOption { id: string; label: string; }
-interface BlockData { id: string; title: string; weeks: { id: string; week_number: number; start_date: string }[] }
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function WeekSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="h-16 bg-surface-subtle rounded-xl"></div>
+      <div className="h-12 bg-surface-subtle rounded-xl"></div>
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="bg-surface-elevated border border-line rounded-xl p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-surface-subtle rounded-full"></div>
+            <div className="space-y-2 flex-1">
+              <div className="h-5 bg-surface-subtle rounded w-40"></div>
+              <div className="h-4 bg-surface-subtle rounded w-24"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function WeekDetailsPage() {
   const { id: currentAlunoId, blockId: currentBlockId, weekId: currentWeekId } = useParams();
   const router = useRouter();
-  
+
   const [week, setWeek] = useState<Week | null>(null);
   const [loading, setLoading] = useState(true);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -84,24 +106,20 @@ export default function WeekDetailsPage() {
   const [duplicating, setDuplicating] = useState(false);
   const [sourceTreino, setSourceTreino] = useState<Treino | null>(null);
 
-  // Dados para os Selects
   const [students, setStudents] = useState<DropdownOption[]>([]);
   const [blocks, setBlocks] = useState<DropdownOption[]>([]);
   const [weeks, setWeeks] = useState<DropdownOption[]>([]);
 
-  // Seleções do Usuário
   const [targetAlunoId, setTargetAlunoId] = useState<string>("");
   const [targetBlockId, setTargetBlockId] = useState<string>("");
   const [targetWeekId, setTargetWeekId] = useState<string>("");
-  
+
   const [newName, setNewName] = useState("");
   const [newDay, setNewDay] = useState("");
 
-  // Loading states dos selects
   const [loadingBlocks, setLoadingBlocks] = useState(false);
   const [loadingWeeks, setLoadingWeeks] = useState(false);
 
-  // 1. Carrega a semana atual
   useEffect(() => {
     async function loadWeek() {
       try {
@@ -116,11 +134,10 @@ export default function WeekDetailsPage() {
     loadWeek();
   }, [currentWeekId]);
 
-  // 2. Carrega lista de alunos (apenas uma vez, quando abre o modal ou a pág)
   useEffect(() => {
     async function loadStudents() {
       try {
-        const data = await fetchWithAuth("alunos?limit=100"); // Pega todos
+        const data = await fetchWithAuth("alunos?limit=100");
         const list = (data.alunos || []).map((a: any) => ({ id: a.id, label: a.user.name }));
         setStudents(list);
       } catch (err) { console.error(err); }
@@ -128,7 +145,6 @@ export default function WeekDetailsPage() {
     loadStudents();
   }, []);
 
-  // 3. Efeito Cascata: Mudou Aluno -> Busca Blocos
   useEffect(() => {
     if (!targetAlunoId) { setBlocks([]); return; }
     async function loadBlocks() {
@@ -136,12 +152,10 @@ export default function WeekDetailsPage() {
       try {
         const data = await fetchWithAuth(`alunos/${targetAlunoId}/training_blocks`);
         setBlocks(data.map((b: any) => ({ id: b.id, label: b.title })));
-        
-        // Se for o aluno atual, pré-seleciona o bloco atual
-        if (targetAlunoId === currentAlunoId && data.some((b:any) => b.id === currentBlockId)) {
-            setTargetBlockId(currentBlockId as string);
+        if (targetAlunoId === currentAlunoId && data.some((b: any) => b.id === currentBlockId)) {
+          setTargetBlockId(currentBlockId as string);
         } else {
-            setTargetBlockId(""); // Reseta se mudou de aluno
+          setTargetBlockId("");
         }
       } catch (err) { console.error(err); }
       finally { setLoadingBlocks(false); }
@@ -149,35 +163,29 @@ export default function WeekDetailsPage() {
     loadBlocks();
   }, [targetAlunoId, currentAlunoId, currentBlockId]);
 
-  // 4. Efeito Cascata: Mudou Bloco -> Busca Semanas
   useEffect(() => {
     if (!targetBlockId) { setWeeks([]); return; }
     async function loadWeeks() {
       setLoadingWeeks(true);
       try {
-        // Precisamos dos detalhes do bloco para pegar as semanas
         const data = await fetchWithAuth(`training_blocks/${targetBlockId}`);
         const sortedWeeks = (data.weeks || []).sort((a: any, b: any) => a.week_number - b.week_number);
-        
-        setWeeks(sortedWeeks.map((w: any) => ({ 
-            id: w.id, 
-            label: `Semana ${w.week_number} (${formatDateMini(w.start_date)})` 
+        setWeeks(sortedWeeks.map((w: any) => ({
+          id: w.id,
+          label: `Semana ${w.week_number} (${formatDateMini(w.start_date)})`,
         })));
-
-        // Se for o bloco atual, pré-seleciona a semana atual
-        if (targetBlockId === currentBlockId && sortedWeeks.some((w:any) => w.id === currentWeekId)) {
-            setTargetWeekId(currentWeekId as string);
+        if (targetBlockId === currentBlockId && sortedWeeks.some((w: any) => w.id === currentWeekId)) {
+          setTargetWeekId(currentWeekId as string);
         } else if (sortedWeeks.length > 0) {
-            setTargetWeekId(sortedWeeks[0].id); // Seleciona a primeira por padrão
+          setTargetWeekId(sortedWeeks[0].id);
         } else {
-            setTargetWeekId("");
+          setTargetWeekId("");
         }
       } catch (err) { console.error(err); }
       finally { setLoadingWeeks(false); }
     }
     loadWeeks();
   }, [targetBlockId, currentBlockId, currentWeekId]);
-
 
   // --- Handlers ---
 
@@ -193,11 +201,7 @@ export default function WeekDetailsPage() {
     setSourceTreino(treino);
     setNewName(`${treino.name} (Cópia)`);
     setNewDay(treino.day ? new Date(treino.day).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-    
-    // Inicializa com o contexto ATUAL
     setTargetAlunoId(currentAlunoId as string);
-    // Os useEffects vão cuidar de carregar blocos/semanas e setar os IDs atuais
-    
     setIsModalOpen(true);
     setOpenMenuId(null);
   };
@@ -205,41 +209,29 @@ export default function WeekDetailsPage() {
   const handleConfirmDuplicate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sourceTreino || !targetWeekId) return;
-
     setDuplicating(true);
     try {
-        await fetchWithAuth(`treinos/${sourceTreino.id}/duplicate`, {
-            method: 'POST',
-            body: JSON.stringify({
-                duplication: {
-                    week_id: targetWeekId,
-                    name: newName,
-                    day: newDay
-                }
-            })
-        });
-        
-        alert("Treino duplicado com sucesso!");
-        setIsModalOpen(false);
-
-        // Se duplicou para a MESMA semana que estamos vendo, recarrega
-        if (targetWeekId === currentWeekId) {
-            window.location.reload();
-        } else {
-            // Se duplicou para outro lugar, pergunta se quer ir lá
-            if(confirm("Treino enviado para outra semana. Deseja ir para lá agora?")) {
-                // Precisamos descobrir a URL correta. Como é complexo montar a URL completa sem ter os dados do aluno/bloco de destino no state de forma fácil, 
-                // vamos simplificar: se for outro aluno/bloco, o usuário navega manualmente.
-                // Mas se for o mesmo aluno/bloco e só mudou a semana:
-                if (targetAlunoId === currentAlunoId && targetBlockId === currentBlockId) {
-                    router.push(`/coach/treinos/${targetAlunoId}/blocks/${targetBlockId}/week/${targetWeekId}`);
-                }
-            }
+      await fetchWithAuth(`treinos/${sourceTreino.id}/duplicate`, {
+        method: 'POST',
+        body: JSON.stringify({
+          duplication: { week_id: targetWeekId, name: newName, day: newDay },
+        }),
+      });
+      alert("Treino duplicado com sucesso!");
+      setIsModalOpen(false);
+      if (targetWeekId === currentWeekId) {
+        window.location.reload();
+      } else {
+        if (confirm("Treino enviado para outra semana. Deseja ir para lá agora?")) {
+          if (targetAlunoId === currentAlunoId && targetBlockId === currentBlockId) {
+            router.push(`/coach/treinos/${targetAlunoId}/blocks/${targetBlockId}/week/${targetWeekId}`);
+          }
         }
+      }
     } catch (err: any) {
-        alert("Erro ao duplicar: " + err.message);
+      alert("Erro ao duplicar: " + err.message);
     } finally {
-        setDuplicating(false);
+      setDuplicating(false);
     }
   };
 
@@ -252,212 +244,271 @@ export default function WeekDetailsPage() {
     return new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' });
   };
 
-  if (loading) return <div className="p-12 text-center text-neutral-500 animate-pulse">Carregando treinos...</div>;
-  if (!week) return <div className="p-12 text-center text-red-500">Semana não encontrada.</div>;
+  const selectClass =
+    "w-full border border-line-input rounded-lg px-3 py-2 bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none text-sm disabled:bg-surface-subtle disabled:text-content-muted";
+
+  if (loading) return (
+    <div className="max-w-4xl mx-auto pb-24 md:pb-8 p-4 md:p-0">
+      <WeekSkeleton />
+    </div>
+  );
+  if (!week) return (
+    <div className="p-12 text-center">
+      <p className="font-bold text-semantic-error-text">Semana não encontrada.</p>
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto pb-24 md:pb-8 text-neutral-800" onClick={() => setOpenMenuId(null)}>
-      
-      {/* CABEÇALHO DA PÁGINA */}
+    <div className="max-w-4xl mx-auto pb-24 md:pb-8 text-content-primary" onClick={() => setOpenMenuId(null)}>
+
+      {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}`)} className="p-2 hover:bg-neutral-100 rounded-full text-neutral-500"><ArrowLeft size={24} /></button>
+          <button
+            onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}`)}
+            className="p-2 hover:bg-surface-subtle rounded-lg text-content-secondary transition-colors"
+          >
+            <ArrowLeft size={22} />
+          </button>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Semana {week.week_number}</h1>
-            <div className="flex items-center gap-2 text-sm text-neutral-500 mt-1"><Calendar size={14} /><span>{formatDate(week.start_date)} - {formatDate(week.end_date)}</span></div>
+            <h1 className="text-2xl font-bold text-content-primary">Semana {week.week_number}</h1>
+            <div className="flex items-center gap-2 text-sm text-content-tertiary mt-1">
+              <Calendar size={14} />
+              <span>{formatDate(week.start_date)} — {formatDate(week.end_date)}</span>
+            </div>
           </div>
         </div>
-        <button onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}/week/${currentWeekId}/create`)} className="bg-red-700 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-red-800 transition-all shadow-md flex items-center gap-2 w-full md:w-auto justify-center"><Plus size={20} /> Novo Treino</button>
+        <button
+          onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}/week/${currentWeekId}/create`)}
+          className="bg-brand text-content-on-brand px-5 py-2.5 rounded-xl font-bold hover:bg-brand-hover transition-colors shadow-sm flex items-center gap-2 w-full md:w-auto justify-center"
+        >
+          <Plus size={18} /> Novo Treino
+        </button>
       </div>
 
-      {/* OBJETIVO DE PERIODIZAÇÃO */}
-      <div className="mb-5 bg-white border border-neutral-200 rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-bold text-neutral-400 uppercase mb-3">Foco da Semana</p>
+      {/* Objetivo de Periodização */}
+      <div className="mb-5 bg-surface-elevated border border-line rounded-xl p-4 shadow-sm">
+        <p className="text-xs font-bold text-content-muted uppercase mb-3">Foco da Semana</p>
         <div className="flex flex-wrap gap-2">
           {([
-            { value: 'overload',    label: 'Progressão de Carga', color: 'green'  },
-            { value: 'maintenance', label: 'Manter',              color: 'blue'   },
-            { value: 'deload',      label: 'Deload',              color: 'amber'  },
-          ] as { value: PeriodizationGoal; label: string; color: string }[]).map(({ value, label, color }) => {
+            { value: 'overload',    label: 'Progressão de Carga', variant: 'success' },
+            { value: 'maintenance', label: 'Manter',              variant: 'info'    },
+            { value: 'deload',      label: 'Deload',              variant: 'warning' },
+          ] as { value: PeriodizationGoal; label: string; variant: string }[]).map(({ value, label, variant }) => {
             const isActive = week.periodization_goal === value;
-            const colors: Record<string, string> = {
-              green: isActive
-                ? 'bg-green-600 text-white border-green-600'
-                : 'bg-white text-green-700 border-green-300 hover:bg-green-50',
-              blue: isActive
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50',
-              amber: isActive
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50',
+            const cls: Record<string, string> = {
+              success: isActive
+                ? 'bg-semantic-success-text text-white border-semantic-success-text'
+                : 'bg-surface-elevated text-semantic-success-text border-semantic-success-border hover:bg-semantic-success-bg',
+              info: isActive
+                ? 'bg-semantic-info-text text-white border-semantic-info-text'
+                : 'bg-surface-elevated text-semantic-info-text border-semantic-info-border hover:bg-semantic-info-bg',
+              warning: isActive
+                ? 'bg-semantic-warning-text text-white border-semantic-warning-text'
+                : 'bg-surface-elevated text-semantic-warning-text border-semantic-warning-border hover:bg-semantic-warning-bg',
             };
             return (
               <button
                 key={value}
                 onClick={() => !isActive && handleGoalChange(value)}
                 disabled={savingGoal}
-                className={`px-4 py-2 rounded-xl border font-bold text-sm transition-colors disabled:opacity-50 ${colors[color]}`}
+                className={`px-4 py-2 rounded-xl border font-bold text-sm transition-colors disabled:opacity-50 ${cls[variant]}`}
               >
                 {label}
               </button>
             );
           })}
-          {savingGoal && <span className="text-xs text-neutral-400 self-center">Salvando...</span>}
+          {savingGoal && <span className="text-xs text-content-muted self-center">Salvando...</span>}
           {!week.periodization_goal && (
-            <span className="text-xs text-neutral-400 self-center italic">Nenhum foco definido — a IA usará "Manter" como padrão.</span>
+            <span className="text-xs text-content-muted self-center italic">
+              Nenhum foco definido — a IA usará "Manter" como padrão.
+            </span>
           )}
         </div>
       </div>
 
-      {/* BANNER DE STATUS DA SEMANA */}
+      {/* Banner de status */}
       {week.treinos && week.treinos.length > 0 && (() => {
         const draftWithAI = week.treinos.filter((t) => t.status === 'draft' && t.has_pending_ai_suggestions);
         const draftWithoutAI = week.treinos.filter((t) => t.status === 'draft' && !t.has_pending_ai_suggestions);
         const allPublished = week.treinos.every((t) => t.status !== 'draft');
         if (allPublished) return (
-          <div className="mb-5 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-800 font-medium">
-            <CheckCircle2 size={16} className="text-green-600" /> Todos os treinos estão publicados.
+          <div className="mb-5 flex items-center gap-2 bg-semantic-success-bg border border-semantic-success-border rounded-xl px-4 py-3 text-sm text-semantic-success-text font-bold">
+            <CheckCircle2 size={16} /> Todos os treinos estão publicados.
           </div>
         );
         return (
           <div className="mb-5 flex flex-wrap gap-2">
             {draftWithAI.length > 0 && (
-              <span className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full">
+              <span className="flex items-center gap-1.5 bg-semantic-warning-bg border border-semantic-warning-border text-semantic-warning-text text-xs font-bold px-3 py-1.5 rounded-full">
                 <Bot size={12} /> {draftWithAI.length} revisão{draftWithAI.length > 1 ? 'ões' : ''} de IA pendente{draftWithAI.length > 1 ? 's' : ''}
               </span>
             )}
             {draftWithoutAI.length > 0 && (
-              <span className="flex items-center gap-1.5 bg-neutral-100 border border-neutral-300 text-neutral-700 text-xs font-bold px-3 py-1.5 rounded-full">
-                <AlertTriangle size={12} className="text-neutral-500" /> {draftWithoutAI.length} treino{draftWithoutAI.length > 1 ? 's' : ''} aguardando publicação
+              <span className="flex items-center gap-1.5 bg-surface-subtle border border-line text-content-secondary text-xs font-bold px-3 py-1.5 rounded-full">
+                <AlertTriangle size={12} className="text-content-muted" /> {draftWithoutAI.length} treino{draftWithoutAI.length > 1 ? 's' : ''} aguardando publicação
               </span>
             )}
           </div>
         );
       })()}
 
-      {/* LISTA DE TREINOS (Cards) */}
+      {/* Lista de treinos */}
       {week.treinos && week.treinos.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-           {week.treinos.map((treino) => {
-             const isDraft = treino.status === 'draft';
-             const hasAI = treino.has_pending_ai_suggestions;
-             const hasAIObs = treino.has_ai_observation;
-             const isPublishing = publishingId === treino.id;
-             const statusColors = {
-               draft: 'border-neutral-300 bg-white',
-               published: 'border-neutral-200 bg-white',
-               in_progress: 'border-amber-200 bg-amber-50/30',
-               completed: 'border-green-200 bg-green-50/20',
-             };
-             const cardBorder = statusColors[treino.status ?? 'published'];
+          {week.treinos.map((treino) => {
+            const isDraft = treino.status === 'draft';
+            const hasAI = treino.has_pending_ai_suggestions;
+            const hasAIObs = treino.has_ai_observation;
+            const isPublishing = publishingId === treino.id;
+            const statusColors: Record<string, string> = {
+              draft:       'border-line bg-surface-elevated',
+              published:   'border-line bg-surface-elevated',
+              in_progress: 'border-semantic-warning-border bg-semantic-warning-bg/10',
+              completed:   'border-semantic-success-border bg-semantic-success-bg/10',
+            };
+            const cardBorder = statusColors[treino.status ?? 'published'];
 
-             return (
-             <div key={treino.id} className={`p-5 rounded-2xl border shadow-sm hover:shadow-md transition-all group relative cursor-pointer ${cardBorder}`} onClick={() => router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`)}>
+            return (
+              <div
+                key={treino.id}
+                className={`p-5 rounded-xl border shadow-sm hover:shadow-md transition-all group relative cursor-pointer ${cardBorder}`}
+                onClick={() => router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`)}
+              >
                 <div className="flex justify-between items-start gap-3">
-                   <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                         <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center border border-red-100 flex-shrink-0"><Dumbbell size={20} /></div>
-                         <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                              <h3 className="text-base font-bold text-neutral-900 group-hover:text-red-700 transition-colors truncate">{treino.name}</h3>
-                              {/* Status badge */}
-                              {treino.status === 'draft' && !hasAI && !hasAIObs && (
-                                <span className="text-[10px] font-bold bg-neutral-100 text-neutral-600 border border-neutral-300 px-2 py-0.5 rounded-full whitespace-nowrap">Rascunho</span>
-                              )}
-                              {treino.status === 'draft' && hasAI && (
-                                <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
-                                  <Bot size={9} /> Revisão IA
-                                </span>
-                              )}
-                              {treino.status === 'draft' && !hasAI && hasAIObs && (
-                                <span className="text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
-                                  <Bot size={9} /> IA analisou
-                                </span>
-                              )}
-                              {treino.status === 'published' && (
-                                <span className="text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full whitespace-nowrap">Publicado</span>
-                              )}
-                              {treino.status === 'in_progress' && (
-                                <span className="text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap">Em andamento</span>
-                              )}
-                              {treino.status === 'completed' && (
-                                <span className="text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
-                                  <CheckCircle2 size={9} /> Concluído
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-neutral-500 font-medium uppercase tracking-wide">{treino.day ? formatDate(treino.day) : "Data não definida"}</p>
-                         </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-surface-subtle text-brand flex items-center justify-center border border-line flex-shrink-0">
+                        <Dumbbell size={18} />
                       </div>
-
-                      {/* Ações rápidas para treinos em rascunho */}
-                      {isDraft && (
-                        <div className="flex flex-wrap gap-2 mt-3 pl-13">
-                          {hasAI ? (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setReviewTreino(treino); }}
-                              className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
-                            >
-                              <Bot size={12} /> Revisar sugestões da IA
-                            </button>
-                          ) : hasAIObs ? (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setReviewTreino(treino); }}
-                              className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                            >
-                              <Bot size={12} /> Ver análise da IA
-                            </button>
-                          ) : (
-                            <button
-                              onClick={(e) => handlePublishToggle(treino, e)}
-                              disabled={isPublishing}
-                              className="flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
-                            >
-                              {isPublishing ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
-                              Publicar treino
-                            </button>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                          <h3 className="text-base font-bold text-content-primary group-hover:text-brand transition-colors truncate">
+                            {treino.name}
+                          </h3>
+                          {treino.status === 'draft' && !hasAI && !hasAIObs && (
+                            <span className="text-[10px] font-bold bg-surface-subtle text-content-muted border border-line px-2 py-0.5 rounded-full whitespace-nowrap">Rascunho</span>
+                          )}
+                          {treino.status === 'draft' && hasAI && (
+                            <span className="text-[10px] font-bold bg-semantic-warning-bg text-semantic-warning-text border border-semantic-warning-border px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                              <Bot size={9} /> Revisão IA
+                            </span>
+                          )}
+                          {treino.status === 'draft' && !hasAI && hasAIObs && (
+                            <span className="text-[10px] font-bold bg-semantic-info-bg text-semantic-info-text border border-semantic-info-border px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                              <Bot size={9} /> IA analisou
+                            </span>
+                          )}
+                          {treino.status === 'published' && (
+                            <span className="text-[10px] font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border px-2 py-0.5 rounded-full whitespace-nowrap">Publicado</span>
+                          )}
+                          {treino.status === 'in_progress' && (
+                            <span className="text-[10px] font-bold bg-semantic-warning-bg text-semantic-warning-text border border-semantic-warning-border px-2 py-0.5 rounded-full whitespace-nowrap">Em andamento</span>
+                          )}
+                          {treino.status === 'completed' && (
+                            <span className="text-[10px] font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border px-2 py-0.5 rounded-full flex items-center gap-1 whitespace-nowrap">
+                              <CheckCircle2 size={9} /> Concluído
+                            </span>
                           )}
                         </div>
-                      )}
-                      {treino.status === 'published' && (
-                        <div className="flex gap-2 mt-3 pl-13">
+                        <p className="text-xs text-content-muted font-bold uppercase tracking-wide">
+                          {treino.day ? formatDate(treino.day) : "Data não definida"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isDraft && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {hasAI ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setReviewTreino(treino); }}
+                            className="flex items-center gap-1.5 text-xs font-bold text-semantic-warning-text bg-semantic-warning-bg border border-semantic-warning-border px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                          >
+                            <Bot size={12} /> Revisar sugestões da IA
+                          </button>
+                        ) : hasAIObs ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setReviewTreino(treino); }}
+                            className="flex items-center gap-1.5 text-xs font-bold text-semantic-info-text bg-semantic-info-bg border border-semantic-info-border px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                          >
+                            <Bot size={12} /> Ver análise da IA
+                          </button>
+                        ) : (
                           <button
                             onClick={(e) => handlePublishToggle(treino, e)}
                             disabled={isPublishing}
-                            className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 text-xs font-bold text-semantic-success-text bg-semantic-success-bg border border-semantic-success-border px-3 py-1.5 rounded-lg hover:opacity-80 transition-opacity disabled:opacity-50"
                           >
-                            {isPublishing ? <Loader2 size={12} className="animate-spin" /> : <EyeOff size={12} />}
-                            Despublicar
+                            {isPublishing ? <Loader2 size={12} className="animate-spin" /> : <Eye size={12} />}
+                            Publicar treino
                           </button>
-                        </div>
-                      )}
-                   </div>
+                        )}
+                      </div>
+                    )}
+                    {treino.status === 'published' && (
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={(e) => handlePublishToggle(treino, e)}
+                          disabled={isPublishing}
+                          className="flex items-center gap-1.5 text-xs font-medium text-content-muted hover:text-content-secondary hover:bg-surface-subtle px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {isPublishing ? <Loader2 size={12} className="animate-spin" /> : <EyeOff size={12} />}
+                          Despublicar
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                   <div className="relative flex-shrink-0">
-                      <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === treino.id ? null : treino.id); }} className="p-2 hover:bg-neutral-100 rounded-full text-neutral-400 hover:text-neutral-600 transition-colors z-10 relative"><MoreVertical size={20} /></button>
-                      {openMenuId === treino.id && (
-                         <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-neutral-100 z-20 overflow-hidden">
-                            <button onClick={(e) => { e.stopPropagation(); router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`); }} className="w-full text-left px-4 py-3 hover:bg-neutral-50 flex items-center gap-2 text-sm text-neutral-700 font-medium"><Edit size={16} /> Editar Treino</button>
-                            <button onClick={(e) => { e.stopPropagation(); openDuplicateModal(treino); }} className="w-full text-left px-4 py-3 hover:bg-neutral-50 flex items-center gap-2 text-sm text-neutral-700 font-medium"><Copy size={16} /> Duplicar</button>
-                            <div className="h-px bg-neutral-100" />
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteTreino(treino.id); }} className="w-full text-left px-4 py-3 hover:bg-red-50 flex items-center gap-2 text-sm text-red-600 font-medium"><Trash2 size={16} /> Excluir</button>
-                         </div>
-                      )}
-                   </div>
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === treino.id ? null : treino.id); }}
+                      className="p-2 hover:bg-surface-subtle rounded-lg text-content-muted hover:text-content-secondary transition-colors z-10 relative"
+                    >
+                      <MoreVertical size={18} />
+                    </button>
+                    {openMenuId === treino.id && (
+                      <div className="absolute right-0 top-10 w-48 bg-surface-elevated rounded-xl shadow-xl border border-line z-20 overflow-hidden">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/coach/treinos/${currentAlunoId}/${treino.id}`); }}
+                          className="w-full text-left px-4 py-3 hover:bg-surface-subtle flex items-center gap-2 text-sm text-content-secondary font-bold"
+                        >
+                          <Edit size={15} /> Editar Treino
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); openDuplicateModal(treino); }}
+                          className="w-full text-left px-4 py-3 hover:bg-surface-subtle flex items-center gap-2 text-sm text-content-secondary font-bold"
+                        >
+                          <Copy size={15} /> Duplicar
+                        </button>
+                        <div className="h-px bg-line" />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteTreino(treino.id); }}
+                          className="w-full text-left px-4 py-3 hover:bg-semantic-error-bg flex items-center gap-2 text-sm text-semantic-error-text font-bold"
+                        >
+                          <Trash2 size={15} /> Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-             </div>
-           );
-           })}
+              </div>
+            );
+          })}
         </div>
       ) : (
-        <div className="bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-2xl p-12 text-center flex flex-col items-center">
-           <Dumbbell size={48} className="text-neutral-300 mb-4" />
-           <h3 className="text-lg font-bold text-neutral-700">Semana Vazia</h3>
-           <button onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}/week/${currentWeekId}/create`)} className="text-red-700 font-bold hover:underline">Adicionar Treino Agora</button>
+        <div className="bg-surface-subtle border-2 border-dashed border-line rounded-xl p-12 text-center flex flex-col items-center">
+          <Dumbbell size={48} className="text-content-muted mb-4" />
+          <h3 className="text-lg font-bold text-content-primary mb-2">Semana Vazia</h3>
+          <button
+            onClick={() => router.push(`/coach/treinos/${currentAlunoId}/blocks/${currentBlockId}/week/${currentWeekId}/create`)}
+            className="text-brand font-bold hover:underline"
+          >
+            Adicionar Treino Agora
+          </button>
         </div>
       )}
 
-      {/* MODAL DE REVISÃO DA IA */}
+      {/* Modal de Revisão da IA */}
       {reviewTreino && (
         <AiReviewModal
           treinoId={reviewTreino.id}
@@ -467,109 +518,110 @@ export default function WeekDetailsPage() {
         />
       )}
 
-      {/* MODAL DE DUPLICAÇÃO AVANÇADA */}
+      {/* Modal de Duplicação Avançada */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}>
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                
-                <div className="p-5 border-b border-neutral-100 flex justify-between items-center bg-neutral-50 shrink-0">
-                    <h3 className="font-bold text-lg text-neutral-900 flex items-center gap-2">
-                        <Copy size={20} className="text-red-700"/> Duplicar Treino
-                    </h3>
-                    <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-red-600"><X size={20} /></button>
-                </div>
-                
-                <form onSubmit={handleConfirmDuplicate} className="p-6 space-y-5 overflow-y-auto">
-                    
-                    {/* ORIGEM */}
-                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-sm text-blue-800 flex items-center gap-2">
-                        <span className="font-bold shrink-0">Origem:</span> {sourceTreino?.name}
-                    </div>
-
-                    {/* DESTINO */}
-                    <div className="space-y-4">
-                        <h4 className="text-xs font-bold text-neutral-400 uppercase border-b pb-1 mb-2">Destino da Cópia</h4>
-                        
-                        {/* Select Aluno */}
-                        <div>
-                            <label className="block text-sm font-bold text-neutral-700 mb-1 flex items-center gap-2"><User size={14}/> Aluno</label>
-                            <select 
-                                className="w-full border border-neutral-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-red-500 outline-none"
-                                value={targetAlunoId}
-                                onChange={(e) => setTargetAlunoId(e.target.value)}
-                            >
-                                <option value="">Selecione...</option>
-                                {students.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                            </select>
-                        </div>
-
-                        {/* Select Bloco */}
-                        <div>
-                            <label className="block text-sm font-bold text-neutral-700 mb-1 flex items-center gap-2"><Layers size={14}/> Bloco</label>
-                            <select 
-                                className="w-full border border-neutral-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-red-500 outline-none disabled:bg-neutral-100 disabled:text-neutral-400"
-                                value={targetBlockId}
-                                onChange={(e) => setTargetBlockId(e.target.value)}
-                                disabled={!targetAlunoId || loadingBlocks}
-                            >
-                                <option value="">{loadingBlocks ? "Carregando..." : "Selecione o Bloco"}</option>
-                                {blocks.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
-                            </select>
-                        </div>
-
-                        {/* Select Semana */}
-                        <div>
-                            <label className="block text-sm font-bold text-neutral-700 mb-1 flex items-center gap-2"><Calendar size={14}/> Semana</label>
-                            <select 
-                                className="w-full border border-neutral-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-red-500 outline-none disabled:bg-neutral-100 disabled:text-neutral-400"
-                                value={targetWeekId}
-                                onChange={(e) => setTargetWeekId(e.target.value)}
-                                disabled={!targetBlockId || loadingWeeks}
-                            >
-                                <option value="">{loadingWeeks ? "Carregando..." : "Selecione a Semana"}</option>
-                                {weeks.map(w => <option key={w.id} value={w.id}>{w.label}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* DETALHES DO NOVO TREINO */}
-                    <div className="space-y-4 pt-4 border-t border-neutral-100">
-                        <h4 className="text-xs font-bold text-neutral-400 uppercase border-b pb-1 mb-2">Dados do Novo Treino</h4>
-                        <div>
-                            <label className="block text-sm font-bold text-neutral-600 mb-1">Nome</label>
-                            <input 
-                                type="text" 
-                                className="w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 outline-none"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-neutral-600 mb-1">Data</label>
-                            <input 
-                                type="date" 
-                                className="w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 outline-none"
-                                value={newDay}
-                                onChange={(e) => setNewDay(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {/* ACTIONS */}
-                    <div className="pt-4 flex gap-3">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-neutral-100 text-neutral-700 font-bold rounded-xl hover:bg-neutral-200 transition-colors">Cancelar</button>
-                        <button type="submit" disabled={duplicating || !targetWeekId} className="flex-1 py-3 bg-red-700 text-white font-bold rounded-xl hover:bg-red-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
-                            {duplicating ? <Loader2 className="animate-spin" size={20} /> : <Copy size={20} />}
-                            {duplicating ? "Copiando..." : "Confirmar Cópia"}
-                        </button>
-                    </div>
-                </form>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40"
+          onClick={() => setIsModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="duplicate-modal-title"
+        >
+          <div
+            className="bg-surface-elevated rounded-t-2xl sm:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-line"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-line flex justify-between items-center bg-surface-page shrink-0">
+              <h3 id="duplicate-modal-title" className="font-bold text-lg text-content-primary flex items-center gap-2">
+                <Copy size={18} className="text-brand" /> Duplicar Treino
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-content-muted hover:text-content-secondary transition-colors">
+                <X size={20} />
+              </button>
             </div>
+
+            <form onSubmit={handleConfirmDuplicate} className="p-6 space-y-5 overflow-y-auto">
+              {/* Origem */}
+              <div className="bg-semantic-info-bg border border-semantic-info-border p-3 rounded-lg text-sm text-semantic-info-text flex items-center gap-2">
+                <span className="font-bold shrink-0">Origem:</span> {sourceTreino?.name}
+              </div>
+
+              {/* Destino */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-content-muted uppercase border-b border-line pb-1 mb-2">Destino da Cópia</h4>
+
+                <div>
+                  <label className="block text-sm font-bold text-content-secondary mb-1 flex items-center gap-2"><User size={13} /> Aluno</label>
+                  <select className={selectClass} value={targetAlunoId} onChange={(e) => setTargetAlunoId(e.target.value)}>
+                    <option value="">Selecione...</option>
+                    {students.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-content-secondary mb-1 flex items-center gap-2"><Layers size={13} /> Bloco</label>
+                  <select className={selectClass} value={targetBlockId} onChange={(e) => setTargetBlockId(e.target.value)} disabled={!targetAlunoId || loadingBlocks}>
+                    <option value="">{loadingBlocks ? "Carregando..." : "Selecione o Bloco"}</option>
+                    {blocks.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-content-secondary mb-1 flex items-center gap-2"><Calendar size={13} /> Semana</label>
+                  <select className={selectClass} value={targetWeekId} onChange={(e) => setTargetWeekId(e.target.value)} disabled={!targetBlockId || loadingWeeks}>
+                    <option value="">{loadingWeeks ? "Carregando..." : "Selecione a Semana"}</option>
+                    {weeks.map(w => <option key={w.id} value={w.id}>{w.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Dados do novo treino */}
+              <div className="space-y-4 pt-4 border-t border-line">
+                <h4 className="text-xs font-bold text-content-muted uppercase border-b border-line pb-1 mb-2">Dados do Novo Treino</h4>
+                <div>
+                  <label className="block text-sm font-bold text-content-secondary mb-1">Nome</label>
+                  <input
+                    type="text"
+                    className="w-full border border-line-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-glow outline-none bg-surface-app text-content-primary text-sm"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-content-secondary mb-1">Data</label>
+                  <input
+                    type="date"
+                    className="w-full border border-line-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-glow outline-none bg-surface-app text-content-primary text-sm"
+                    value={newDay}
+                    onChange={(e) => setNewDay(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Ações */}
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3 bg-surface-subtle text-content-secondary font-bold rounded-xl hover:bg-surface-page transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={duplicating || !targetWeekId}
+                  className="flex-1 py-3 bg-brand text-content-on-brand font-bold rounded-xl hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {duplicating ? <Loader2 className="animate-spin" size={18} /> : <Copy size={18} />}
+                  {duplicating ? "Copiando..." : "Confirmar Cópia"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-
     </div>
   );
 }
