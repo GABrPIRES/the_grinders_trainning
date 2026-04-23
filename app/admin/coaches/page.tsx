@@ -105,7 +105,7 @@ export default function AdminCoachesPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-content-tertiary hidden sm:block mr-2">{coaches.length} de {total}</span>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-50 transition-colors"><ChevronLeft size={16} /></button>
-            <span className="text-sm font-bold min-w-[20px] text-center text-content-primary">{page}</span>
+            <span className="text-sm font-bold text-center text-content-primary">{page}/{totalPages || 1}</span>
             <button onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages} className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-50 transition-colors"><ChevronRight size={16} /></button>
           </div>
         </div>

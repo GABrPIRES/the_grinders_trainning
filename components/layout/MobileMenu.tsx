@@ -36,7 +36,7 @@ const MENUS = {
     { name: 'Home',      href: '/admin',          icon: Home },
     { name: 'Coaches',   href: '/admin/coaches',  icon: Users },
     { name: 'Alunos',    href: '/admin/students', icon: Dumbbell },
-    { name: 'Financeiro',href: '/admin/settings', icon: CreditCard },
+    { name: 'Config',    href: '/admin/settings', icon: Settings },
     { name: 'Perfil',    href: '/admin/profile',  icon: User },
   ],
 };

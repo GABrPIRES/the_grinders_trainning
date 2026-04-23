@@ -13,7 +13,6 @@ interface Student {
   created_at: string;
   user: { name: string; email: string };
   personal?: { user: { name: string } };
-  pagamento?: { status: string };
 }
 
 function StudentsSkeleton() {
@@ -33,19 +32,6 @@ function StudentsSkeleton() {
   );
 }
 
-function StatusBadge({ status }: { status?: string }) {
-  switch (status) {
-    case 'ativo':
-    case 'pago':
-      return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border">Ativo</span>;
-    case 'atrasado':
-      return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-semantic-error-bg text-semantic-error-text border border-semantic-error-border">Atrasado</span>;
-    case 'pendente':
-      return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-semantic-warning-bg text-semantic-warning-text border border-semantic-warning-border">Pendente</span>;
-    default:
-      return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-surface-subtle text-content-muted border border-line">Sem Status</span>;
-  }
-}
 
 export default function AdminStudentsPage() {
   const router = useRouter();
@@ -118,7 +104,7 @@ export default function AdminStudentsPage() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-content-tertiary hidden sm:block mr-2">{students.length} de {total}</span>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-50 transition-colors"><ChevronLeft size={16} /></button>
-            <span className="text-sm font-bold min-w-[20px] text-center text-content-primary">{page}</span>
+            <span className="text-sm font-bold text-center text-content-primary">{page}/{totalPages || 1}</span>
             <button onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages} className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-50 transition-colors"><ChevronRight size={16} /></button>
           </div>
         </div>
@@ -143,17 +129,14 @@ export default function AdminStudentsPage() {
                 onClick={() => router.push(`/admin/students/${student.id}/edit`)}
                 className="bg-surface-elevated border border-line p-5 rounded-xl shadow-sm flex flex-col gap-4 active:scale-[0.98] transition-transform cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-surface-subtle text-content-secondary flex items-center justify-center font-bold text-xs border border-line">
-                      {getInitials(student.user.name)}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-content-primary text-sm">{student.user.name}</h3>
-                      <p className="text-xs text-content-tertiary">{student.user.email}</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-surface-subtle text-content-secondary flex items-center justify-center font-bold text-xs border border-line">
+                    {getInitials(student.user.name)}
                   </div>
-                  <StatusBadge status={student.pagamento?.status} />
+                  <div>
+                    <h3 className="font-bold text-content-primary text-sm">{student.user.name}</h3>
+                    <p className="text-xs text-content-tertiary">{student.user.email}</p>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm border-t border-line pt-3">
                   <div>
@@ -178,7 +161,6 @@ export default function AdminStudentsPage() {
                 <tr>
                   <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Aluno</th>
                   <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Coach Responsável</th>
-                  <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Status Financeiro</th>
                   <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Data Cadastro</th>
                   <th className="px-6 py-4 text-right" />
                 </tr>
@@ -207,7 +189,6 @@ export default function AdminStudentsPage() {
                         {student.personal?.user?.name || <span className="text-content-muted italic">Sem Coach</span>}
                       </div>
                     </td>
-                    <td className="px-6 py-4"><StatusBadge status={student.pagamento?.status} /></td>
                     <td className="px-6 py-4 text-sm text-content-tertiary font-mono">{formatDate(student.created_at)}</td>
                     <td className="px-6 py-4 text-right">
                       <button
