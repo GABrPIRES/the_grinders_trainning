@@ -184,7 +184,7 @@ function EngagementBar({ label, icon, pct: v, total }: { label: string; icon: Re
 
 // ─── Chart tooltip ────────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) {
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { value?: number }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-surface-elevated border border-line rounded-xl shadow-lg px-4 py-3 text-sm">
