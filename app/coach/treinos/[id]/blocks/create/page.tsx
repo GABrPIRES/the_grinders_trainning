@@ -8,12 +8,19 @@ import {
   TrendingUp, Info, AlertCircle,
 } from "lucide-react";
 
+interface ExistingBlock {
+  title: string;
+  start_date: string;
+  end_date: string;
+}
+
 export default function CreateBlockPage() {
   const { id } = useParams();
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [existingBlocks, setExistingBlocks] = useState<ExistingBlock[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -21,6 +28,13 @@ export default function CreateBlockPage() {
     weeks_duration: "4",
     end_date: "",
   });
+
+  useEffect(() => {
+    if (!id) return;
+    fetchWithAuth(`alunos/${id}/training_blocks`)
+      .then((data) => setExistingBlocks(data || []))
+      .catch(() => {});
+  }, [id]);
 
   // Cálculo automático da Data de Término
   useEffect(() => {
@@ -47,6 +61,22 @@ export default function CreateBlockPage() {
       alert("Por favor, verifique a data. O ano parece incorreto.");
       return;
     }
+
+    // Validação de sobreposição de datas
+    if (form.start_date && form.end_date && existingBlocks.length > 0) {
+      const newStart = new Date(form.start_date);
+      const newEnd = new Date(form.end_date);
+      const overlap = existingBlocks.find((block) => {
+        const bStart = new Date(block.start_date);
+        const bEnd = new Date(block.end_date);
+        return newStart <= bEnd && bStart <= newEnd;
+      });
+      if (overlap) {
+        setError(`Este período se sobrepõe com o bloco "${overlap.title}". Escolha uma data de início diferente.`);
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
     try {

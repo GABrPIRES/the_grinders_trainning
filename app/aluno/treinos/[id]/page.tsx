@@ -16,6 +16,8 @@ import {
   Info,
   AlertCircle,
   X,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -136,6 +138,16 @@ export default function AlunoTreinoDetalhesPage() {
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const [feedbackWeekId, setFeedbackWeekId] = useState<string | null>(null);
+  const [expandedExerciseIds, setExpandedExerciseIds] = useState<Set<string>>(new Set());
+
+  const toggleExercise = (id: string) => {
+    setExpandedExerciseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const timerDisplay = useTimer(treino?.started_at, id);
 
@@ -403,252 +415,277 @@ export default function AlunoTreinoDetalhesPage() {
 
       {/* Exercise list */}
       <div className="space-y-5">
-        {treino.exercicios.map((ex, exIndex) => (
-          <div key={ex.id} className="bg-surface-elevated border border-line rounded-2xl shadow-sm overflow-hidden">
+        {treino.exercicios.map((ex, exIndex) => {
+          const isExExpanded = expandedExerciseIds.has(ex.id);
+          const doneCount = ex.sections.filter((s) => sectionLogs[s.id]?.feito).length;
+          const totalSections = ex.sections.length;
 
-            {/* Exercise header */}
-            <div className="bg-surface-subtle border-b border-line p-4">
-              <h2 className="text-base font-bold text-brand">
-                {exIndex + 1}. {ex.name}
-              </h2>
+          return (
+            <div key={ex.id} className="bg-surface-elevated border border-line rounded-2xl shadow-sm overflow-hidden">
 
-              {(isEditable || isCompleted) && (
-                <div className="mt-3">
-                  <label className="text-[10px] font-bold text-content-muted uppercase block mb-1">
-                    Observação do exercício
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Anotações, dores, ajustes de técnica..."
-                    value={observations[ex.id] ?? ''}
-                    onChange={(e) => handleObservationChange(ex.id, e.target.value)}
-                    disabled={!isEditable}
-                    className="w-full text-sm border border-line-input rounded-lg p-2 resize-none focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none bg-surface-app text-content-primary placeholder:text-content-tertiary disabled:bg-surface-subtle disabled:text-content-tertiary transition-all"
-                  />
+              {/* Exercise header — click to expand/collapse */}
+              <button
+                onClick={() => toggleExercise(ex.id)}
+                className="w-full flex items-center justify-between p-4 bg-surface-subtle text-left hover:bg-surface-subtle/80 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <h2 className="text-base font-bold text-brand truncate">
+                    {exIndex + 1}. {ex.name}
+                  </h2>
+                  {(isEditable || isCompleted) && doneCount > 0 && (
+                    doneCount === totalSections ? (
+                      <span className="flex-shrink-0 text-[10px] font-bold text-semantic-success-text bg-semantic-success-bg border border-semantic-success-border px-2 py-0.5 rounded-full">
+                        Completo
+                      </span>
+                    ) : (
+                      <span className="flex-shrink-0 text-xs text-content-muted">
+                        {doneCount}/{totalSections}
+                      </span>
+                    )
+                  )}
                 </div>
-              )}
-            </div>
+                <ChevronDown
+                  size={18}
+                  className={`text-content-muted flex-shrink-0 ml-2 transition-transform duration-200 ${isExExpanded ? 'rotate-180' : ''}`}
+                />
+              </button>
 
-            {/* Column headers — desktop */}
-            <div
-              className={`hidden md:grid text-[10px] font-bold text-content-muted uppercase tracking-wide px-4 py-2 border-b border-line text-center ${
-                isEditable ? 'grid-cols-7' : 'grid-cols-6'
-              }`}
-            >
-              <span>Carga</span>
-              {isEditable && <span>Real</span>}
-              <span>Séries</span>
-              <span>Reps</span>
-              <span>Equip</span>
-              <span>RPE {isActive ? 'prev.' : ''}</span>
-              <span>{isActive ? 'RPE Real' : 'PR Est.'}</span>
-              <span>Feito</span>
-            </div>
+              {/* Expanded content */}
+              {isExExpanded && (
+                <>
+                  {/* Observation field */}
+                  {(isEditable || isCompleted) && (
+                    <div className="px-4 pt-3 pb-3 border-t border-line">
+                      <label className="text-[10px] font-bold text-content-muted uppercase block mb-1">
+                        Observação do exercício
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Anotações, dores, ajustes de técnica..."
+                        value={observations[ex.id] ?? ''}
+                        onChange={(e) => handleObservationChange(ex.id, e.target.value)}
+                        disabled={!isEditable}
+                        className="w-full text-sm border border-line-input rounded-lg p-2 resize-none focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none bg-surface-app text-content-primary placeholder:text-content-tertiary disabled:bg-surface-subtle disabled:text-content-tertiary transition-all"
+                      />
+                    </div>
+                  )}
 
-            {/* Sections */}
-            <div className="divide-y divide-line">
-              {ex.sections.map((sec) => {
-                const log = sectionLogs[sec.id] ?? { actual_load: '', actual_rpe: '', feito: false };
-                const estimatedPR = computePR(sec, log);
-
-                return (
+                  {/* Column headers — desktop only */}
                   <div
-                    key={sec.id}
-                    className={`p-4 transition-colors ${
-                      log.feito ? 'bg-semantic-success-bg/40' : isEditable ? 'hover:bg-surface-subtle' : ''
-                    }`}
+                    className={`hidden md:flex items-center gap-3 text-[10px] font-bold text-content-muted uppercase tracking-wide px-4 py-2 border-t border-line`}
                   >
-                    {/* Mobile layout */}
-                    <div className="md:hidden space-y-3">
-                      <div className="flex items-center justify-between gap-3">
-                        {/* Colunas prescritas */}
-                        <div className="grid grid-cols-4 gap-2 flex-1 text-center">
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga</p>
-                            <p className="font-bold text-content-primary text-sm">
-                              {sec.carga ?? '—'}
-                              <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Séries</p>
-                            <p className="font-bold text-content-primary text-sm">{sec.series ?? '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Reps</p>
-                            <p className="font-bold text-content-primary text-sm">{sec.reps ?? '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE</p>
-                            <p className="font-bold text-content-primary text-sm">{sec.rpe ?? '—'}</p>
-                          </div>
-                        </div>
-                        {/* Checkbox / feito */}
-                        {isEditable ? (
-                          <input
-                            type="checkbox"
-                            checked={log.feito}
-                            onChange={(e) => handleSectionChange(sec.id, 'feito', e.target.checked)}
-                            className="h-6 w-6 accent-red-600 rounded cursor-pointer flex-shrink-0"
-                            aria-label="Marcar como feito"
-                          />
-                        ) : (
-                          <span className="text-lg flex-shrink-0">{log.feito ? '✅' : isCompleted ? '⬜' : ''}</span>
-                        )}
-                      </div>
+                    <div className="w-8 flex-shrink-0" />
+                    <div className={`flex-1 grid gap-2 text-center ${isEditable ? 'grid-cols-7' : 'grid-cols-6'}`}>
+                      <span>Carga</span>
+                      {isEditable && <span>Real</span>}
+                      <span>Séries</span>
+                      <span>Reps</span>
+                      <span>Equip</span>
+                      <span>RPE{isActive ? ' prev.' : ''}</span>
+                      {!isEditable && <span>PR Est.</span>}
+                      {isEditable && <span>RPE Real</span>}
+                    </div>
+                  </div>
 
-                      {sec.equip && (
-                        <p className="text-xs text-content-muted flex items-center gap-1">
-                          <Info size={10} /> {sec.equip}
-                        </p>
-                      )}
+                  {/* Sections */}
+                  <div className="divide-y divide-line">
+                    {ex.sections.map((sec) => {
+                      const log = sectionLogs[sec.id] ?? { actual_load: '', actual_rpe: '', feito: false };
+                      const estimatedPR = computePR(sec, log);
 
-                      {isEditable && (
-                        <div className="flex gap-3">
-                          <div className="flex-1 space-y-1">
-                            <label className="text-[10px] font-bold text-content-muted uppercase block">Carga Real</label>
-                            <input
-                              type="number" step="0.5"
-                              placeholder={sec.carga != null ? String(sec.carga) : '—'}
-                              value={log.actual_load}
-                              onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
-                              className={`${sectionInputClass} p-2`}
-                            />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <label className="text-[10px] font-bold text-content-muted uppercase block">RPE Real</label>
-                            <input
-                              type="number" step="0.5" min="5" max="10"
-                              placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
-                              value={log.actual_rpe}
-                              onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
-                              className={`${sectionInputClass} p-2`}
-                            />
-                          </div>
-                          {estimatedPR != null && (
-                            <div className="flex-1 space-y-1">
-                              <label className="text-[10px] font-bold text-content-muted uppercase block">PR Est.</label>
-                              <p className="text-center font-bold text-brand text-sm pt-2">{estimatedPR}kg</p>
+                      return (
+                        <div
+                          key={sec.id}
+                          className={`flex items-start gap-3 p-4 transition-colors ${
+                            log.feito ? 'bg-semantic-success-bg/40' : isEditable ? 'hover:bg-surface-subtle' : ''
+                          }`}
+                        >
+                          {/* Circular done button — left side */}
+                          {isEditable ? (
+                            <button
+                              onClick={() => handleSectionChange(sec.id, 'feito', !log.feito)}
+                              className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all border-2 ${
+                                log.feito
+                                  ? 'bg-semantic-success-text border-semantic-success-text text-white'
+                                  : 'border-line-input bg-transparent hover:border-brand'
+                              }`}
+                              aria-label={log.feito ? 'Desmarcar' : 'Marcar como feito'}
+                            >
+                              {log.feito && <Check size={13} strokeWidth={3} />}
+                            </button>
+                          ) : (
+                            <div
+                              className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
+                                log.feito
+                                  ? 'bg-semantic-success-text border-semantic-success-text text-white'
+                                  : 'border-line bg-transparent'
+                              }`}
+                            >
+                              {log.feito && <Check size={13} strokeWidth={3} />}
                             </div>
                           )}
+
+                          {/* Section data */}
+                          <div className="flex-1 min-w-0">
+                            {/* Mobile layout */}
+                            <div className="md:hidden space-y-2">
+                              <div className="grid grid-cols-4 gap-2 text-center">
+                                <div>
+                                  <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga</p>
+                                  <p className="font-bold text-content-primary text-sm">
+                                    {sec.carga ?? '—'}
+                                    <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Séries</p>
+                                  <p className="font-bold text-content-primary text-sm">{sec.series ?? '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Reps</p>
+                                  <p className="font-bold text-content-primary text-sm">{sec.reps ?? '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE</p>
+                                  <p className="font-bold text-content-primary text-sm">{sec.rpe ?? '—'}</p>
+                                </div>
+                              </div>
+
+                              {sec.equip && (
+                                <p className="text-xs text-content-muted flex items-center gap-1">
+                                  <Info size={10} /> {sec.equip}
+                                </p>
+                              )}
+
+                              {isEditable && (
+                                <div className="flex gap-3">
+                                  <div className="flex-1 space-y-1">
+                                    <label className="text-[10px] font-bold text-content-muted uppercase block">Carga Real</label>
+                                    <input
+                                      type="number" step="0.5"
+                                      placeholder={sec.carga != null ? String(sec.carga) : '—'}
+                                      value={log.actual_load}
+                                      onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
+                                      className={`${sectionInputClass} p-2`}
+                                    />
+                                  </div>
+                                  <div className="flex-1 space-y-1">
+                                    <label className="text-[10px] font-bold text-content-muted uppercase block">RPE Real</label>
+                                    <input
+                                      type="number" step="0.5" min="5" max="10"
+                                      placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
+                                      value={log.actual_rpe}
+                                      onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
+                                      className={`${sectionInputClass} p-2`}
+                                    />
+                                  </div>
+                                  {estimatedPR != null && (
+                                    <div className="flex-1 space-y-1">
+                                      <label className="text-[10px] font-bold text-content-muted uppercase block">PR Est.</label>
+                                      <p className="text-center font-bold text-brand text-sm pt-2">{estimatedPR}kg</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {isCompleted && !isEditable && (
+                                <div className="border-t border-line pt-2 mt-1">
+                                  <p className="text-[10px] font-bold text-content-muted uppercase mb-2">Executado</p>
+                                  <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                      <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga Real</p>
+                                      <p className="font-bold text-content-primary text-sm">
+                                        {log.actual_load || '—'}
+                                        {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE Real</p>
+                                      <p className="font-bold text-content-primary text-sm">{log.actual_rpe || '—'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] font-bold text-content-muted uppercase mb-1">PR Est.</p>
+                                      <p className="font-bold text-brand text-sm">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Desktop layout */}
+                            <div
+                              className={`hidden md:grid items-center gap-2 text-center ${
+                                isEditable ? 'grid-cols-7' : 'grid-cols-6'
+                              }`}
+                            >
+                              <div>
+                                <span className="font-bold text-content-primary">{sec.carga ?? '—'}</span>
+                                <span className="text-xs text-content-muted ml-1">{sec.load_unit || 'kg'}</span>
+                              </div>
+
+                              {isEditable && (
+                                <input
+                                  type="number" step="0.5"
+                                  placeholder={sec.carga != null ? String(sec.carga) : '—'}
+                                  value={log.actual_load}
+                                  onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
+                                  className={sectionInputClass}
+                                />
+                              )}
+
+                              <span className="text-sm text-content-primary">{sec.series ?? '—'}</span>
+                              <span className="text-sm text-content-primary">{sec.reps ?? '—'}</span>
+                              <span className="text-xs text-content-tertiary">{sec.equip || '—'}</span>
+                              <span className="text-sm text-content-primary">{sec.rpe ?? '—'}</span>
+
+                              {isEditable ? (
+                                <input
+                                  type="number" step="0.5" min="5" max="10"
+                                  placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
+                                  value={log.actual_rpe}
+                                  onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
+                                  className={sectionInputClass}
+                                />
+                              ) : (
+                                <span className="text-sm font-bold text-brand">
+                                  {estimatedPR ? `${estimatedPR}kg` : '—'}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Desktop — valores reais (treino finalizado e formulário respondido) */}
+                            {isCompleted && !isEditable && (
+                              <div className="hidden md:block border-t border-line/50 pt-3 mt-2">
+                                <p className="text-[10px] font-bold text-content-muted uppercase mb-2">Executado</p>
+                                <div className="grid grid-cols-3 gap-4 text-center max-w-xs">
+                                  <div>
+                                    <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga Real</p>
+                                    <p className="font-bold text-content-primary text-sm">
+                                      {log.actual_load || '—'}
+                                      {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE Real</p>
+                                    <p className="font-bold text-content-primary text-sm">{log.actual_rpe || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] font-bold text-content-muted uppercase mb-1">PR Est.</p>
+                                    <p className="font-bold text-brand text-sm">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-
-                      {/* Valores reais em colunas — só quando finalizado e forms respondido */}
-                      {isCompleted && !isEditable && (
-                        <div className="border-t border-line pt-3 mt-1">
-                          <p className="text-[10px] font-bold text-content-muted uppercase mb-2">Executado</p>
-                          <div className="grid grid-cols-4 gap-2 text-center">
-                            <div>
-                              <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga Real</p>
-                              <p className="font-bold text-content-primary text-sm">
-                                {log.actual_load || '—'}
-                                {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE Real</p>
-                              <p className="font-bold text-content-primary text-sm">{log.actual_rpe || '—'}</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-content-muted uppercase mb-1">PR Est.</p>
-                              <p className="font-bold text-brand text-sm">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Feito</p>
-                              <p className="text-base">{log.feito ? '✅' : '⬜'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Desktop layout */}
-                    <div
-                      className={`hidden md:grid items-center gap-2 text-center ${
-                        isEditable ? 'grid-cols-7' : 'grid-cols-6'
-                      }`}
-                    >
-                      <div>
-                        <span className="font-bold text-content-primary">{sec.carga ?? '—'}</span>
-                        <span className="text-xs text-content-muted ml-1">{sec.load_unit || 'kg'}</span>
-                      </div>
-
-                      {isEditable && (
-                        <input
-                          type="number" step="0.5"
-                          placeholder={sec.carga != null ? String(sec.carga) : '—'}
-                          value={log.actual_load}
-                          onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
-                          className={sectionInputClass}
-                        />
-                      )}
-
-                      <span className="text-sm text-content-primary">{sec.series ?? '—'}</span>
-                      <span className="text-sm text-content-primary">{sec.reps ?? '—'}</span>
-                      <span className="text-xs text-content-tertiary">{sec.equip || '—'}</span>
-                      <span className="text-sm text-content-primary">{sec.rpe ?? '—'}</span>
-
-                      {isEditable ? (
-                        <input
-                          type="number" step="0.5" min="5" max="10"
-                          placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
-                          value={log.actual_rpe}
-                          onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
-                          className={sectionInputClass}
-                        />
-                      ) : (
-                        <span className="text-sm font-bold text-brand">
-                          {estimatedPR ? `${estimatedPR}kg` : '—'}
-                        </span>
-                      )}
-
-                      {isEditable ? (
-                        <input
-                          type="checkbox"
-                          checked={log.feito}
-                          onChange={(e) => handleSectionChange(sec.id, 'feito', e.target.checked)}
-                          className="h-5 w-5 accent-red-600 rounded cursor-pointer mx-auto block"
-                          aria-label="Marcar como feito"
-                        />
-                      ) : (
-                        <span className="text-base mx-auto block">{log.feito ? '✅' : '⬜'}</span>
-                      )}
-                    </div>
-
-                    {/* Desktop — valores reais (treino finalizado e forms respondido) */}
-                    {isCompleted && !isEditable && (
-                      <div className="hidden md:block border-t border-line/50 pt-3 mt-1 px-2">
-                        <p className="text-[10px] font-bold text-content-muted uppercase mb-2">Executado</p>
-                        <div className="grid grid-cols-4 gap-4 text-center max-w-sm">
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga Real</p>
-                            <p className="font-bold text-content-primary text-sm">
-                              {log.actual_load || '—'}
-                              {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE Real</p>
-                            <p className="font-bold text-content-primary text-sm">{log.actual_rpe || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">PR Est.</p>
-                            <p className="font-bold text-brand text-sm">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Feito</p>
-                            <p className="text-base">{log.feito ? '✅' : '⬜'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Bottom bar — treino ativo */}

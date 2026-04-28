@@ -167,7 +167,7 @@ export default function MeusTreinosPage() {
 
               {/* Semanas */}
               {isExpanded && (
-                <div className="p-4 bg-surface-subtle/50 space-y-3">
+                <div className="p-4 space-y-3">
                   {block.weeks.map(week => {
                     const isCurrentWeek = isCurrentDate(week.start_date, week.end_date);
                     const isWeekExpanded = expandedWeekId === week.id;
@@ -176,7 +176,7 @@ export default function MeusTreinosPage() {
                     return (
                       <div
                         key={week.id}
-                        className={`bg-surface-elevated border rounded-lg transition-all ${
+                        className={`bg-surface-elevated border rounded-xl shadow-sm overflow-hidden transition-all ${
                           hasPendingFeedback
                             ? 'border-semantic-warning-border ring-1 ring-semantic-warning-border/50'
                             : isCurrentWeek
@@ -248,14 +248,14 @@ export default function MeusTreinosPage() {
 
                         {/* Treinos da Semana */}
                         {isWeekExpanded && (
-                          <div className="px-4 pb-4 pt-0 border-t border-line mt-2">
+                          <div className="px-4 pb-4 pt-0 border-t border-line">
                             {week.treinos.length > 0 ? (
-                              <ul className="mt-3 space-y-1">
+                              <ul className="mt-3 space-y-2">
                                 {week.treinos.map(treino => (
                                   <li key={treino.id}>
                                     <button
                                       onClick={() => router.push(`/aluno/treinos/${treino.id}`)}
-                                      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all group active:scale-[0.98]"
+                                      className="w-full flex items-center justify-between p-3 rounded-xl border border-line hover:bg-surface-subtle hover:border-brand/30 transition-all group active:scale-[0.98]"
                                     >
                                       <div className="flex items-center gap-3">
                                         <Dumbbell size={18} className="text-content-muted group-hover:text-brand transition-colors" />
