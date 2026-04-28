@@ -62,21 +62,21 @@
   --tg-brand-surface:      69 10 10;
 
   --tg-bg-app:             10 10 10;
-  --tg-bg-page:            23 23 23;
+  --tg-bg-page:            18 18 18;
   --tg-bg-subtle:          38 38 38;
-  --tg-bg-elevated:        38 38 38;
+  --tg-bg-elevated:        26 26 26;
   --tg-bg-sidebar:         0 0 0;
   --tg-bg-sidebar-hover:   38 38 38;
 
   --tg-text-primary:       250 250 250;
   --tg-text-secondary:     163 163 163;
   --tg-text-tertiary:      115 115 115;
-  --tg-text-muted:         82 82 82;
+  --tg-text-muted:         115 115 115;
   --tg-text-on-brand:      255 255 255;
   --tg-text-sidebar:       163 163 163;
 
-  --tg-border:             38 38 38;
-  --tg-border-input:       64 64 64;
+  --tg-border:             52 52 52;
+  --tg-border-input:       72 72 72;
 
   --tg-success-bg:         20 83 45;
   --tg-success-text:       134 239 172;
