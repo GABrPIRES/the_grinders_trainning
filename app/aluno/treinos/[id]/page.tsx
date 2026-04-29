@@ -40,6 +40,8 @@ interface Exercise {
   id: string;
   name: string;
   observation?: string | null;
+  coach_comment?: string | null;
+  video_link?: string | null;
   sections: Section[];
 }
 
@@ -147,6 +149,12 @@ export default function AlunoTreinoDetalhesPage() {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleExerciseDone = (ex: Exercise) => {
+    const allDone = ex.sections.every((s) => sectionLogs[s.id]?.feito);
+    const newValue = !allDone;
+    ex.sections.forEach((sec) => handleSectionChange(sec.id, 'feito', newValue));
   };
 
   const timerDisplay = useTimer(treino?.started_at, id);
@@ -417,56 +425,55 @@ export default function AlunoTreinoDetalhesPage() {
       <div className="space-y-5">
         {treino.exercicios.map((ex, exIndex) => {
           const isExExpanded = expandedExerciseIds.has(ex.id);
-          const doneCount = ex.sections.filter((s) => sectionLogs[s.id]?.feito).length;
           const totalSections = ex.sections.length;
+          const isExDone = totalSections > 0 && ex.sections.every((s) => sectionLogs[s.id]?.feito);
 
           return (
             <div key={ex.id} className="bg-surface-elevated border border-line rounded-2xl shadow-sm overflow-hidden">
 
-              {/* Exercise header — click to expand/collapse */}
-              <button
-                onClick={() => toggleExercise(ex.id)}
-                className="w-full flex items-center justify-between p-4 bg-surface-subtle text-left hover:bg-surface-subtle/80 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <h2 className="text-base font-bold text-brand truncate">
+              {/* Exercise header */}
+              <div className="flex items-center bg-surface-subtle">
+                {/* Done button — works open or closed */}
+                {(isEditable || isCompleted) && (
+                  <button
+                    onClick={() => handleExerciseDone(ex)}
+                    disabled={!isEditable}
+                    aria-label={isExDone ? 'Desmarcar exercício' : 'Marcar exercício como feito'}
+                    className={`ml-3 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all border-2 ${
+                      isExDone
+                        ? 'bg-red-950/60 border-red-900/70'
+                        : 'border-line-input bg-transparent hover:border-brand disabled:opacity-40'
+                    }`}
+                  >
+                    {isExDone && <Check size={10} strokeWidth={3} className="text-red-600" />}
+                  </button>
+                )}
+                {/* Expand/collapse button */}
+                <button
+                  onClick={() => toggleExercise(ex.id)}
+                  className="flex-1 flex items-center justify-between p-4 text-left hover:bg-surface-subtle/80 transition-colors"
+                >
+                  <h2 className={`text-base font-bold truncate transition-colors ${isExDone ? 'text-red-900/60' : 'text-brand'}`}>
                     {exIndex + 1}. {ex.name}
                   </h2>
-                  {(isEditable || isCompleted) && doneCount > 0 && (
-                    doneCount === totalSections ? (
-                      <span className="flex-shrink-0 text-[10px] font-bold text-semantic-success-text bg-semantic-success-bg border border-semantic-success-border px-2 py-0.5 rounded-full">
-                        Completo
-                      </span>
-                    ) : (
-                      <span className="flex-shrink-0 text-xs text-content-muted">
-                        {doneCount}/{totalSections}
-                      </span>
-                    )
-                  )}
-                </div>
-                <ChevronDown
-                  size={18}
-                  className={`text-content-muted flex-shrink-0 ml-2 transition-transform duration-200 ${isExExpanded ? 'rotate-180' : ''}`}
-                />
-              </button>
+                  <ChevronDown
+                    size={18}
+                    className={`text-content-muted flex-shrink-0 ml-2 transition-transform duration-200 ${isExExpanded ? 'rotate-180' : ''}`}
+                  />
+                </button>
+              </div>
 
               {/* Expanded content */}
               {isExExpanded && (
                 <>
-                  {/* Observation field */}
-                  {(isEditable || isCompleted) && (
-                    <div className="px-4 pt-3 pb-3 border-t border-line">
-                      <label className="text-[10px] font-bold text-content-muted uppercase block mb-1">
-                        Observação do exercício
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="Anotações, dores, ajustes de técnica..."
-                        value={observations[ex.id] ?? ''}
-                        onChange={(e) => handleObservationChange(ex.id, e.target.value)}
-                        disabled={!isEditable}
-                        className="w-full text-sm border border-line-input rounded-lg p-2 resize-none focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none bg-surface-app text-content-primary placeholder:text-content-tertiary disabled:bg-surface-subtle disabled:text-content-tertiary transition-all"
-                      />
+                  {/* 1. Coach comment (placeholder — dados virão do backend) */}
+                  {ex.coach_comment && (
+                    <div className="px-4 pt-3 pb-3 border-t border-line flex gap-2.5 items-start bg-surface-subtle/40">
+                      <span className="mt-0.5 text-content-muted flex-shrink-0">💬</span>
+                      <div>
+                        <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Observação do coach</p>
+                        <p className="text-sm text-content-secondary leading-relaxed">{ex.coach_comment}</p>
+                      </div>
                     </div>
                   )}
 
@@ -487,7 +494,7 @@ export default function AlunoTreinoDetalhesPage() {
                     </div>
                   </div>
 
-                  {/* Sections */}
+                  {/* 2+3. Sections (prescrição + execução real por série) */}
                   <div className="divide-y divide-line">
                     {ex.sections.map((sec) => {
                       const log = sectionLogs[sec.id] ?? { actual_load: '', actual_rpe: '', feito: false };
@@ -681,6 +688,23 @@ export default function AlunoTreinoDetalhesPage() {
                       );
                     })}
                   </div>
+
+                  {/* 4. Suas observações (campo do aluno) */}
+                  {(isEditable || isCompleted) && (
+                    <div className="px-4 pt-3 pb-4 border-t border-line">
+                      <label className="text-[10px] font-bold text-content-muted uppercase block mb-1">
+                        Suas observações
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Anotações pessoais, dores, ajustes de técnica..."
+                        value={observations[ex.id] ?? ''}
+                        onChange={(e) => handleObservationChange(ex.id, e.target.value)}
+                        disabled={!isEditable}
+                        className="w-full text-sm border border-line-input rounded-lg p-2 resize-none focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none bg-surface-app text-content-primary placeholder:text-content-tertiary disabled:bg-surface-subtle disabled:text-content-tertiary transition-all"
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>
