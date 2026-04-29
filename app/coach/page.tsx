@@ -276,12 +276,13 @@ export default function CoachDashboardPage() {
   // ── Derived ──
   const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const greeting = () => {
+  const [greeting, setGreeting] = useState('');
+  const [currentDate, setCurrentDate] = useState('');
+  useEffect(() => {
     const h = new Date().getHours();
-    if (h < 12) return "Bom dia";
-    if (h < 18) return "Boa tarde";
-    return "Boa noite";
-  };
+    setGreeting(h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite");
+    setCurrentDate(new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }));
+  }, []);
 
   const revTrend = (): { trend: "up" | "down" | "flat"; label: string } => {
     if (!data) return { trend: "flat", label: "" };
@@ -306,10 +307,10 @@ export default function CoachDashboardPage() {
       {/* ── Header ── */}
       <div>
         <h1 className="text-2xl font-bold text-content-primary">
-          {greeting()}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
+          {greeting}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
         </h1>
         <p className="text-sm text-content-tertiary mt-0.5">
-          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+          {currentDate}
         </p>
       </div>
 

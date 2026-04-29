@@ -1,12 +1,22 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Bell, User } from "lucide-react";
 import Image from 'next/image';
 import DarkModeToggle from './DarkModeToggle';
 
 export default function HeaderBar() {
   const pathname = usePathname();
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString("pt-BR", {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }));
+  }, []);
 
   const getPageTitle = (path: string) => {
     if (path.includes("/treinos")) return "Gestão de Treinos";
@@ -18,11 +28,6 @@ export default function HeaderBar() {
     return "The Grinders";
   };
 
-  const currentDate = new Date().toLocaleDateString("pt-BR", {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  });
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-surface-sidebar border-b border-line px-6 py-3 shadow-sm transition-all md:pl-8 md:bg-surface-elevated">
@@ -31,7 +36,7 @@ export default function HeaderBar() {
       <div className="flex w-full justify-between">
         <div className="md:hidden">
           <Image
-            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
+            src="/images/logos/logo_transparent.png"
             alt="Logo"
             width={120}
             height={40}
@@ -39,7 +44,7 @@ export default function HeaderBar() {
             className="hidden dark:block"
           />
           <Image
-            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            src="/images/logos/logo_dark_transparent.png"
             alt="Logo"
             width={120}
             height={40}
