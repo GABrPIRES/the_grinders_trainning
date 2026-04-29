@@ -32,7 +32,7 @@ function toEmbedUrl(url: string): string | null {
     } else {
       videoId = u.searchParams.get('v');
     }
-    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1` : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1` : null;
   } catch { return null; }
 }
 
@@ -76,6 +76,34 @@ interface SectionLog {
   actual_load: string;
   actual_rpe: string;
   feito: boolean;
+}
+
+// ─── Video Player (clean embed + overlay unlock) ──────────────────────────────
+
+function VideoPlayer({ src, iframeRef, title }: {
+  src: string;
+  iframeRef: (el: HTMLIFrameElement | null) => void;
+  title: string;
+}) {
+  const [overlayActive, setOverlayActive] = useState(true);
+  return (
+    <div className="relative w-full h-full">
+      <iframe
+        ref={iframeRef}
+        src={src}
+        className="w-full h-full"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        title={title}
+      />
+      {overlayActive && (
+        <div
+          className="absolute inset-0 cursor-pointer"
+          onClick={() => setOverlayActive(false)}
+        />
+      )}
+    </div>
+  );
 }
 
 // ─── Timer hook ───────────────────────────────────────────────────────────────
@@ -493,17 +521,12 @@ export default function AlunoTreinoDetalhesPage() {
                   {ex.video_link && (() => {
                     const embedUrl = toEmbedUrl(ex.video_link);
                     return embedUrl ? (
-                      <div className="border-t border-line">
-                        <div className="aspect-video w-full">
-                          <iframe
-                            ref={(el) => { iframeRefs.current[ex.id] = el; }}
-                            src={embedUrl}
-                            className="w-full h-full"
-                            allow="autoplay; encrypted-media"
-                            allowFullScreen
-                            title={`Vídeo — ${ex.name}`}
-                          />
-                        </div>
+                      <div className="border-t border-line aspect-video w-full">
+                        <VideoPlayer
+                          src={embedUrl}
+                          iframeRef={(el) => { iframeRefs.current[ex.id] = el; }}
+                          title={`Vídeo — ${ex.name}`}
+                        />
                       </div>
                     ) : null;
                   })()}

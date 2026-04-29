@@ -24,7 +24,7 @@ function toEmbedUrl(url: string): string | null {
     } else {
       videoId = u.searchParams.get('v');
     }
-    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1` : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1` : null;
   } catch { return null; }
 }
 
@@ -220,6 +220,7 @@ function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; s
 
 function PreviewExercise({ exercise, index }: { exercise: Exercise; index: number }) {
   const [expanded, setExpanded] = useState(false);
+  const [overlayActive, setOverlayActive] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const embedUrl = exercise.video_link ? toEmbedUrl(exercise.video_link) : null;
   const visibleSections = exercise.sections.filter(s => !s.deleted);
@@ -229,6 +230,7 @@ function PreviewExercise({ exercise, index }: { exercise: Exercise; index: numbe
       iframeRef.current?.contentWindow?.postMessage(
         '{"event":"command","func":"pauseVideo","args":""}', '*'
       );
+      setOverlayActive(true);
     }
     setExpanded(prev => !prev);
   };
@@ -249,7 +251,7 @@ function PreviewExercise({ exercise, index }: { exercise: Exercise; index: numbe
       {expanded && (
         <>
           {embedUrl && (
-            <div className="border-t border-line aspect-video w-full">
+            <div className="border-t border-line aspect-video w-full relative">
               <iframe
                 ref={iframeRef}
                 src={embedUrl}
@@ -258,6 +260,12 @@ function PreviewExercise({ exercise, index }: { exercise: Exercise; index: numbe
                 allowFullScreen
                 title={`Vídeo — ${exercise.name}`}
               />
+              {overlayActive && (
+                <div
+                  className="absolute inset-0 cursor-pointer"
+                  onClick={() => setOverlayActive(false)}
+                />
+              )}
             </div>
           )}
 
