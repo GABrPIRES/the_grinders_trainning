@@ -86,8 +86,15 @@ function VideoPlayer({ src, iframeRef, title }: {
   title: string;
 }) {
   const [overlayActive, setOverlayActive] = useState(true);
+  const [opaque, setOpaque] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setOpaque(false), 1000);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-black">
       <iframe
         ref={iframeRef}
         src={src}
@@ -98,7 +105,7 @@ function VideoPlayer({ src, iframeRef, title }: {
       />
       {overlayActive && (
         <div
-          className="absolute inset-0 cursor-pointer"
+          className={`absolute inset-0 cursor-pointer transition-colors duration-700 ${opaque ? 'bg-black' : 'bg-transparent'}`}
           onClick={() => setOverlayActive(false)}
         />
       )}

@@ -221,9 +221,16 @@ function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; s
 function PreviewExercise({ exercise, index }: { exercise: Exercise; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const [overlayActive, setOverlayActive] = useState(true);
+  const [overlayOpaque, setOverlayOpaque] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const embedUrl = exercise.video_link ? toEmbedUrl(exercise.video_link) : null;
   const visibleSections = exercise.sections.filter(s => !s.deleted);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const t = setTimeout(() => setOverlayOpaque(false), 1000);
+    return () => clearTimeout(t);
+  }, [expanded]);
 
   const handleToggle = () => {
     if (expanded) {
@@ -231,6 +238,7 @@ function PreviewExercise({ exercise, index }: { exercise: Exercise; index: numbe
         '{"event":"command","func":"pauseVideo","args":""}', '*'
       );
       setOverlayActive(true);
+      setOverlayOpaque(true);
     }
     setExpanded(prev => !prev);
   };
@@ -262,7 +270,7 @@ function PreviewExercise({ exercise, index }: { exercise: Exercise; index: numbe
               />
               {overlayActive && (
                 <div
-                  className="absolute inset-0 cursor-pointer"
+                  className={`absolute inset-0 cursor-pointer transition-colors duration-700 ${overlayOpaque ? 'bg-black' : 'bg-transparent'}`}
                   onClick={() => setOverlayActive(false)}
                 />
               )}
