@@ -332,30 +332,60 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [mode, setMode] = useState<'new' | 'update'>('new');
   const [name, setName] = useState('');
+  const [models, setModels] = useState<ExerciseModel[]>([]);
+  const [search, setSearch] = useState('');
+  const [selectedModel, setSelectedModel] = useState<ExerciseModel | null>(null);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [saving, setSaving] = useState(false);
   const firstSection = exercise.sections.filter(s => !s.deleted)[0];
 
+  useEffect(() => {
+    if (mode === 'update' && models.length === 0) {
+      setLoadingModels(true);
+      fetchWithAuth('coach/exercise_models')
+        .then((data: ExerciseModel[]) => setModels(data))
+        .catch(() => {})
+        .finally(() => setLoadingModels(false));
+    }
+  }, [mode]);
+
+  const filtered = models.filter(m =>
+    m.name.toLowerCase().includes(search.toLowerCase()) ||
+    m.exercise_name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const buildPayload = (modelName: string) => ({
+    exercise_model: {
+      name: modelName,
+      exercise_name: exercise.name,
+      load: firstSection?.carga ?? null,
+      load_unit: firstSection?.load_unit || 'kg',
+      series: firstSection?.series ?? null,
+      reps: firstSection?.reps != null ? String(firstSection.reps) : null,
+      rpe: firstSection?.rpe ?? null,
+      coach_comment: exercise.coach_comment || null,
+      video_link: exercise.video_link || null,
+    },
+  });
+
   const handleSave = async () => {
-    if (!name.trim()) return;
+    if (mode === 'new' && !name.trim()) return;
+    if (mode === 'update' && !selectedModel) return;
     setSaving(true);
     try {
-      await fetchWithAuth('coach/exercise_models', {
-        method: 'POST',
-        body: JSON.stringify({
-          exercise_model: {
-            name: name.trim(),
-            exercise_name: exercise.name,
-            load: firstSection?.carga ?? null,
-            load_unit: firstSection?.load_unit || 'kg',
-            series: firstSection?.series ?? null,
-            reps: firstSection?.reps != null ? String(firstSection.reps) : null,
-            rpe: firstSection?.rpe ?? null,
-            coach_comment: exercise.coach_comment || null,
-            video_link: exercise.video_link || null,
-          },
-        }),
-      });
+      if (mode === 'new') {
+        await fetchWithAuth('coach/exercise_models', {
+          method: 'POST',
+          body: JSON.stringify(buildPayload(name.trim())),
+        });
+      } else {
+        await fetchWithAuth(`coach/exercise_models/${selectedModel!.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(buildPayload(selectedModel!.name)),
+        });
+      }
       onSaved();
       onClose();
     } catch {
@@ -364,6 +394,8 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
       setSaving(false);
     }
   };
+
+  const canSave = mode === 'new' ? name.trim().length > 0 : selectedModel !== null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" role="dialog">
@@ -377,21 +409,76 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <p className="text-sm text-content-secondary">
-            Salvando <strong className="text-content-primary">{exercise.name}</strong> como modelo. Use um nome descritivo para encontrá-lo facilmente.
-          </p>
-          <div>
-            <label className="text-[10px] font-bold text-content-muted uppercase block mb-1">Nome do modelo</label>
-            <input
-              type="text"
-              autoFocus
-              placeholder="Ex: Agachamento — Base 4×6"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSave()}
-              className="w-full border border-line-input rounded-lg px-3 py-2 text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none"
-            />
+          {/* Toggle mode */}
+          <div className="p-1 bg-surface-subtle rounded-xl flex gap-1 border border-line">
+            {([['new', 'Salvar como novo'], ['update', 'Atualizar existente']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => { setMode(key); setSelectedModel(null); setSearch(''); }}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  mode === key
+                    ? 'bg-surface-elevated text-content-primary shadow-sm'
+                    : 'text-content-muted hover:text-content-secondary'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {mode === 'new' ? (
+            <div>
+              <label className="text-[10px] font-bold text-content-muted uppercase block mb-1">Nome do modelo</label>
+              <input
+                type="text"
+                autoFocus
+                placeholder="Ex: Agachamento — Base 4×6"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
+                className="w-full border border-line-input rounded-lg px-3 py-2 text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-content-muted uppercase block">Escolha o modelo</label>
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" />
+                <input
+                  type="text"
+                  placeholder="Buscar modelo..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full border border-line-input rounded-lg pl-8 pr-3 py-2 text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none"
+                />
+              </div>
+              <div className="max-h-44 overflow-y-auto space-y-1">
+                {loadingModels ? (
+                  <p className="text-xs text-content-muted text-center py-4">Carregando...</p>
+                ) : filtered.length === 0 ? (
+                  <p className="text-xs text-content-muted text-center py-4">Nenhum modelo encontrado.</p>
+                ) : filtered.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setSelectedModel(m)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      selectedModel?.id === m.id
+                        ? 'bg-brand/10 border border-brand/30 text-content-primary'
+                        : 'hover:bg-surface-subtle text-content-secondary'
+                    }`}
+                  >
+                    <span className="font-medium text-content-primary">{m.name}</span>
+                    <span className="text-content-muted text-xs ml-1">— {m.exercise_name}</span>
+                  </button>
+                ))}
+              </div>
+              {selectedModel && (
+                <p className="text-xs text-content-muted">
+                  Os dados de <strong className="text-content-primary">{exercise.name}</strong> vão sobrescrever o modelo <strong className="text-content-primary">{selectedModel.name}</strong>.
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <div className="p-5 border-t border-line flex gap-3">
           <button onClick={onClose} className="flex-1 border border-line-input text-content-primary font-bold py-2.5 rounded-lg hover:bg-surface-subtle transition-colors text-sm">
@@ -399,11 +486,11 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
           </button>
           <button
             onClick={handleSave}
-            disabled={saving || !name.trim()}
+            disabled={saving || !canSave}
             className="flex-1 bg-brand hover:bg-brand-hover text-content-on-brand font-bold py-2.5 rounded-lg transition-colors disabled:opacity-50 text-sm flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Bookmark size={15} />}
-            {saving ? 'Salvando...' : 'Salvar'}
+            {saving ? 'Salvando...' : mode === 'new' ? 'Salvar' : 'Atualizar'}
           </button>
         </div>
       </div>

@@ -13,6 +13,7 @@ import {
   Users,
   ClipboardList,
   Upload,
+  Bookmark,
 } from 'lucide-react';
 import { logout } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -26,6 +27,7 @@ const navItems = [
   { label: 'Pagamentos',     href: '/coach/payments', icon: <CreditCard size={18} /> },
   { label: 'Planos',         href: '/coach/plans',    icon: <ClipboardList size={18} /> },
   { label: 'Importar Treino',href: '/coach/import',   icon: <Upload size={18} /> },
+  { label: 'Modelos',        href: '/coach/exercise-models', icon: <Bookmark size={18} /> },
   { label: 'Configurações',  href: '/coach/settings', icon: <Settings size={18} /> },
   { label: 'Ajuda',          href: '/coach/help',     icon: <HelpCircle size={18} /> },
 ];
@@ -45,7 +47,7 @@ export default function CoachSidebar() {
         <div className="text-center py-6 border-b border-line">
           {/* Logo branca — dark mode */}
           <Image
-            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
+            src="/images/logos/logo_transparent.png"
             alt="Logo The Grinders"
             width={250}
             height={50}
@@ -54,7 +56,7 @@ export default function CoachSidebar() {
           />
           {/* Logo escura — light mode */}
           <Image
-            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            src="/images/logos/logo_dark_transparent.png"
             alt="Logo The Grinders"
             width={250}
             height={50}
