@@ -307,7 +307,7 @@ export default function ExerciseModelsPage() {
   );
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto px-4 py-8 pb-24 md:pb-8">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <Bookmark size={22} className="text-brand" />

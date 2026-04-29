@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import {
   Search, Plus, MoreHorizontal, ChevronLeft, ChevronRight,
-  Shield, Mail, Phone, Users, FileBadge,
+  Shield, Mail, Phone, Users, Pencil, ToggleLeft, X,
 } from "lucide-react";
 
 interface Coach {
@@ -34,24 +35,53 @@ function CoachesSkeleton() {
   );
 }
 
+function StatusBadge({ status }: { status?: string }) {
+  const isAtivo = status === "ativo" || !status;
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+      isAtivo
+        ? "bg-semantic-success-bg text-semantic-success-text border-semantic-success-border"
+        : "bg-surface-subtle text-content-muted border-line"
+    }`}>
+      {isAtivo ? "Ativo" : "Inativo"}
+    </span>
+  );
+}
+
 export default function AdminCoachesPage() {
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchCoaches(), 500);
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchCoaches(), 300);
     return () => clearTimeout(timer);
-  }, [search, page, limit]);
+  }, [search, statusFilter, page, limit]);
 
   const fetchCoaches = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ search, page: page.toString(), limit: limit.toString() });
+      if (statusFilter !== "todos") params.append("status", statusFilter);
       const data = await fetchWithAuth(`admin/coaches?${params}`);
       const lista = Array.isArray(data) ? data : (data.coaches || []);
       setCoaches(lista);
@@ -60,6 +90,27 @@ export default function AdminCoachesPage() {
       console.error("Erro ao buscar coaches:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (coach: Coach) => {
+    setOpenMenu(null);
+    const current = coach.user.status || "ativo";
+    const next = current === "ativo" ? "inativo" : "ativo";
+    setTogglingId(coach.user_id);
+    try {
+      await fetchWithAuth(`users/${coach.user_id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ user: { status: next } }),
+      });
+      setCoaches(prev =>
+        prev.map(c => c.user_id === coach.user_id ? { ...c, user: { ...c.user, status: next } } : c)
+      );
+      showToast(`Coach ${next === "ativo" ? "ativado" : "desativado"} com sucesso!`);
+    } catch {
+      showToast("Erro ao alterar status.", "error");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -96,16 +147,21 @@ export default function AdminCoachesPage() {
             className="w-full pl-10 pr-4 py-2 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none bg-surface-app text-content-primary text-sm"
           />
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={`w-full sm:w-auto ${selectClass}`}>
+            <option value="todos">Todos os status</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
           <select value={limit} onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }} className={`w-full sm:w-auto ${selectClass}`}>
             <option value="10">10 por pág</option>
             <option value="20">20 por pág</option>
             <option value="50">50 por pág</option>
           </select>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-content-tertiary hidden sm:block mr-2">{coaches.length} de {total}</span>
+            <span className="text-sm text-content-tertiary hidden sm:block">{coaches.length} de {total}</span>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-50 transition-colors"><ChevronLeft size={16} /></button>
-            <span className="text-sm font-bold text-center text-content-primary">{page}/{totalPages || 1}</span>
+            <span className="text-sm font-bold text-content-primary">{page}/{totalPages || 1}</span>
             <button onClick={() => setPage(p => (p < totalPages ? p + 1 : p))} disabled={page >= totalPages} className="p-2 border border-line rounded-lg hover:bg-surface-subtle disabled:opacity-50 transition-colors"><ChevronRight size={16} /></button>
           </div>
         </div>
@@ -118,7 +174,7 @@ export default function AdminCoachesPage() {
         <div className="bg-surface-elevated border border-line p-12 text-center rounded-xl shadow-sm flex flex-col items-center">
           <Shield size={48} className="text-content-muted mb-3" />
           <h3 className="text-base font-bold text-content-primary">Nenhum coach encontrado</h3>
-          <p className="text-sm text-content-tertiary">Cadastre o primeiro profissional da plataforma.</p>
+          <p className="text-sm text-content-tertiary">Tente ajustar os filtros ou cadastre um novo profissional.</p>
         </div>
       ) : (
         <>
@@ -127,34 +183,54 @@ export default function AdminCoachesPage() {
             {coaches.map((coach) => (
               <div
                 key={coach.id}
-                onClick={() => router.push(`/admin/coaches/${coach.user_id}/edit`)}
-                className="bg-surface-elevated border border-line p-5 rounded-xl shadow-sm flex flex-col gap-4 active:scale-[0.98] transition-transform cursor-pointer"
+                className="bg-surface-elevated border border-line p-5 rounded-xl shadow-sm flex flex-col gap-4"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-surface-subtle text-content-secondary flex items-center justify-center font-bold text-sm border border-line">
+                  <div
+                    className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                    onClick={() => router.push(`/admin/coaches/${coach.user_id}/edit`)}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-surface-subtle text-content-secondary flex items-center justify-center font-bold text-sm border border-line shrink-0">
                       {getInitials(coach.user.name)}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-content-primary text-sm">{coach.user.name}</h3>
-                      <p className="text-xs text-content-tertiary">{coach.user.email}</p>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-content-primary text-sm truncate">{coach.user.name}</h3>
+                      <p className="text-xs text-content-tertiary truncate">{coach.user.email}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-content-muted uppercase font-bold mb-0.5">Alunos</span>
-                    <span className="bg-surface-subtle text-brand px-2 py-1 rounded text-xs font-bold border border-line flex items-center gap-1">
-                      <Users size={12} /> {coach.alunos_count}
-                    </span>
+                  {/* Dropdown mobile */}
+                  <div className="relative shrink-0 ml-2" ref={openMenu === coach.user_id ? menuRef : undefined}>
+                    <button
+                      onClick={() => setOpenMenu(openMenu === coach.user_id ? null : coach.user_id)}
+                      disabled={togglingId === coach.user_id}
+                      className="p-2 hover:bg-surface-subtle rounded-full transition-colors text-content-muted disabled:opacity-50"
+                    >
+                      <MoreHorizontal size={18} />
+                    </button>
+                    {openMenu === coach.user_id && (
+                      <div className="absolute right-0 top-10 w-44 bg-surface-elevated border border-line rounded-xl shadow-2xl z-50 overflow-hidden">
+                        <button
+                          onClick={() => { setOpenMenu(null); router.push(`/admin/coaches/${coach.user_id}/edit`); }}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-surface-subtle transition-colors text-content-primary"
+                        >
+                          <Pencil size={15} className="text-content-muted" /> Editar
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(coach)}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-surface-subtle transition-colors text-content-primary border-t border-line"
+                        >
+                          <ToggleLeft size={15} className="text-content-muted" />
+                          {coach.user.status === "inativo" ? "Ativar" : "Inativar"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm border-t border-line pt-3">
-                  <div className="flex items-center gap-2 text-content-secondary">
-                    <FileBadge size={14} className="text-content-muted" />
-                    <span className="font-mono text-xs">Sem CREF</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-content-secondary justify-end">
-                    <Phone size={14} className="text-content-muted" />
-                    <span className="text-xs">{coach.phone_number || "-"}</span>
+                <div className="flex items-center justify-between border-t border-line pt-3">
+                  <StatusBadge status={coach.user.status} />
+                  <div className="flex items-center gap-3 text-xs text-content-secondary">
+                    <span className="flex items-center gap-1"><Phone size={12} className="text-content-muted" />{coach.phone_number || "-"}</span>
+                    <span className="flex items-center gap-1 text-brand font-bold"><Users size={12} />{coach.alunos_count} alunos</span>
                   </div>
                 </div>
               </div>
@@ -162,14 +238,15 @@ export default function AdminCoachesPage() {
           </div>
 
           {/* Desktop Table */}
-          <div className="hidden md:block bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden" ref={menuRef}>
             <table className="min-w-full divide-y divide-line text-left">
               <thead className="bg-surface-page">
                 <tr>
                   <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Profissional</th>
                   <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Contato</th>
-                  <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Registro (CREF)</th>
+                  <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Carteira</th>
+                  <th className="px-6 py-4 text-xs font-bold text-content-muted uppercase tracking-wider">Desde</th>
                   <th className="px-6 py-4 text-right" />
                 </tr>
               </thead>
@@ -187,7 +264,7 @@ export default function AdminCoachesPage() {
                         </div>
                         <div>
                           <p className="font-bold text-content-primary text-sm">{coach.user.name}</p>
-                          <p className="text-xs text-content-tertiary">Coach desde {formatDate(coach.created_at)}</p>
+                          <p className="text-xs text-content-tertiary">{coach.user.email}</p>
                         </div>
                       </div>
                     </td>
@@ -198,9 +275,7 @@ export default function AdminCoachesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-mono text-sm bg-surface-subtle px-2 py-1 rounded border border-line text-content-secondary">
-                        Não informado
-                      </span>
+                      <StatusBadge status={coach.user.status} />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -209,13 +284,36 @@ export default function AdminCoachesPage() {
                         <span className="text-xs text-content-tertiary">alunos</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        className="text-content-muted hover:text-content-primary p-2 hover:bg-surface-subtle rounded-full transition-all"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/admin/coaches/${coach.user_id}/edit`); }}
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-content-secondary">{formatDate(coach.created_at)}</span>
+                    </td>
+                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="relative inline-block">
+                        <button
+                          onClick={() => setOpenMenu(openMenu === coach.user_id ? null : coach.user_id)}
+                          disabled={togglingId === coach.user_id}
+                          className="text-content-muted hover:text-content-primary p-2 hover:bg-surface-subtle rounded-full transition-all disabled:opacity-50"
+                        >
+                          <MoreHorizontal size={18} />
+                        </button>
+                        {openMenu === coach.user_id && (
+                          <div className="absolute right-0 top-10 w-44 bg-surface-elevated border border-line rounded-xl shadow-2xl z-50 overflow-hidden">
+                            <button
+                              onClick={() => { setOpenMenu(null); router.push(`/admin/coaches/${coach.user_id}/edit`); }}
+                              className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-surface-subtle transition-colors text-content-primary"
+                            >
+                              <Pencil size={15} className="text-content-muted" /> Editar
+                            </button>
+                            <button
+                              onClick={() => handleToggleStatus(coach)}
+                              className="w-full flex items-center gap-2 px-4 py-3 text-sm hover:bg-surface-subtle transition-colors text-content-primary border-t border-line"
+                            >
+                              <ToggleLeft size={15} className="text-content-muted" />
+                              {coach.user.status === "inativo" ? "Ativar" : "Inativar"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -228,6 +326,7 @@ export default function AdminCoachesPage() {
           </div>
         </>
       )}
+      {ToastEl}
     </div>
   );
 }
