@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 // 1. Configuração do Viewport
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#1a0808",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -91,6 +91,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface-app text-content-primary`}
+        suppressHydrationWarning
       >
         {children}
       </body>
