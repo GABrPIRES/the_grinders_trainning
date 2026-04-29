@@ -481,8 +481,7 @@ export default function AlunoTreinoDetalhesPage() {
                   <div
                     className={`hidden md:flex items-center gap-3 text-[10px] font-bold text-content-muted uppercase tracking-wide px-4 py-2 border-t border-line`}
                   >
-                    <div className="w-8 flex-shrink-0" />
-                    <div className={`flex-1 grid gap-2 text-center ${isEditable ? 'grid-cols-7' : 'grid-cols-6'}`}>
+                    <div className={`flex-1 grid gap-2 text-center ${isEditable ? 'grid-cols-6' : 'grid-cols-5'}`}>
                       <span>Carga</span>
                       {isEditable && <span>Real</span>}
                       <span>Séries</span>
@@ -503,37 +502,11 @@ export default function AlunoTreinoDetalhesPage() {
                       return (
                         <div
                           key={sec.id}
-                          className={`flex items-start gap-3 p-4 transition-colors ${
+                          className={`p-4 transition-colors ${
                             log.feito ? 'bg-semantic-success-bg/40' : isEditable ? 'hover:bg-surface-subtle' : ''
                           }`}
                         >
-                          {/* Circular done button — left side */}
-                          {isEditable ? (
-                            <button
-                              onClick={() => handleSectionChange(sec.id, 'feito', !log.feito)}
-                              className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all border-2 ${
-                                log.feito
-                                  ? 'bg-semantic-success-text border-semantic-success-text text-white'
-                                  : 'border-line-input bg-transparent hover:border-brand'
-                              }`}
-                              aria-label={log.feito ? 'Desmarcar' : 'Marcar como feito'}
-                            >
-                              {log.feito && <Check size={13} strokeWidth={3} />}
-                            </button>
-                          ) : (
-                            <div
-                              className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
-                                log.feito
-                                  ? 'bg-semantic-success-text border-semantic-success-text text-white'
-                                  : 'border-line bg-transparent'
-                              }`}
-                            >
-                              {log.feito && <Check size={13} strokeWidth={3} />}
-                            </div>
-                          )}
-
-                          {/* Section data */}
-                          <div className="flex-1 min-w-0">
+                          <div className="min-w-0">
                             {/* Mobile layout */}
                             <div className="md:hidden space-y-2">
                               <div className="grid grid-cols-4 gap-2 text-center">
@@ -622,7 +595,7 @@ export default function AlunoTreinoDetalhesPage() {
                             {/* Desktop layout */}
                             <div
                               className={`hidden md:grid items-center gap-2 text-center ${
-                                isEditable ? 'grid-cols-7' : 'grid-cols-6'
+                                isEditable ? 'grid-cols-6' : 'grid-cols-5'
                               }`}
                             >
                               <div>
