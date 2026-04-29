@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Home, Dumbbell, User, Settings, Users,
   CreditCard, FileText, Upload, HelpCircle,
-  MoreHorizontal, LogOut, X
+  MoreHorizontal, LogOut, X, Bookmark
 } from 'lucide-react';
 import { logout } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -18,8 +18,9 @@ const MENUS = {
     { name: 'Treinos',   href: '/coach/treinos',  icon: Dumbbell },
     { name: 'Planos',    href: '/coach/plans',    icon: FileText },
     { name: 'Financeiro',href: '/coach/payments', icon: CreditCard },
-    { name: 'Importar',  href: '/coach/import',   icon: Upload },
-    { name: 'Perfil',    href: '/coach/profile',  icon: User },
+    { name: 'Importar',  href: '/coach/import',          icon: Upload },
+    { name: 'Modelos',   href: '/coach/exercise-models', icon: Bookmark },
+    { name: 'Perfil',    href: '/coach/profile',         icon: User },
     { name: 'Config',    href: '/coach/settings', icon: Settings },
     { name: 'Ajuda',     href: '/coach/help',     icon: HelpCircle },
   ],
