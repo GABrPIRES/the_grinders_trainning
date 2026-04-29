@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import { ArrowLeft, User, Mail, Lock, Save, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 
 export default function CreateCoachPage() {
+  const { showToast, ToastEl } = useToast();
   const [coach, setCoach] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +26,7 @@ export default function CreateCoachPage() {
         method: "POST",
         body: JSON.stringify({ user: { ...coach, role: "personal" } }),
       });
-      alert("Coach cadastrado com sucesso!");
+      showToast("Coach cadastrado com sucesso!");
       router.push("/admin/coaches");
     } catch (err: any) {
       setError(err.message || "Erro ao cadastrar coach");
@@ -97,6 +99,7 @@ export default function CreateCoachPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import { ArrowLeft, User, Mail, Lock, Save, Loader2, ShieldCheck, ToggleLeft, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 function EditCoachSkeleton() {
   return (
@@ -31,6 +32,7 @@ function EditCoachSkeleton() {
 export default function EditCoachPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { showToast, ToastEl } = useToast();
   const [coach, setCoach] = useState({ name: "", email: "", password: "", status: "ativo" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,7 +63,7 @@ export default function EditCoachPage() {
     setSaving(true);
     try {
       await fetchWithAuth(`users/${id}`, { method: "PATCH", body: JSON.stringify({ user: coach }) });
-      alert("Dados do coach atualizados!");
+      showToast("Dados do coach atualizados!");
       router.push("/admin/coaches");
     } catch (err: any) {
       setError(err.message || "Erro ao atualizar");
@@ -147,6 +149,7 @@ export default function EditCoachPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
     </div>
   );
 }

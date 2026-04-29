@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import {
   Bookmark, Trash2, Pencil, Search, X, Loader2,
-  Check, AlertCircle, CheckCircle2,
+  Check, AlertCircle,
 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 interface ExerciseModel {
   id: string;
@@ -265,13 +266,13 @@ function EditModelModal({ model, onClose, onSaved }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ExerciseModelsPage() {
+  const { showToast, ToastEl } = useToast();
   const [models, setModels] = useState<ExerciseModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [editingModel, setEditingModel] = useState<ExerciseModel | null>(null);
   const [deletingModel, setDeletingModel] = useState<ExerciseModel | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [toast, setToast] = useState('');
 
   useEffect(() => {
     fetchWithAuth('coach/exercise_models')
@@ -279,11 +280,6 @@ export default function ExerciseModelsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  };
 
   const handleDelete = async () => {
     if (!deletingModel) return;
@@ -294,7 +290,7 @@ export default function ExerciseModelsPage() {
       setDeletingModel(null);
       showToast('Modelo excluído.');
     } catch {
-      alert('Erro ao excluir modelo.');
+      showToast('Erro ao excluir modelo.', 'error');
     } finally {
       setDeleting(false);
     }
@@ -429,13 +425,7 @@ export default function ExerciseModelsPage() {
         />
       )}
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-green-900/90 border border-green-700/60 text-green-200 px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-medium">
-          <CheckCircle2 size={16} className="text-green-400" />
-          {toast}
-        </div>
-      )}
+      {ToastEl}
     </div>
   );
 }

@@ -42,6 +42,7 @@ export default function DuplicateWeekModal({ sourceWeekId, sourceWeekNumber, onC
   // Estados de UI
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [duplicateError, setDuplicateError] = useState("");
 
   // 1. Carrega Alunos ao abrir
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function DuplicateWeekModal({ sourceWeekId, sourceWeekNumber, onC
   const handleDuplicate = async () => {
     if (!targetWeekId) return;
     setLoading(true);
+    setDuplicateError("");
     try {
       await fetchWithAuth(`weeks/${sourceWeekId}/duplicate`, {
         method: "POST",
@@ -113,7 +115,7 @@ export default function DuplicateWeekModal({ sourceWeekId, sourceWeekNumber, onC
       });
       onSuccess();
     } catch (error: any) {
-      alert("Erro ao duplicar: " + error.message);
+      setDuplicateError("Erro ao duplicar: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -216,21 +218,28 @@ export default function DuplicateWeekModal({ sourceWeekId, sourceWeekNumber, onC
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-neutral-100 bg-neutral-50 flex justify-end gap-3">
+        <div className="p-5 border-t border-neutral-100 bg-neutral-50 flex flex-col gap-3">
+          {duplicateError && (
+            <p className="text-xs text-red-600 flex items-center gap-1">
+              ⚠️ {duplicateError}
+            </p>
+          )}
+          <div className="flex justify-end gap-3">
             <button 
                 onClick={onClose} 
                 className="px-5 py-2.5 text-sm font-bold text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors"
             >
                 Cancelar
             </button>
-            <button 
-                onClick={handleDuplicate} 
+            <button
+                onClick={handleDuplicate}
                 disabled={!targetWeekId || loading}
                 className="px-6 py-2.5 text-sm font-bold text-white bg-red-700 hover:bg-red-800 rounded-lg shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 {loading ? <Loader2 className="animate-spin" size={16} /> : <Copy size={16} />}
                 Confirmar Cópia
             </button>
+          </div>
         </div>
 
       </div>
