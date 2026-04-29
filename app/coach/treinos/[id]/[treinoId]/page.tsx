@@ -24,7 +24,7 @@ function toEmbedUrl(url: string): string | null {
     } else {
       videoId = u.searchParams.get('v');
     }
-    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1` : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1` : null;
   } catch { return null; }
 }
 
