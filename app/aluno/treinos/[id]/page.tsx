@@ -18,7 +18,17 @@ import {
   X,
   ChevronDown,
   Check,
+  MessageSquare,
 } from 'lucide-react';
+
+function toEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const videoId = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1) : null);
+    if (!videoId) return null;
+    return `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+  } catch { return null; }
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -141,12 +151,19 @@ export default function AlunoTreinoDetalhesPage() {
 
   const [feedbackWeekId, setFeedbackWeekId] = useState<string | null>(null);
   const [expandedExerciseIds, setExpandedExerciseIds] = useState<Set<string>>(new Set());
+  const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({});
 
   const toggleExercise = (id: string) => {
     setExpandedExerciseIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        iframeRefs.current[id]?.contentWindow?.postMessage(
+          '{"event":"command","func":"pauseVideo","args":""}', '*'
+        );
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -466,10 +483,29 @@ export default function AlunoTreinoDetalhesPage() {
               {/* Expanded content */}
               {isExExpanded && (
                 <>
-                  {/* 1. Coach comment (placeholder — dados virão do backend) */}
+                  {/* 1. Vídeo do coach */}
+                  {ex.video_link && (() => {
+                    const embedUrl = toEmbedUrl(ex.video_link);
+                    return embedUrl ? (
+                      <div className="border-t border-line">
+                        <div className="aspect-video w-full">
+                          <iframe
+                            ref={(el) => { iframeRefs.current[ex.id] = el; }}
+                            src={embedUrl}
+                            className="w-full h-full"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                            title={`Vídeo — ${ex.name}`}
+                          />
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {/* 2. Observação do coach */}
                   {ex.coach_comment && (
                     <div className="px-4 pt-3 pb-3 border-t border-line flex gap-2.5 items-start bg-surface-subtle/40">
-                      <span className="mt-0.5 text-content-muted flex-shrink-0">💬</span>
+                      <MessageSquare size={14} className="mt-0.5 text-content-muted flex-shrink-0" />
                       <div>
                         <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Observação do coach</p>
                         <p className="text-sm text-content-secondary leading-relaxed">{ex.coach_comment}</p>
@@ -493,7 +529,7 @@ export default function AlunoTreinoDetalhesPage() {
                     </div>
                   </div>
 
-                  {/* 2+3. Sections (prescrição + execução real por série) */}
+                  {/* 3+4. Sections (prescrição + execução real por série) */}
                   <div className="divide-y divide-line">
                     {ex.sections.map((sec) => {
                       const log = sectionLogs[sec.id] ?? { actual_load: '', actual_rpe: '', feito: false };
