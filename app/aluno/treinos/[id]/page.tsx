@@ -24,9 +24,15 @@ import {
 function toEmbedUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    const videoId = u.searchParams.get('v') || (u.hostname === 'youtu.be' ? u.pathname.slice(1) : null);
-    if (!videoId) return null;
-    return `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+    let videoId: string | null = null;
+    if (u.hostname === 'youtu.be') {
+      videoId = u.pathname.slice(1).split('?')[0];
+    } else if (u.pathname.startsWith('/shorts/')) {
+      videoId = u.pathname.split('/shorts/')[1]?.split('?')[0] ?? null;
+    } else {
+      videoId = u.searchParams.get('v');
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1` : null;
   } catch { return null; }
 }
 
