@@ -1,12 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { fetchWithAuth } from "@/lib/api";
-import { Lock, Shield, Loader2, Check, AlertTriangle } from "lucide-react";
+import { Lock, Shield, Loader2, Check, AlertTriangle, Mail } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 export default function AdminSettingsPage() {
+  const { showToast, ToastEl } = useToast();
   const [savingPassword, setSavingPassword] = useState(false);
   const [passForm, setPassForm] = useState({ current_password: "", password: "", password_confirmation: "" });
+  const [emailsEnabled, setEmailsEnabled] = useState(false);
+  const [togglingEmails, setTogglingEmails] = useState(false);
+
+  useEffect(() => {
+    fetchWithAuth("admin/settings")
+      .then((d: any) => setEmailsEnabled(d.emails_enabled))
+      .catch(() => {});
+  }, []);
+
+  const handleToggleEmails = async () => {
+    const next = !emailsEnabled;
+    setTogglingEmails(true);
+    try {
+      await fetchWithAuth("admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ settings: { emails_enabled: next } }),
+      });
+      setEmailsEnabled(next);
+      showToast(`E-mails transacionais ${next ? "ativados" : "desativados"}.`);
+    } catch {
+      showToast("Erro ao alterar configuração.", "error");
+    } finally {
+      setTogglingEmails(false);
+    }
+  };
 
   const handlePassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassForm({ ...passForm, [e.target.name]: e.target.value });
@@ -15,16 +42,16 @@ export default function AdminSettingsPage() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passForm.password !== passForm.password_confirmation) {
-      alert("A nova senha e a confirmação não coincidem.");
+      showToast("A nova senha e a confirmação não coincidem.", "error");
       return;
     }
     setSavingPassword(true);
     try {
       await fetchWithAuth("auth/change_password", { method: "POST", body: JSON.stringify(passForm) });
-      alert("Senha de administrador alterada com sucesso!");
+      showToast("Senha de administrador alterada com sucesso!");
       setPassForm({ current_password: "", password: "", password_confirmation: "" });
     } catch (error: any) {
-      alert("Erro ao alterar senha: " + error.message);
+      showToast("Erro ao alterar senha: " + error.message, "error");
     } finally {
       setSavingPassword(false);
     }
@@ -87,6 +114,38 @@ export default function AdminSettingsPage() {
           </form>
         </div>
       </section>
+
+      {/* Feature Flags */}
+      <section className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-line bg-surface-page">
+          <h2 className="text-base font-bold flex items-center gap-2 text-content-primary">
+            <Mail size={17} className="text-brand" /> E-mails Transacionais
+          </h2>
+          <p className="text-sm text-content-tertiary mt-0.5">
+            Ative para que coaches e alunos recebam e-mails automáticos sobre treinos.
+          </p>
+        </div>
+        <div className="p-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="font-bold text-content-primary text-sm">Envio de e-mails</p>
+            <p className="text-xs text-content-tertiary mt-0.5">
+              Quando ativo, os coaches podem configurar quais eventos geram e-mails para eles e seus alunos.
+              {emailsEnabled
+                ? " Atualmente ativo — e-mails estão sendo enviados."
+                : " Atualmente inativo — nenhum e-mail será enviado."}
+            </p>
+          </div>
+          <button
+            onClick={handleToggleEmails}
+            disabled={togglingEmails}
+            className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 disabled:opacity-60 ${emailsEnabled ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}
+          >
+            <div className={`bg-surface-elevated w-4 h-4 rounded-full shadow transform transition-transform duration-300 ${emailsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+          </button>
+        </div>
+      </section>
+
+      {ToastEl}
     </div>
   );
 }

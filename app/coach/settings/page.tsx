@@ -2,13 +2,47 @@
 
 import { useState, useEffect } from "react";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
 import { coachService } from "@/services/coachService";
 import {
   Lock, Bell, Shield, Check, Loader2,
-  UserPlus, Copy, Users, Share2,
+  UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle,
 } from "lucide-react";
 
+function PrefRow({
+  icon, title, description, checked, onToggle, saving,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  checked: boolean;
+  onToggle: () => void;
+  saving: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-3">
+        <div className="p-2 bg-surface-subtle text-brand rounded-lg border border-line shrink-0 mt-0.5">{icon}</div>
+        <div>
+          <p className="font-bold text-content-primary text-sm">{title}</p>
+          <p className="text-xs text-content-tertiary mt-0.5">{description}</p>
+        </div>
+      </div>
+      <button
+        onClick={onToggle}
+        disabled={saving}
+        className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 disabled:opacity-60 ${checked ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}
+      >
+        <div className={`bg-surface-elevated w-4 h-4 rounded-full shadow transform transition-transform duration-300 ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
+      </button>
+    </div>
+  );
+}
+
 export default function CoachSettingsPage() {
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
   const [savingPassword, setSavingPassword] = useState(false);
   const [passForm, setPassForm] = useState({ current_password: "", password: "", password_confirmation: "" });
 
@@ -17,11 +51,19 @@ export default function CoachSettingsPage() {
   const [pendingStudents, setPendingStudents] = useState<any[]>([]);
   const [copied, setCopied] = useState(false);
 
-  const [notifications, setNotifications] = useState(true);
+  const [notifPrefs, setNotifPrefs] = useState({
+    notifications_enabled: true,
+    email_on_workout_completed: true,
+    email_on_workout_missed: true,
+    email_students_on_publish: true,
+    emails_globally_enabled: false,
+  });
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
     loadInviteData();
     loadPendingStudents();
+    loadNotifPrefs();
   }, []);
 
   const loadInviteData = async () => {
@@ -36,6 +78,30 @@ export default function CoachSettingsPage() {
       const data = await coachService.getPendingStudents();
       setPendingStudents(data);
     } catch (e) { console.error(e); }
+  };
+
+  const loadNotifPrefs = async () => {
+    try {
+      const data = await fetchWithAuth("coach/notification_preferences");
+      setNotifPrefs(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleNotifPrefToggle = async (key: keyof typeof notifPrefs) => {
+    const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
+    setNotifPrefs(updated);
+    setSavingPrefs(true);
+    try {
+      await fetchWithAuth("coach/notification_preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ notification_preferences: { [key]: updated[key] } }),
+      });
+    } catch {
+      setNotifPrefs(notifPrefs); // reverte
+      showToast("Erro ao salvar preferência.", "error");
+    } finally {
+      setSavingPrefs(false);
+    }
   };
 
   const handleShare = async () => {
@@ -56,16 +122,16 @@ export default function CoachSettingsPage() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passForm.password !== passForm.password_confirmation) {
-      alert("A nova senha e a confirmação não coincidem.");
+      showToast("A nova senha e a confirmação não coincidem.", "error");
       return;
     }
     setSavingPassword(true);
     try {
       await fetchWithAuth("auth/change_password", { method: "POST", body: JSON.stringify(passForm) });
-      alert("Senha alterada com sucesso!");
+      showToast("Senha alterada com sucesso!");
       setPassForm({ current_password: "", password: "", password_confirmation: "" });
     } catch (error: any) {
-      alert("Erro ao alterar senha: " + error.message);
+      showToast("Erro ao alterar senha: " + error.message, "error");
     } finally {
       setSavingPassword(false);
     }
@@ -85,15 +151,16 @@ export default function CoachSettingsPage() {
       const newState = !inviteData.auto_approve;
       await coachService.updateSettings(newState);
       setInviteData({ ...inviteData, auto_approve: newState });
-    } catch (e) { alert("Erro ao atualizar."); }
+    } catch (e) { showToast("Erro ao atualizar.", "error"); }
   };
 
   const handleApproval = async (id: string, action: 'approve' | 'reject') => {
-    if (!confirm(`Confirma ${action === 'approve' ? 'aprovar' : 'rejeitar'} este aluno?`)) return;
+    const ok = await showConfirm({ message: `Confirma ${action === 'approve' ? 'aprovar' : 'rejeitar'} este aluno?` });
+    if (!ok) return;
     try {
       await coachService.handleApproval(id, action);
       setPendingStudents(prev => prev.filter(s => s.id !== id));
-    } catch (e) { alert("Erro na ação."); }
+    } catch (e) { showToast("Erro na ação.", "error"); }
   };
 
   const inputClass = "w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all bg-surface-app text-content-primary text-sm";
@@ -232,30 +299,70 @@ export default function CoachSettingsPage() {
         <section className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-line bg-surface-page">
             <h2 className="text-base font-bold flex items-center gap-2 text-content-primary">
-              <Bell size={17} className="text-brand" /> Preferências do App
+              <Bell size={17} className="text-brand" /> Notificações
             </h2>
-            <p className="text-sm text-content-tertiary mt-0.5">Personalize sua experiência.</p>
+            <p className="text-sm text-content-tertiary mt-0.5">Controle quando e como você é alertado.</p>
           </div>
 
           <div className="p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-surface-subtle text-brand rounded-lg border border-line"><Bell size={18} /></div>
-                <div>
-                  <p className="font-bold text-content-primary text-sm">Notificações Push</p>
-                  <p className="text-xs text-content-tertiary">Receba alertas sobre novos alunos e pagamentos (Em breve).</p>
+            {/* Toggle global de notificações in-app */}
+            <PrefRow
+              icon={<Bell size={18} />}
+              title="Notificações in-app"
+              description="Receba alertas quando alunos concluírem treinos e outras atualizações."
+              checked={notifPrefs.notifications_enabled}
+              onToggle={() => handleNotifPrefToggle("notifications_enabled")}
+              saving={savingPrefs}
+            />
+
+            {/* E-mails — só aparece se o admin habilitou a feature */}
+            {notifPrefs.emails_globally_enabled ? (
+              <>
+                <div className="border-t border-line pt-5">
+                  <p className="text-xs font-bold text-content-muted uppercase mb-4 flex items-center gap-2">
+                    <Mail size={13} /> Notificações por e-mail
+                  </p>
+                  <div className="space-y-4">
+                    <PrefRow
+                      icon={<CheckCircle2 size={18} />}
+                      title="Treino concluído pelo aluno"
+                      description="Receba um e-mail com o resumo de carga e RPE quando um aluno finalizar o treino."
+                      checked={notifPrefs.email_on_workout_completed}
+                      onToggle={() => handleNotifPrefToggle("email_on_workout_completed")}
+                      saving={savingPrefs}
+                    />
+                    <PrefRow
+                      icon={<AlertCircle size={18} />}
+                      title="Treino não realizado"
+                      description="Seja avisado quando um aluno não realizar um treino dentro da semana."
+                      checked={notifPrefs.email_on_workout_missed}
+                      onToggle={() => handleNotifPrefToggle("email_on_workout_missed")}
+                      saving={savingPrefs}
+                    />
+                    <PrefRow
+                      icon={<Mail size={18} />}
+                      title="Avisar alunos ao publicar semana"
+                      description="Seus alunos recebem um e-mail quando você publica todos os treinos da semana."
+                      checked={notifPrefs.email_students_on_publish}
+                      onToggle={() => handleNotifPrefToggle("email_students_on_publish")}
+                      saving={savingPrefs}
+                    />
+                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="border-t border-line pt-5">
+                <p className="text-xs text-content-muted flex items-center gap-2">
+                  <Mail size={13} />
+                  Notificações por e-mail não estão disponíveis no momento.
+                </p>
               </div>
-              <button
-                onClick={() => setNotifications(!notifications)}
-                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${notifications ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}
-              >
-                <div className={`bg-surface-elevated w-4 h-4 rounded-full shadow transform transition-transform duration-300 ${notifications ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
-            </div>
+            )}
           </div>
         </section>
       </div>
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

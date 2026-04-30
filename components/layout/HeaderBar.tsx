@@ -5,10 +5,15 @@ import { useEffect, useState } from "react";
 import { Bell, User } from "lucide-react";
 import Image from 'next/image';
 import DarkModeToggle from './DarkModeToggle';
+import NotificationsDropdown from './NotificationsDropdown';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function HeaderBar() {
   const pathname = usePathname();
   const [currentDate, setCurrentDate] = useState('');
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications();
 
   useEffect(() => {
     setCurrentDate(new Date().toLocaleDateString("pt-BR", {
@@ -27,7 +32,6 @@ export default function HeaderBar() {
     if (path === "/coach" || path === "/admin" || path === "/aluno") return "Dashboard";
     return "The Grinders";
   };
-
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-surface-sidebar border-b border-line px-6 py-3 shadow-sm transition-all md:pl-8 md:bg-surface-elevated">
@@ -70,10 +74,31 @@ export default function HeaderBar() {
         <DarkModeToggle />
 
         {/* Notificações */}
-        <button className="relative p-2 text-content-secondary hover:bg-surface-subtle rounded-full transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-brand border-2 border-surface-elevated" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setNotifOpen(o => !o)}
+            className="relative p-2 text-content-secondary hover:bg-surface-subtle rounded-full transition-colors"
+            aria-label="Notificações"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-content-on-brand border border-surface-elevated">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {notifOpen && (
+            <NotificationsDropdown
+              notifications={notifications}
+              unreadCount={unreadCount}
+              loading={loading}
+              onMarkRead={markRead}
+              onMarkAllRead={markAllRead}
+              onClose={() => setNotifOpen(false)}
+            />
+          )}
+        </div>
 
         <div className="h-6 w-px bg-line hidden sm:block" />
 
