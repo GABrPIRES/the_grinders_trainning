@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
+import Image from "next/image";
 import {
-  MessageCircle, Mail, HelpCircle,
+  HelpCircle,
   ChevronRight, ExternalLink
 } from "lucide-react";
 
@@ -61,8 +62,8 @@ export default function StudentHelpPage() {
                 rel="noopener noreferrer"
                 className="group bg-surface-elevated p-6 rounded-xl border border-line shadow-sm hover:shadow-md hover:border-green-400 transition-all flex items-center gap-4 cursor-pointer"
                 >
-                    <div className="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <MessageCircle size={28} />
+                    <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Image src="/images/icons/icon_whatsapp.png" alt="WhatsApp" width={28} height={28} className="object-contain" />
                     </div>
                     <div>
                         <h3 className="font-bold text-content-primary text-lg">WhatsApp</h3>
@@ -78,8 +79,8 @@ export default function StudentHelpPage() {
                 href={`mailto:${coach.email}`}
                 className="group bg-surface-elevated p-6 rounded-xl border border-line shadow-sm hover:shadow-md hover:border-blue-400 transition-all flex items-center gap-4 cursor-pointer"
                 >
-                    <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Mail size={28} />
+                    <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Image src="/images/icons/icon_email.png" alt="Email" width={28} height={28} className="object-contain" />
                     </div>
                     <div>
                         <h3 className="font-bold text-content-primary text-lg">E-mail</h3>

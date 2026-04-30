@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { fetchWithAuth } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { ArrowLeft, Trash2, Save, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface Pagamento {
@@ -31,6 +33,8 @@ function Skeleton() {
 export default function EditPaymentPage() {
   const router = useRouter();
   const { idAluno, idPagamento } = useParams();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const [payment, setPayment] = useState<Pagamento | null>(null);
   const [formData, setFormData] = useState({ amount: '', due_date: '' });
@@ -86,12 +90,13 @@ export default function EditPaymentPage() {
       });
       router.push(`/coach/payments/${idAluno}`);
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, "error");
     }
   };
 
   const handleUnmarkAsPaid = async () => {
-    if (!window.confirm('Tem certeza que deseja desconciliar este pagamento? Ele voltará ao status "pendente".')) return;
+    const ok = await showConfirm({ message: 'Tem certeza que deseja desconciliar este pagamento? Ele voltará ao status "pendente".', confirmLabel: 'Desconciliar', danger: true });
+    if (!ok) return;
     try {
       await fetchWithAuth(`pagamentos/${idPagamento}`, {
         method: 'PATCH',
@@ -99,21 +104,22 @@ export default function EditPaymentPage() {
       });
       fetchPayment();
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, "error");
     }
   };
 
   const handleDelete = async () => {
     if (payment?.status === 'pago') {
-      alert('Desconcilie o pagamento antes de excluí-lo.');
+      showToast('Desconcilie o pagamento antes de excluí-lo.', "warning");
       return;
     }
-    if (!window.confirm('Tem certeza que deseja excluir este pagamento?')) return;
+    const ok = await showConfirm({ message: 'Tem certeza que deseja excluir este pagamento?', confirmLabel: 'Excluir', danger: true });
+    if (!ok) return;
     try {
       await fetchWithAuth(`pagamentos/${idPagamento}`, { method: 'DELETE' });
       router.push(`/coach/payments/${idAluno}`);
     } catch (err: any) {
-      alert(err.message);
+      showToast(err.message, "error");
     }
   };
 
@@ -238,6 +244,8 @@ export default function EditPaymentPage() {
           </button>
         </div>
       )}
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
-import { Lock, Bell, Shield, Loader2, Check } from "lucide-react";
+import { Shield, Loader2, Check, Smartphone } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
+import PushNotificationToggle from "@/components/settings/PushNotificationToggle";
 
 export default function StudentSettingsPage() {
+  const { showToast, ToastEl } = useToast();
   const [savingPassword, setSavingPassword] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [passForm, setPassForm] = useState({
@@ -20,8 +23,8 @@ export default function StudentSettingsPage() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passForm.password !== passForm.password_confirmation) {
-        alert("As senhas não coincidem.");
-        return;
+      showToast("As senhas não coincidem.", "error");
+      return;
     }
     setSavingPassword(true);
     try {
@@ -29,10 +32,10 @@ export default function StudentSettingsPage() {
         method: "POST",
         body: JSON.stringify(passForm),
       });
-      alert("Senha atualizada com sucesso!");
+      showToast("Senha atualizada com sucesso!");
       setPassForm({ current_password: "", password: "", password_confirmation: "" });
     } catch (error: any) {
-      alert("Erro ao alterar senha: " + error.message);
+      showToast("Erro ao alterar senha: " + error.message, "error");
     } finally {
       setSavingPassword(false);
     }
@@ -83,20 +86,22 @@ export default function StudentSettingsPage() {
         </section>
 
         {/* NOTIFICAÇÕES */}
-        <section className="bg-surface-elevated rounded-xl border border-line shadow-sm overflow-hidden p-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-brand/10 text-brand rounded-lg"><Bell size={20}/></div>
-                <div>
-                    <p className="font-semibold text-content-primary">Notificações de Treino</p>
-                    <p className="text-xs text-content-tertiary">Receba lembretes e mensagens do coach (Em breve).</p>
-                </div>
-            </div>
-            <button onClick={() => setNotifications(!notifications)} className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${notifications ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}>
-                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${notifications ? 'translate-x-6' : 'translate-x-0'}`}></div>
-            </button>
+        <section className="bg-surface-elevated rounded-xl border border-line shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-line bg-surface-page">
+            <h2 className="text-base font-bold flex items-center gap-2 text-content-primary">
+              <Smartphone size={17} className="text-brand" /> Notificações no Celular
+            </h2>
+            <p className="text-sm text-content-tertiary mt-0.5">
+              Receba alertas de treinos publicados e formulários mesmo com o app fechado.
+            </p>
+          </div>
+          <div className="p-6">
+            <PushNotificationToggle />
+          </div>
         </section>
 
       </div>
+      {ToastEl}
     </div>
   );
 }

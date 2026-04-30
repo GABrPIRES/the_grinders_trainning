@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import {
-  Mail, MessageCircle, Instagram, FileText,
+  Instagram, FileText,
   Settings, ExternalLink, ChevronRight, User,
 } from "lucide-react";
 
@@ -27,8 +28,8 @@ export default function CoachHelpPage() {
             target="_blank" rel="noopener noreferrer"
             className="group bg-surface-elevated border border-line rounded-xl p-6 shadow-sm hover:shadow-md hover:border-semantic-success-border transition-all flex flex-col items-center text-center"
           >
-            <div className="w-12 h-12 rounded-full bg-semantic-success-bg text-semantic-success-text flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-semantic-success-border">
-              <MessageCircle size={22} />
+            <div className="w-12 h-12 rounded-full bg-semantic-success-bg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-semantic-success-border">
+              <Image src="/images/icons/icon_whatsapp.png" alt="WhatsApp" width={22} height={22} className="object-contain" />
             </div>
             <h3 className="font-bold text-content-primary mb-1">WhatsApp</h3>
             <p className="text-sm text-content-tertiary mb-4">Resposta rápida para dúvidas urgentes.</p>
@@ -41,8 +42,8 @@ export default function CoachHelpPage() {
             href="mailto:gabrielribeiropires@outlook.com"
             className="group bg-surface-elevated border border-line rounded-xl p-6 shadow-sm hover:shadow-md hover:border-semantic-info-border transition-all flex flex-col items-center text-center"
           >
-            <div className="w-12 h-12 rounded-full bg-semantic-info-bg text-semantic-info-text flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-semantic-info-border">
-              <Mail size={22} />
+            <div className="w-12 h-12 rounded-full bg-semantic-info-bg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-semantic-info-border">
+              <Image src="/images/icons/icon_email.png" alt="Email" width={22} height={22} className="object-contain" />
             </div>
             <h3 className="font-bold text-content-primary mb-1">E-mail</h3>
             <p className="text-sm text-content-tertiary mb-4">Para sugestões e problemas técnicos.</p>

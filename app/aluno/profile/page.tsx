@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import {
   User, Save, Loader2, Weight, Ruler, Target,
   Activity, Calendar, Clock, Dumbbell, Trophy, AlertTriangle, Timer
@@ -25,6 +26,7 @@ function ProfileSkeleton() {
 }
 
 export default function StudentProfilePage() {
+  const { showToast, ToastEl } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -118,9 +120,9 @@ export default function StudentProfilePage() {
           },
         }),
       });
-      alert("Perfil atualizado com sucesso!");
+      showToast("Perfil atualizado com sucesso!");
     } catch (error: any) {
-      alert("Erro ao atualizar: " + error.message);
+      showToast("Erro ao atualizar: " + error.message, "error");
     } finally {
       setSaving(false);
     }
@@ -348,6 +350,7 @@ export default function StudentProfilePage() {
           </form>
         </div>
       </div>
+      {ToastEl}
     </div>
   );
 }

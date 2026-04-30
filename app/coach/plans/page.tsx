@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Edit, Trash2, Plus, CreditCard, Clock, FileText } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface Plan {
   id: string;
@@ -36,6 +38,8 @@ export default function CoachPlansPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -52,12 +56,13 @@ export default function CoachPlansPage() {
   useEffect(() => { fetchPlans(); }, []);
 
   const handleDelete = async (planId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este plano?')) return;
+    const ok = await showConfirm({ message: 'Tem certeza que deseja excluir este plano?', confirmLabel: 'Excluir', danger: true });
+    if (!ok) return;
     try {
       await fetchWithAuth(`planos/${planId}`, { method: 'DELETE' });
       fetchPlans();
     } catch (err: any) {
-      alert(err.message || 'Erro ao excluir o plano.');
+      showToast(err.message || 'Erro ao excluir o plano.', "error");
     }
   };
 
@@ -142,6 +147,8 @@ export default function CoachPlansPage() {
           ))}
         </div>
       )}
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

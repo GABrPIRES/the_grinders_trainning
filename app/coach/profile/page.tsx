@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { User, Mail, Save, Loader2, Phone, FileText } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 function ProfileSkeleton() {
   return (
@@ -26,6 +27,7 @@ function ProfileSkeleton() {
 }
 
 export default function CoachProfilePage() {
+  const { showToast, ToastEl } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone_number: "", bio: "" });
@@ -62,9 +64,9 @@ export default function CoachProfilePage() {
         method: "PUT",
         body: JSON.stringify({ user: { name: form.name }, personal: { phone_number: form.phone_number, bio: form.bio } }),
       });
-      alert("Perfil atualizado com sucesso!");
+      showToast("Perfil atualizado com sucesso!");
     } catch (error: any) {
-      alert("Erro ao atualizar: " + (error.message || "Tente novamente."));
+      showToast("Erro ao atualizar: " + (error.message || "Tente novamente."), "error");
     } finally {
       setSaving(false);
     }
@@ -160,6 +162,7 @@ export default function CoachProfilePage() {
           </div>
         </div>
       )}
+      {ToastEl}
     </div>
   );
 }

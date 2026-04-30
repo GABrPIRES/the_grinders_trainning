@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import {
   Trash, Banknote, KeyRound, Filter, Search, X,
   Plus, ChevronLeft, ChevronRight,
@@ -157,6 +159,8 @@ function PaymentStateBadge({ state }: { state: string }) {
 
 export default function CoachPaymentsPage() {
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
@@ -200,7 +204,7 @@ export default function CoachPaymentsPage() {
       await fetchWithAuth('payment_methods', { method: 'POST', body: JSON.stringify({ payment_method: { method_type: 'pix', details: pixForm } }) });
       setPixForm({ key_type: 'cpf', key: '' });
       fetchPageData();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { showToast(err.message, "error"); }
   };
 
   const handleAddBank = async (e: React.FormEvent) => {
@@ -209,13 +213,14 @@ export default function CoachPaymentsPage() {
       await fetchWithAuth('payment_methods', { method: 'POST', body: JSON.stringify({ payment_method: { method_type: 'bank_account', details: bankForm } }) });
       setBankForm({ bank_name: '', agency: '', account_number: '', holder_name: '' });
       fetchPageData();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: any) { showToast(err.message, "error"); }
   };
 
   const handleDeleteMethod = async (id: string) => {
-    if (!window.confirm('Tem certeza?')) return;
+    const ok = await showConfirm({ message: 'Tem certeza que deseja remover este método de pagamento?', confirmLabel: 'Remover', danger: true });
+    if (!ok) return;
     try { await fetchWithAuth(`payment_methods/${id}`, { method: 'DELETE' }); fetchPageData(); }
-    catch (err: any) { alert(err.message); }
+    catch (err: any) { showToast(err.message, "error"); }
   };
 
   const filteredAlunos = useMemo(() => {
@@ -515,6 +520,8 @@ export default function CoachPaymentsPage() {
           </button>
         </div>
       </section>
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

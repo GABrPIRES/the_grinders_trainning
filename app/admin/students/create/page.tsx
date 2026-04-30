@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import {
   ArrowLeft, User, Mail, Lock, Phone,
   Save, Loader2, GraduationCap, Shield, ChevronDown, AlertCircle,
@@ -15,6 +16,7 @@ interface Coach {
 
 export default function CreateStudentPage() {
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
   const [student, setStudent] = useState({ name: "", email: "", password: "", phone_number: "", personal_id: "" });
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [error, setError] = useState("");
@@ -53,7 +55,7 @@ export default function CreateStudentPage() {
           },
         }),
       });
-      alert("Aluno cadastrado e vinculado com sucesso!");
+      showToast("Aluno cadastrado e vinculado com sucesso!");
       router.push("/admin/students");
     } catch (err: any) {
       setError(err.message || "Erro ao cadastrar aluno");
@@ -154,6 +156,7 @@ export default function CreateStudentPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
     </div>
   );
 }

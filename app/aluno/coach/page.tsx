@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { fetchWithAuth } from '@/lib/api';
-import { Mail, Instagram, User, Phone, ExternalLink, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
+import { Instagram, User, ExternalLink, AlertCircle } from 'lucide-react';
 
 interface CoachProfile {
   user: {
@@ -130,8 +131,8 @@ export default function MeuCoachPage() {
                   href={`mailto:${coach.user.email}`}
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-subtle border border-transparent hover:border-line transition-all group"
                 >
-                  <div className="bg-semantic-info-bg text-semantic-info-text p-2 rounded-lg group-hover:bg-semantic-info-text group-hover:text-white transition-colors flex-shrink-0">
-                    <Mail size={20} />
+                  <div className="bg-semantic-info-bg p-2 rounded-lg group-hover:bg-semantic-info-text transition-colors flex-shrink-0">
+                    <Image src="/images/icons/icon_email.png" alt="Email" width={20} height={20} className="object-contain" />
                   </div>
                   <div className="overflow-hidden">
                     <p className="text-xs font-bold text-content-muted uppercase">Email</p>
@@ -166,8 +167,8 @@ export default function MeuCoachPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-subtle border border-transparent hover:border-line transition-all group"
                 >
-                  <div className="bg-semantic-success-bg text-semantic-success-text p-2 rounded-lg group-hover:bg-semantic-success-text group-hover:text-white transition-colors flex-shrink-0">
-                    <Phone size={20} />
+                  <div className="bg-semantic-success-bg p-2 rounded-lg group-hover:bg-semantic-success-text transition-colors flex-shrink-0">
+                    <Image src="/images/icons/icon_whatsapp.png" alt="WhatsApp" width={20} height={20} className="object-contain" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-content-muted uppercase">WhatsApp</p>

@@ -41,7 +41,7 @@ export default function AlunoSidebar() {
         <div className="text-center py-6 border-b border-line">
           {/* Logo branca — dark mode */}
           <Image
-            src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
+            src="/images/logos/logo_transparent.png"
             alt="Logo The Grinders"
             width={250}
             height={50}
@@ -50,7 +50,7 @@ export default function AlunoSidebar() {
           />
           {/* Logo escura — light mode */}
           <Image
-            src="/images/logo_the_grinders_dark-removebg-preview.png"
+            src="/images/logos/logo_dark_transparent.png"
             alt="Logo The Grinders"
             width={250}
             height={50}

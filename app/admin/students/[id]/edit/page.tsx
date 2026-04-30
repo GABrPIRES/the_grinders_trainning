@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import { ArrowLeft, User, Mail, Lock, Save, Loader2, ToggleLeft, GraduationCap, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 function EditStudentSkeleton() {
   return (
@@ -31,6 +32,7 @@ function EditStudentSkeleton() {
 export default function EditStudentPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { showToast, ToastEl } = useToast();
   const [student, setStudent] = useState({ name: "", email: "", password: "", status: "ativo", phone_number: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,7 +66,7 @@ export default function EditStudentPage() {
         method: "PATCH",
         body: JSON.stringify({ aluno: { name: student.name, email: student.email, password: student.password, status: student.status, phone_number: student.phone_number } }),
       });
-      alert("Dados atualizados com sucesso!");
+      showToast("Dados atualizados com sucesso!");
       router.push("/admin/students");
     } catch (err: any) {
       setError(err.message || "Erro ao atualizar");
@@ -150,6 +152,7 @@ export default function EditStudentPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
     </div>
   );
 }

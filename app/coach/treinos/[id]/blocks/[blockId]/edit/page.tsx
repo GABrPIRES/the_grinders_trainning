@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   ArrowLeft, Calendar, Hash, Save, Loader2,
   TrendingUp, Info, AlertCircle, Trash2,
@@ -31,6 +33,8 @@ function EditBlockSkeleton() {
 export default function EditBlockPage() {
   const { id, blockId } = useParams();
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -84,7 +88,7 @@ export default function EditBlockPage() {
     const selectedDate = new Date(form.start_date);
     const year = selectedDate.getFullYear();
     if (year < 2024 || year > 2100) {
-      alert("Por favor, verifique a data. O ano parece incorreto.");
+      showToast("Por favor, verifique a data. O ano parece incorreto.", "warning");
       return;
     }
     setSaving(true);
@@ -111,12 +115,17 @@ export default function EditBlockPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Tem certeza? Apagar o bloco excluirá todos os treinos vinculados a ele.")) return;
+    const ok = await showConfirm({
+      message: "Tem certeza? Apagar o bloco excluirá todos os treinos vinculados a ele.",
+      confirmLabel: "Excluir",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await fetchWithAuth(`training_blocks/${blockId}`, { method: 'DELETE' });
       router.push(`/coach/treinos/${id}`);
     } catch (err: any) {
-      alert("Erro ao excluir: " + err.message);
+      showToast("Erro ao excluir: " + err.message, "error");
     }
   };
 
@@ -252,6 +261,8 @@ export default function EditBlockPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

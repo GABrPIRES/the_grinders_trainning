@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Dumbbell, ArrowRight, ChevronDown, ChevronUp, CheckCircle, ClipboardList } from "lucide-react";
-import { format, parseISO, isWithinInterval } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import WeeklyFeedbackModal from "@/components/modals/WeeklyFeedbackModal";
 
@@ -75,16 +75,15 @@ export default function MeusTreinosPage() {
         }
 
         if (data && data.length > 0) {
-          const today = new Date();
-          const activeBlock = data[0];
+          const todayStr = new Date().toISOString().split('T')[0];
+          const activeBlock = data.find((b: TrainingBlock) =>
+            b.start_date && b.end_date && todayStr >= b.start_date && todayStr <= b.end_date
+          ) || data[0];
           setExpandedBlockId(activeBlock.id);
 
           const activeWeek = activeBlock.weeks.find((week: Week) => {
             if (!week.start_date || !week.end_date) return false;
-            const start = parseISO(week.start_date);
-            const end = parseISO(week.end_date);
-            end.setHours(23, 59, 59, 999);
-            return isWithinInterval(today, { start, end });
+            return todayStr >= week.start_date && todayStr <= week.end_date;
           });
 
           if (activeWeek) {
@@ -109,11 +108,8 @@ export default function MeusTreinosPage() {
 
   const isCurrentDate = (start: string, end: string) => {
     if (!start || !end) return false;
-    const today = new Date();
-    const startDate = parseISO(start);
-    const endDate = parseISO(end);
-    endDate.setHours(23, 59, 59, 999);
-    return isWithinInterval(today, { start: startDate, end: endDate });
+    const todayStr = new Date().toISOString().split('T')[0];
+    return todayStr >= start && todayStr <= end;
   };
 
   if (loading) return <TreinosSkeleton />;
@@ -139,7 +135,10 @@ export default function MeusTreinosPage() {
 
       <div className="space-y-4">
         {blocks.map((block, index) => {
-          const isCurrentBlock = index === 0;
+          const todayStr = new Date().toISOString().split('T')[0];
+          const isCurrentBlock = block.start_date && block.end_date
+            ? todayStr >= block.start_date && todayStr <= block.end_date
+            : index === 0;
           const isExpanded = expandedBlockId === block.id;
 
           return (

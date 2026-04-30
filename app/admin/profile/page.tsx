@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { User, Mail, Save, Loader2, ShieldCheck, LayoutDashboard } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 function AdminProfileSkeleton() {
   return (
@@ -23,6 +24,7 @@ function AdminProfileSkeleton() {
 }
 
 export default function AdminProfilePage() {
+  const { showToast, ToastEl } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", role: "" });
@@ -54,9 +56,9 @@ export default function AdminProfilePage() {
     setSaving(true);
     try {
       await fetchWithAuth("profile", { method: "PUT", body: JSON.stringify({ user: { name: form.name } }) });
-      alert("Perfil atualizado com sucesso!");
+      showToast("Perfil atualizado com sucesso!");
     } catch (error: any) {
-      alert("Erro ao atualizar: " + error.message);
+      showToast("Erro ao atualizar: " + error.message, "error");
     } finally {
       setSaving(false);
     }
@@ -138,6 +140,7 @@ export default function AdminProfilePage() {
           </div>
         </div>
       )}
+      {ToastEl}
     </div>
   );
 }

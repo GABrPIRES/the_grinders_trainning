@@ -61,7 +61,7 @@ function redirectBasedOnRole(role: string, request: NextRequest) {
     if (role === 'personal') return NextResponse.redirect(new URL('/coach', request.url));
     if (role === 'aluno') return NextResponse.redirect(new URL('/aluno', request.url));
     // Fallback para evitar loops se a role for desconhecida
-    return NextResponse.next(); 
+    return NextResponse.next();
 }
 
 export const config = {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { fetchWithAuth } from "@/lib/api";
-import { Lock, Shield, Loader2, Check, AlertTriangle, Mail } from "lucide-react";
+import { Shield, Loader2, Check, AlertTriangle, Mail, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 
 export default function AdminSettingsPage() {
@@ -11,12 +11,34 @@ export default function AdminSettingsPage() {
   const [passForm, setPassForm] = useState({ current_password: "", password: "", password_confirmation: "" });
   const [emailsEnabled, setEmailsEnabled] = useState(false);
   const [togglingEmails, setTogglingEmails] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [togglingPush, setTogglingPush] = useState(false);
 
   useEffect(() => {
     fetchWithAuth("admin/settings")
-      .then((d: any) => setEmailsEnabled(d.emails_enabled))
+      .then((d: any) => {
+        setEmailsEnabled(d.emails_enabled);
+        setPushEnabled(d.push_enabled);
+      })
       .catch(() => {});
   }, []);
+
+  const handleTogglePush = async () => {
+    const next = !pushEnabled;
+    setTogglingPush(true);
+    try {
+      await fetchWithAuth("admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ settings: { push_enabled: next } }),
+      });
+      setPushEnabled(next);
+      showToast(`Notificações push ${next ? "ativadas" : "desativadas"}.`);
+    } catch {
+      showToast("Erro ao alterar configuração.", "error");
+    } finally {
+      setTogglingPush(false);
+    }
+  };
 
   const handleToggleEmails = async () => {
     const next = !emailsEnabled;
@@ -141,6 +163,36 @@ export default function AdminSettingsPage() {
             className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 disabled:opacity-60 ${emailsEnabled ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}
           >
             <div className={`bg-surface-elevated w-4 h-4 rounded-full shadow transform transition-transform duration-300 ${emailsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+          </button>
+        </div>
+      </section>
+
+      {/* Push Notifications */}
+      <section className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-line bg-surface-page">
+          <h2 className="text-base font-bold flex items-center gap-2 text-content-primary">
+            <Smartphone size={17} className="text-brand" /> Notificações Push (PWA)
+          </h2>
+          <p className="text-sm text-content-tertiary mt-0.5">
+            Ative para que coaches e alunos recebam notificações nativas no celular.
+          </p>
+        </div>
+        <div className="p-6 flex items-start justify-between gap-4">
+          <div>
+            <p className="font-bold text-content-primary text-sm">Envio de push notifications</p>
+            <p className="text-xs text-content-tertiary mt-0.5">
+              Quando ativo, usuários com opt-in recebem alertas mesmo com o app fechado.
+              {pushEnabled
+                ? " Atualmente ativo — pushes estão sendo enviados."
+                : " Atualmente inativo — nenhum push será enviado."}
+            </p>
+          </div>
+          <button
+            onClick={handleTogglePush}
+            disabled={togglingPush}
+            className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 disabled:opacity-60 ${pushEnabled ? 'bg-brand' : 'bg-surface-subtle border border-line'}`}
+          >
+            <div className={`bg-surface-elevated w-4 h-4 rounded-full shadow transform transition-transform duration-300 ${pushEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
           </button>
         </div>
       </section>

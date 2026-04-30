@@ -80,12 +80,9 @@ export default function CoachStudentBlocksPage() {
   };
 
   const getStatus = (block: TrainingBlock) => {
-    const now = new Date();
-    const start = new Date(block.start_date);
-    const end = new Date(block.end_date);
-    end.setHours(23, 59, 59);
-    if (now >= start && now <= end) return 'active';
-    if (now > end) return 'completed';
+    const today = new Date().toISOString().split('T')[0];
+    if (today >= block.start_date && today <= block.end_date) return 'active';
+    if (today > block.end_date) return 'completed';
     return 'future';
   };
 
@@ -105,7 +102,7 @@ export default function CoachStudentBlocksPage() {
         );
       default:
         return (
-          <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border">
+          <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-surface-subtle text-content-muted border border-line">
             <CheckCircle2 size={12} /> Concluído
           </span>
         );

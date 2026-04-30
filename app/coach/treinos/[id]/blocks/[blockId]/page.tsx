@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   ArrowLeft, Calendar, Edit, Trash2,
   Dumbbell, Clock, AlertCircle, CheckCircle2,
@@ -71,6 +73,8 @@ function BlockDetailSkeleton() {
 export default function BlockDetailsPage() {
   const { id, blockId } = useParams();
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const [block, setBlock] = useState<TrainingBlock | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,22 +131,27 @@ export default function BlockDetailsPage() {
         method: 'POST',
         body: JSON.stringify({ aluno_id: blockDupAlunoId, title: blockDupTitle }),
       });
-      alert("Bloco duplicado com sucesso!");
+      showToast("Bloco duplicado com sucesso!");
       setBlockDupOpen(false);
     } catch (err: any) {
-      alert("Erro ao duplicar bloco: " + (err.message || ""));
+      showToast("Erro ao duplicar bloco: " + (err.message || ""), "error");
     } finally {
       setDuplicatingBlock(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Tem certeza que deseja excluir este bloco? Isso apagará todas as semanas e treinos dele.")) return;
+    const ok = await showConfirm({
+      message: "Tem certeza que deseja excluir este bloco? Isso apagará todas as semanas e treinos dele.",
+      confirmLabel: "Excluir",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await fetchWithAuth(`training_blocks/${blockId}`, { method: 'DELETE' });
       router.push(`/coach/treinos/${id}`);
     } catch (error) {
-      alert("Erro ao excluir.");
+      showToast("Erro ao excluir.", "error");
     }
   };
 
@@ -172,7 +181,7 @@ export default function BlockDetailsPage() {
       setBlock(data);
       setEditingWeek(null);
     } catch (err: any) {
-      alert(err.message || 'Erro ao salvar semana.');
+      showToast(err.message || 'Erro ao salvar semana.', "error");
     } finally {
       setSavingWeek(false);
     }
@@ -185,7 +194,7 @@ export default function BlockDetailsPage() {
       const data = await fetchWithAuth(`training_blocks/${blockId}`);
       setBlock(data);
     } catch (err: any) {
-      alert(err.message || 'Erro ao adicionar semana.');
+      showToast(err.message || 'Erro ao adicionar semana.', "error");
     } finally {
       setAddingWeek(false);
     }
@@ -322,15 +331,21 @@ export default function BlockDetailsPage() {
                   </div>
 
                   {week.treinos && week.treinos.length > 0 ? (() => {
-                    const withAI = week.treinos.filter(t => t.status === 'draft' && t.has_pending_ai_suggestions);
+                    const withAI    = week.treinos.filter(t => t.status === 'draft' && t.has_pending_ai_suggestions);
                     const withoutAI = week.treinos.filter(t => t.status === 'draft' && !t.has_pending_ai_suggestions);
-                    const published = week.treinos.filter(t => t.status === 'published' || t.status === 'in_progress' || t.status === 'completed');
-                    const allOk = week.treinos.every(t => t.status !== 'draft');
+                    const published = week.treinos.filter(t => t.status === 'published' || t.status === 'in_progress');
+                    const completed = week.treinos.filter(t => t.status === 'completed');
+                    const allOk     = week.treinos.every(t => t.status !== 'draft');
 
                     return (
                       <div className="space-y-2">
                         <div className="flex flex-wrap gap-1.5">
-                          {allOk && published.length > 0 && (
+                          {completed.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-surface-subtle text-content-muted border border-line px-2 py-0.5 rounded-full">
+                              <CheckCircle2 size={9} /> {completed.length} concluído{completed.length > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {published.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border px-2 py-0.5 rounded-full">
                               <CheckCircle2 size={9} /> {published.length} publicado{published.length > 1 ? 's' : ''}
                             </span>
@@ -346,11 +361,6 @@ export default function BlockDetailsPage() {
                           {withoutAI.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-surface-subtle text-content-muted border border-line px-2 py-0.5 rounded-full">
                               <Eye size={9} /> {withoutAI.length} a publicar
-                            </span>
-                          )}
-                          {!allOk && published.length > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-semantic-success-bg text-semantic-success-text border border-semantic-success-border px-2 py-0.5 rounded-full">
-                              <CheckCircle2 size={9} /> {published.length} publicado{published.length > 1 ? 's' : ''}
                             </span>
                           )}
                         </div>
@@ -509,7 +519,7 @@ export default function BlockDetailsPage() {
           sourceWeekNumber={duplicateWeek.number}
           onClose={() => setDuplicateWeek(null)}
           onSuccess={() => {
-            alert("Semana duplicada com sucesso!");
+            showToast("Semana duplicada com sucesso!");
             setDuplicateWeek(null);
           }}
         />
@@ -583,6 +593,9 @@ export default function BlockDetailsPage() {
           </div>
         </div>
       )}
+
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

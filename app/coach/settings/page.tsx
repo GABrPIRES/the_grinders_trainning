@@ -6,9 +6,10 @@ import { useToast } from "@/hooks/useToast";
 import { useConfirm } from "@/hooks/useConfirm";
 import { coachService } from "@/services/coachService";
 import {
-  Lock, Bell, Shield, Check, Loader2,
-  UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle,
+  Bell, Shield, Check, Loader2,
+  UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle, Smartphone,
 } from "lucide-react";
+import PushNotificationToggle from "@/components/settings/PushNotificationToggle";
 
 function PrefRow({
   icon, title, description, checked, onToggle, saving,
@@ -305,6 +306,14 @@ export default function CoachSettingsPage() {
           </div>
 
           <div className="p-6 space-y-5">
+            {/* Push — celular */}
+            <div className="border-b border-line pb-5">
+              <p className="text-xs font-bold text-content-muted uppercase mb-4 flex items-center gap-2">
+                <Smartphone size={13} /> Notificações no celular
+              </p>
+              <PushNotificationToggle />
+            </div>
+
             {/* Toggle global de notificações in-app */}
             <PrefRow
               icon={<Bell size={18} />}

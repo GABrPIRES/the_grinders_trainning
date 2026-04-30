@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import {
   ArrowLeft, Calendar, Hash, Save, Loader2,
   TrendingUp, Info, AlertCircle,
@@ -17,6 +18,7 @@ interface ExistingBlock {
 export default function CreateBlockPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +60,7 @@ export default function CreateBlockPage() {
     const selectedDate = new Date(form.start_date);
     const year = selectedDate.getFullYear();
     if (year < 2024 || year > 2100) {
-      alert("Por favor, verifique a data. O ano parece incorreto.");
+      showToast("Por favor, verifique a data. O ano parece incorreto.", "warning");
       return;
     }
 
@@ -219,6 +221,7 @@ export default function CreateBlockPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
     </div>
   );
 }

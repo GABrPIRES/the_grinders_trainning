@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, Loader2, CreditCard, Clock, FileText, DollarSign, Trash2, AlertCircle } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 function Skeleton() {
   return (
@@ -27,6 +29,8 @@ function Skeleton() {
 export default function EditPlanPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -68,12 +72,13 @@ export default function EditPlanPage() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Tem certeza que deseja excluir este plano?')) return;
+    const ok = await showConfirm({ message: 'Tem certeza que deseja excluir este plano?', confirmLabel: 'Excluir', danger: true });
+    if (!ok) return;
     try {
       await fetchWithAuth(`planos/${id}`, { method: 'DELETE' });
       router.push('/coach/plans');
     } catch (err: any) {
-      alert(err.message || 'Erro ao excluir.');
+      showToast(err.message || 'Erro ao excluir.', "error");
     }
   };
 
@@ -156,6 +161,8 @@ export default function EditPlanPage() {
           </button>
         </div>
       </form>
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

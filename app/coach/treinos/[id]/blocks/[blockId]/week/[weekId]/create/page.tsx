@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useConfirm } from "@/hooks/useConfirm";
 import { v4 as uuid } from "uuid";
 import { calculatePR } from "@/lib/calculatePR";
 import { fetchWithAuth } from "@/lib/api";
@@ -32,6 +33,7 @@ interface WeekData {
 export default function CreateWorkoutPage() {
   const { id: alunoId, blockId, weekId } = useParams();
   const router = useRouter();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -69,10 +71,10 @@ export default function CreateWorkoutPage() {
   const handleAddExercise = () =>
     setExercises(prev => [...prev, { id: uuid(), name: "", sections: [{ id: uuid(), carga: null, load_unit: 'kg', series: null, reps: null, equip: "", rpe: null, pr: null, feito: false }] }]);
 
-  const handleRemoveExercise = (index: number) => {
-    if (confirm("Remover este exercício?")) {
-      setExercises(prev => prev.filter((_, i) => i !== index));
-    }
+  const handleRemoveExercise = async (index: number) => {
+    const ok = await showConfirm({ message: "Remover este exercício?", confirmLabel: "Remover", danger: true });
+    if (!ok) return;
+    setExercises(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAddSection = (exerciseId: string) =>
@@ -373,6 +375,7 @@ export default function CreateWorkoutPage() {
           </button>
         </div>
       </form>
+      {ConfirmEl}
     </div>
   );
 }

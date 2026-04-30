@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
 import {
   ArrowLeft, Calendar, Plus, Dumbbell,
   MoreVertical, Edit, Trash2, Copy, X, Loader2,
@@ -60,6 +62,8 @@ function WeekSkeleton() {
 export default function WeekDetailsPage() {
   const { id: currentAlunoId, blockId: currentBlockId, weekId: currentWeekId } = useParams();
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
 
   const [week, setWeek] = useState<Week | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +83,7 @@ export default function WeekDetailsPage() {
           : prev
       );
     } catch (err: any) {
-      alert(err.message || "Erro ao alterar status.");
+      showToast(err.message || "Erro ao alterar status.", "error");
     } finally {
       setPublishingId(null);
     }
@@ -95,7 +99,7 @@ export default function WeekDetailsPage() {
       });
       setWeek((prev) => prev ? { ...prev, periodization_goal: goal } : prev);
     } catch (err: any) {
-      alert(err.message || 'Erro ao salvar objetivo.');
+      showToast(err.message || 'Erro ao salvar objetivo.', "error");
     } finally {
       setSavingGoal(false);
     }
@@ -190,11 +194,12 @@ export default function WeekDetailsPage() {
   // --- Handlers ---
 
   const handleDeleteTreino = async (treinoId: string) => {
-    if (!confirm("Tem certeza que deseja excluir este treino?")) return;
+    const ok = await showConfirm({ message: "Tem certeza que deseja excluir este treino?", confirmLabel: "Excluir", danger: true });
+    if (!ok) return;
     try {
       await fetchWithAuth(`treinos/${treinoId}`, { method: 'DELETE' });
       if (week) setWeek({ ...week, treinos: week.treinos.filter(t => t.id !== treinoId) });
-    } catch (error) { alert("Erro ao excluir."); }
+    } catch (error) { showToast("Erro ao excluir.", "error"); }
   };
 
   const openDuplicateModal = (treino: Treino) => {
@@ -217,19 +222,18 @@ export default function WeekDetailsPage() {
           duplication: { week_id: targetWeekId, name: newName, day: newDay },
         }),
       });
-      alert("Treino duplicado com sucesso!");
+      showToast("Treino duplicado com sucesso!");
       setIsModalOpen(false);
       if (targetWeekId === currentWeekId) {
         window.location.reload();
       } else {
-        if (confirm("Treino enviado para outra semana. Deseja ir para lá agora?")) {
-          if (targetAlunoId === currentAlunoId && targetBlockId === currentBlockId) {
-            router.push(`/coach/treinos/${targetAlunoId}/blocks/${targetBlockId}/week/${targetWeekId}`);
-          }
+        const goThere = await showConfirm({ message: "Treino enviado para outra semana. Deseja ir para lá agora?" });
+        if (goThere && targetAlunoId === currentAlunoId && targetBlockId === currentBlockId) {
+          router.push(`/coach/treinos/${targetAlunoId}/blocks/${targetBlockId}/week/${targetWeekId}`);
         }
       }
     } catch (err: any) {
-      alert("Erro ao duplicar: " + err.message);
+      showToast("Erro ao duplicar: " + err.message, "error");
     } finally {
       setDuplicating(false);
     }
@@ -622,6 +626,9 @@ export default function WeekDetailsPage() {
           </div>
         </div>
       )}
+
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

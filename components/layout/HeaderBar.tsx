@@ -15,6 +15,10 @@ export default function HeaderBar() {
 
   const { notifications, unreadCount, loading, markRead, markAllRead } = useNotifications();
 
+  const handleOpenNotif = () => {
+    setNotifOpen(o => !o);
+  };
+
   useEffect(() => {
     setCurrentDate(new Date().toLocaleDateString("pt-BR", {
       weekday: 'long',
@@ -76,7 +80,7 @@ export default function HeaderBar() {
         {/* Notificações */}
         <div className="relative">
           <button
-            onClick={() => setNotifOpen(o => !o)}
+            onClick={handleOpenNotif}
             className="relative p-2 text-content-secondary hover:bg-surface-subtle rounded-full transition-colors"
             aria-label="Notificações"
           >

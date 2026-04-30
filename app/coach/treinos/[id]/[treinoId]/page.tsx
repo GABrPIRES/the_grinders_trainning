@@ -2,6 +2,8 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useToast } from "@/hooks/useToast";
+import { useConfirm } from "@/hooks/useConfirm";
 import { v4 as uuid } from "uuid";
 import { calculatePR } from "@/lib/calculatePR";
 import { fetchWithAuth } from "@/lib/api";
@@ -339,6 +341,7 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
   const [selectedModel, setSelectedModel] = useState<ExerciseModel | null>(null);
   const [loadingModels, setLoadingModels] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [modalError, setModalError] = useState('');
   const firstSection = exercise.sections.filter(s => !s.deleted)[0];
 
   useEffect(() => {
@@ -389,7 +392,7 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
       onSaved();
       onClose();
     } catch {
-      alert('Erro ao salvar modelo.');
+      setModalError('Erro ao salvar modelo. Tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -480,6 +483,11 @@ function SaveModelModal({ exercise, onClose, onSaved }: {
             </div>
           )}
         </div>
+        {modalError && (
+          <p className="px-5 pb-2 text-xs text-red-400 flex items-center gap-1">
+            <AlertCircle size={12} /> {modalError}
+          </p>
+        )}
         <div className="p-5 border-t border-line flex gap-3">
           <button onClick={onClose} className="flex-1 border border-line-input text-content-primary font-bold py-2.5 rounded-lg hover:bg-surface-subtle transition-colors text-sm">
             Cancelar
@@ -594,10 +602,12 @@ export default function EditWorkoutPage() {
   const [unpublishing, setUnpublishing] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
 
+  const { showToast, ToastEl } = useToast();
+  const { showConfirm, ConfirmEl } = useConfirm();
+
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [saveModelForExIndex, setSaveModelForExIndex] = useState<number | null>(null);
   const [importModelForExIndex, setImportModelForExIndex] = useState<number | null>(null);
-  const [modelSavedToast, setModelSavedToast] = useState(false);
 
   useEffect(() => {
     async function loadWorkout() {
@@ -657,15 +667,15 @@ export default function EditWorkoutPage() {
       sections: [{ id: uuid(), isNew: true, deleted: false, carga: null, load_unit: 'kg', series: null, reps: null, equip: "", rpe: null, pr: null, feito: false }],
     }]);
 
-  const handleRemoveExercise = (index: number) => {
-    if (confirm("Remover este exercício?")) {
-      setExercises(prev => {
-        const updated = [...prev];
-        if (updated[index].isNew) return prev.filter((_, i) => i !== index);
-        updated[index].deleted = true;
-        return updated;
-      });
-    }
+  const handleRemoveExercise = async (index: number) => {
+    const ok = await showConfirm({ message: "Remover este exercício?", confirmLabel: "Remover", danger: true });
+    if (!ok) return;
+    setExercises(prev => {
+      const updated = [...prev];
+      if (updated[index].isNew) return prev.filter((_, i) => i !== index);
+      updated[index].deleted = true;
+      return updated;
+    });
   };
 
   const handleAddSection = (exerciseId: string) =>
@@ -752,15 +762,18 @@ export default function EditWorkoutPage() {
   };
 
   const handleUnpublish = async () => {
-    if (!confirm(
-      "Despublicar este treino?\n\nOs dados registrados pelo aluno (cargas reais, RPEs e marcações) serão apagados."
-    )) return;
+    const ok = await showConfirm({
+      message: "Despublicar este treino? Os dados registrados pelo aluno (cargas reais, RPEs e marcações) serão apagados.",
+      confirmLabel: "Despublicar",
+      danger: true,
+    });
+    if (!ok) return;
     setUnpublishing(true);
     try {
       await fetchWithAuth(`coach/treinos/${treinoId}/publish`, { method: 'POST' });
       window.location.reload();
     } catch (err: any) {
-      alert("Erro ao despublicar: " + (err.message || ""));
+      showToast("Erro ao despublicar: " + (err.message || ""), "error");
     } finally {
       setUnpublishing(false);
     }
@@ -770,9 +783,12 @@ export default function EditWorkoutPage() {
     e.preventDefault();
 
     if (isPublished) {
-      if (!confirm(
-        "Este treino está publicado para o aluno.\n\nSalvar irá despublicar o treino e apagar todos os dados registrados pelo aluno (cargas reais, RPEs e marcações).\n\nDeseja continuar?"
-      )) return;
+      const ok = await showConfirm({
+        message: "Este treino está publicado para o aluno. Salvar irá despublicar o treino e apagar todos os dados registrados pelo aluno (cargas reais, RPEs e marcações). Deseja continuar?",
+        confirmLabel: "Salvar e Despublicar",
+        danger: true,
+      });
+      if (!ok) return;
     }
 
     setError("");
@@ -816,7 +832,7 @@ export default function EditWorkoutPage() {
         await fetchWithAuth(`coach/treinos/${treinoId}/publish`, { method: 'POST' });
       }
 
-      alert("Treino atualizado com sucesso!");
+      showToast("Treino atualizado com sucesso!");
       window.location.reload();
     } catch (err: any) {
       setError(err.message || "Erro ao atualizar o treino.");
@@ -826,12 +842,17 @@ export default function EditWorkoutPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Tem certeza que deseja excluir este treino?")) return;
+    const ok = await showConfirm({
+      message: "Tem certeza que deseja excluir este treino?",
+      confirmLabel: "Excluir",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await fetchWithAuth(`treinos/${treinoId}`, { method: 'DELETE' });
       router.back();
     } catch {
-      alert("Erro ao excluir.");
+      showToast("Erro ao excluir.", "error");
     }
   };
 
@@ -1221,7 +1242,7 @@ export default function EditWorkoutPage() {
         <SaveModelModal
           exercise={exercises.filter(ex => !ex.deleted)[saveModelForExIndex]}
           onClose={() => setSaveModelForExIndex(null)}
-          onSaved={() => { setModelSavedToast(true); setTimeout(() => setModelSavedToast(false), 3000); }}
+          onSaved={() => showToast("Modelo salvo com sucesso!")}
         />
       )}
 
@@ -1236,12 +1257,8 @@ export default function EditWorkoutPage() {
         />
       )}
 
-      {/* Toast: modelo salvo */}
-      {modelSavedToast && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-surface-elevated border border-semantic-success-border text-semantic-success-text px-5 py-3 rounded-xl shadow-lg text-sm font-bold flex items-center gap-2">
-          <CheckCircle2 size={16} /> Modelo salvo com sucesso!
-        </div>
-      )}
+      {ToastEl}
+      {ConfirmEl}
     </div>
   );
 }

@@ -83,14 +83,14 @@ function SignupFormContent() {
     <div className="max-w-md w-full mx-auto space-y-4">
       <div className="flex justify-center">
         <Image
-          src="/images/Gemini_Generated_Image_gvg24agvg24agvg2__3_-removebg-preview.png"
+          src="/images/logos/logo_transparent.png"
           alt="The Grinders Logo"
           width={240}
           height={44}
           className="object-contain hidden dark:block"
         />
         <Image
-          src="/images/logo_the_grinders_dark-removebg-preview.png"
+          src="/images/logos/logo_dark_transparent.png"
           alt="The Grinders Logo"
           width={240}
           height={44}
@@ -220,7 +220,7 @@ export default function SignupPage() {
       </div>
       <div className="hidden md:block relative w-1/2 h-screen">
         <Image
-          src="/images/davi-cardoso.png"
+          src="/images/team/davi-cardoso.png"
           alt="Atleta de powerlifting"
           fill
           priority

@@ -18,7 +18,7 @@ export function useNotifications() {
 
   const fetch = useCallback(async () => {
     try {
-      const data: AppNotification[] = await fetchWithAuth("notifications");
+      const data: AppNotification[] = await fetchWithAuth("notifications?filter=all");
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.read_at).length);
     } catch {

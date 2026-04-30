@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
 import { ArrowLeft, Save, Loader2, Info, AlertCircle } from "lucide-react";
 
 interface Plano { name: string; price: number; }
@@ -11,6 +12,7 @@ interface Aluno { id: string; user: { name: string }; plano?: Plano; }
 export default function CreatePaymentPage() {
   const { idAluno } = useParams();
   const router = useRouter();
+  const { showToast, ToastEl } = useToast();
 
   const [aluno, setAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function CreatePaymentPage() {
       });
       router.push(`/coach/payments/${idAluno}`);
     } catch (err: any) {
-      alert("Erro ao criar pagamento: " + err.message);
+      showToast("Erro ao criar pagamento: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -142,6 +144,7 @@ export default function CreatePaymentPage() {
           {saving ? 'Salvando...' : 'Criar Pagamento'}
         </button>
       </form>
+      {ToastEl}
     </div>
   );
 }
