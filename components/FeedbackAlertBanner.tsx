@@ -3,26 +3,20 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ClipboardList, X } from 'lucide-react';
-import { fetchWithAuth } from '@/lib/api';
+import { weeklyFeedbackService, PendingFeedback } from '@/services/weeklyFeedbackService';
 import WeeklyFeedbackModal from '@/components/modals/WeeklyFeedbackModal';
-
-interface PendingResult {
-  pending: boolean;
-  week_id?: string;
-  deadline_at?: string;
-  incomplete_treinos?: string[];
-}
 
 export default function FeedbackAlertBanner() {
   const pathname = usePathname();
-  const [pending, setPending] = useState<PendingResult | null>(null);
+  const [pending, setPending] = useState<PendingFeedback | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     setDismissed(false);
-    fetchWithAuth('weekly_feedbacks/pending')
-      .then((res: PendingResult) => setPending(res))
+    weeklyFeedbackService
+      .pending()
+      .then((res) => setPending(res))
       .catch(() => {});
   }, [pathname]);
 
@@ -37,6 +31,11 @@ export default function FeedbackAlertBanner() {
             <p className="text-sm font-semibold text-content-primary">
               Você tem um formulário semanal para preencher!
             </p>
+            {pending.date_range_label && (
+              <p className="text-xs text-semantic-warning-text mt-0.5">
+                Semana de <span className="font-medium">{pending.date_range_label}</span>
+              </p>
+            )}
             {pending.incomplete_treinos && pending.incomplete_treinos.length > 0 && (
               <p className="text-xs text-semantic-warning-text mt-0.5">
                 Treinos pendentes: <span className="font-medium">{pending.incomplete_treinos.join(', ')}</span>
@@ -64,6 +63,7 @@ export default function FeedbackAlertBanner() {
       {showModal && pending.week_id && (
         <WeeklyFeedbackModal
           weekId={pending.week_id}
+          dateRangeLabel={pending.date_range_label}
           incompleteTreinos={pending.incomplete_treinos}
           onClose={() => setShowModal(false)}
           onSubmitted={() => {
