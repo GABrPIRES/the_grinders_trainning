@@ -7,7 +7,7 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { coachService } from "@/services/coachService";
 import {
   Bell, Shield, Check, Loader2,
-  UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle, Smartphone,
+  UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle, Smartphone, Sparkles,
 } from "lucide-react";
 import PushNotificationToggle from "@/components/settings/PushNotificationToggle";
 
@@ -61,11 +61,47 @@ export default function CoachSettingsPage() {
   });
   const [savingPrefs, setSavingPrefs] = useState(false);
 
+  const [aiPrefs, setAiPrefs] = useState({
+    ai_enabled_by_admin: false,
+    ai_enabled: true,
+  });
+  const [savingAi, setSavingAi] = useState(false);
+
   useEffect(() => {
     loadInviteData();
     loadPendingStudents();
     loadNotifPrefs();
+    loadAiPrefs();
   }, []);
+
+  const loadAiPrefs = async () => {
+    try {
+      const data = await fetchWithAuth("coach/settings");
+      setAiPrefs({
+        ai_enabled_by_admin: data.ai_enabled_by_admin,
+        ai_enabled: data.ai_enabled,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleToggleAiEnabled = async () => {
+    const next = !aiPrefs.ai_enabled;
+    setSavingAi(true);
+    try {
+      await fetchWithAuth("coach/settings/ai_enabled", {
+        method: "PATCH",
+        body: JSON.stringify({ ai_enabled: next }),
+      });
+      setAiPrefs((p) => ({ ...p, ai_enabled: next }));
+      showToast(`Atualização por IA ${next ? "ativada" : "desativada"}.`);
+    } catch {
+      showToast("Erro ao atualizar preferência.", "error");
+    } finally {
+      setSavingAi(false);
+    }
+  };
 
   const loadInviteData = async () => {
     try {
@@ -295,6 +331,43 @@ export default function CoachSettingsPage() {
             </form>
           </div>
         </section>
+
+        {/* Atualização por IA — só aparece se admin habilitou para este coach */}
+        {aiPrefs.ai_enabled_by_admin && (
+          <section className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-line bg-surface-page">
+              <h2 className="text-base font-bold flex items-center gap-2 text-content-primary">
+                <Sparkles size={17} className="text-brand" /> Atualização de cargas por IA
+              </h2>
+              <p className="text-sm text-content-tertiary mt-0.5">
+                Quando ativo, ao aluno responder o formulário semanal o sistema sugere automaticamente cargas para a próxima semana — você revisa e aprova antes de publicar.
+              </p>
+            </div>
+            <div className="p-6 flex items-start justify-between gap-4">
+              <div>
+                <p className="font-bold text-content-primary text-sm">Ativar IA para meus alunos</p>
+                <p className="text-xs text-content-tertiary mt-0.5">
+                  {aiPrefs.ai_enabled
+                    ? "Atualmente ativa — você recebe sugestões da IA para revisar."
+                    : "Atualmente desativada — você cria todos os treinos manualmente."}
+                </p>
+              </div>
+              <button
+                onClick={handleToggleAiEnabled}
+                disabled={savingAi}
+                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 shrink-0 disabled:opacity-60 ${
+                  aiPrefs.ai_enabled ? "bg-brand" : "bg-surface-subtle border border-line"
+                }`}
+              >
+                <div
+                  className={`bg-surface-elevated w-4 h-4 rounded-full shadow transform transition-transform duration-300 ${
+                    aiPrefs.ai_enabled ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Preferências */}
         <section className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
