@@ -8,10 +8,15 @@ import { useConfirm } from "@/hooks/useConfirm";
 import {
   ArrowLeft, Calendar, Plus, Dumbbell,
   MoreVertical, Edit, Trash2, Copy, X, Loader2,
-  User, Layers, Bot, Eye, EyeOff, CheckCircle2, AlertTriangle,
+  User, Layers, Bot, Eye, EyeOff, CheckCircle2, AlertTriangle, ClipboardCheck, ChevronRight,
 } from "lucide-react";
 import AiReviewModal from "@/components/modals/AiReviewModal";
+import WeeklyFeedbackViewerModal from "@/components/modals/WeeklyFeedbackViewerModal";
 import { coachReviewService } from "@/services/coachReviewService";
+import {
+  coachWeeklyFeedbackService,
+  WeeklyFeedbackResponse,
+} from "@/services/coachWeeklyFeedbackService";
 
 // --- Interfaces ---
 interface Treino {
@@ -71,6 +76,8 @@ export default function WeekDetailsPage() {
   const [reviewTreino, setReviewTreino] = useState<Treino | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [savingGoal, setSavingGoal] = useState(false);
+  const [feedback, setFeedback] = useState<WeeklyFeedbackResponse | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const handlePublishToggle = async (treino: Treino, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -136,6 +143,15 @@ export default function WeekDetailsPage() {
       }
     }
     loadWeek();
+  }, [currentWeekId]);
+
+  // Busca o feedback respondido pelo aluno desta semana (se houver).
+  useEffect(() => {
+    if (!currentWeekId) return;
+    coachWeeklyFeedbackService
+      .getByWeek(currentWeekId as string)
+      .then((fb) => setFeedback(fb))
+      .catch(() => setFeedback(null));
   }, [currentWeekId]);
 
   useEffect(() => {
@@ -330,6 +346,27 @@ export default function WeekDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Formulário respondido pelo aluno */}
+      {feedback && (
+        <button
+          onClick={() => setShowFeedbackModal(true)}
+          className="mb-5 w-full bg-surface-elevated border border-line rounded-xl p-4 flex items-center justify-between gap-3 hover:bg-surface-page transition-colors text-left shadow-sm"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-semantic-success-bg text-semantic-success-text rounded-lg border border-semantic-success-border shrink-0">
+              <ClipboardCheck size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-content-primary text-sm">Formulário respondido</p>
+              <p className="text-xs text-content-tertiary truncate">
+                Sono {feedback.sleep_level}/10 · Estresse {feedback.stress_level}/10 · Vontade {feedback.training_desire}/10
+              </p>
+            </div>
+          </div>
+          <ChevronRight size={18} className="text-content-tertiary shrink-0" />
+        </button>
+      )}
 
       {/* Banner de status */}
       {week.treinos && week.treinos.length > 0 && (() => {
@@ -625,6 +662,17 @@ export default function WeekDetailsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {showFeedbackModal && feedback && (
+        <WeeklyFeedbackViewerModal
+          feedback={feedback}
+          onClose={() => setShowFeedbackModal(false)}
+          onDeleted={() => {
+            setFeedback(null);
+            setShowFeedbackModal(false);
+          }}
+        />
       )}
 
       {ToastEl}
