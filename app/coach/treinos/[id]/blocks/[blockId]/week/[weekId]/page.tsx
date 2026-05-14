@@ -81,6 +81,19 @@ export default function WeekDetailsPage() {
 
   const handlePublishToggle = async (treino: Treino, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Treino em andamento ou concluído: confirmar porque o backend apaga os
+    // dados registrados pelo aluno (feito, actual_load, actual_rpe, started/finished_at).
+    if (treino.status === 'in_progress' || treino.status === 'completed') {
+      const ok = await showConfirm({
+        message: 'Os dados registrados pelo aluno serão perdidos. Deseja despublicar?',
+        confirmLabel: 'Despublicar',
+        cancelLabel: 'Cancelar',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+
     setPublishingId(treino.id);
     try {
       const result = await coachReviewService.publishTreino(treino.id);
@@ -486,7 +499,7 @@ export default function WeekDetailsPage() {
                         )}
                       </div>
                     )}
-                    {treino.status === 'published' && (
+                    {(treino.status === 'published' || treino.status === 'in_progress' || treino.status === 'completed') && (
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={(e) => handlePublishToggle(treino, e)}
