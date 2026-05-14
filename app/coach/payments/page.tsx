@@ -404,12 +404,12 @@ export default function CoachPaymentsPage() {
             </div>
             <div>
               <label className="block text-[10px] font-bold text-content-muted uppercase mb-1">Vencimento De</label>
-              <input type="date" value={dueDateFrom} onChange={e => { setDueDateFrom(e.target.value); setPage(1); }} className={inputClass} />
+              <input type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} value={dueDateFrom} onChange={e => { setDueDateFrom(e.target.value); setPage(1); }} className={`${inputClass} cursor-pointer`} />
             </div>
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <label className="block text-[10px] font-bold text-content-muted uppercase mb-1">Até</label>
-                <input type="date" value={dueDateTo} onChange={e => { setDueDateTo(e.target.value); setPage(1); }} className={inputClass} />
+                <input type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} value={dueDateTo} onChange={e => { setDueDateTo(e.target.value); setPage(1); }} className={`${inputClass} cursor-pointer`} />
               </div>
               <button onClick={() => { setSearch(''); setStatusFilter('all'); setDueDateFrom(''); setDueDateTo(''); setPage(1); }} className="p-2.5 text-content-muted hover:text-semantic-error-text bg-surface-elevated border border-line rounded-lg transition-colors">
                 <X size={17} />

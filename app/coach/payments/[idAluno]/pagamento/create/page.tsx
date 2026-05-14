@@ -123,7 +123,7 @@ export default function CreatePaymentPage() {
 
         <div>
           <label className="block text-xs font-bold text-content-muted uppercase mb-1">Data de Vencimento</label>
-          <input type="date" required className={inputClass} value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
+          <input type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} required className={`${inputClass} cursor-pointer`} value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
         </div>
 
         <div>

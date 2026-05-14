@@ -358,7 +358,7 @@ export default function ImportPreviewCarousel({ initialData, alunoId, targetBloc
                                     <Calendar size={18} className="text-neutral-400 shrink-0"/>
                                     <div className="flex-1">
                                         <input 
-                                            type="date" 
+                                            type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} 
                                             className={`w-full md:w-40 text-sm border rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-red-500 outline-none ${!treino.day ? 'border-red-300 bg-red-50' : 'border-neutral-300'}`}
                                             value={treino.day || ''} 
                                             onChange={e => updateEditedData([currentIndex, 'treinos', treinoIndex, 'day'], e.target.value)}

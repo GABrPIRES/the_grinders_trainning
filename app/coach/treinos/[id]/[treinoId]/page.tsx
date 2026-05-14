@@ -1028,8 +1028,8 @@ export default function EditWorkoutPage() {
                 <Calendar size={15} /> Data
               </label>
               <input
-                type="date"
-                className="w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow outline-none transition-all bg-surface-app text-content-primary text-sm"
+                type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow outline-none transition-all bg-surface-app text-content-primary text-sm cursor-pointer"
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 required

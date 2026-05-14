@@ -451,14 +451,14 @@ export default function CoachDashboardPage() {
               <>
                 <div>
                   <p className="text-xs font-bold text-content-muted uppercase mb-1.5">De</p>
-                  <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
-                    className="px-3 py-2 border border-line-input rounded-lg text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none"
+                  <input type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} value={customStart} onChange={e => setCustomStart(e.target.value)}
+                    className="px-3 py-2 border border-line-input rounded-lg text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none cursor-pointer"
                   />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-content-muted uppercase mb-1.5">Até</p>
-                  <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
-                    className="px-3 py-2 border border-line-input rounded-lg text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none"
+                  <input type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                    className="px-3 py-2 border border-line-input rounded-lg text-sm bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none cursor-pointer"
                   />
                 </div>
               </>

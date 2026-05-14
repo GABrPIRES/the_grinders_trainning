@@ -645,8 +645,8 @@ export default function WeekDetailsPage() {
                 <div>
                   <label className="block text-sm font-bold text-content-secondary mb-1">Data</label>
                   <input
-                    type="date"
-                    className="w-full border border-line-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-glow outline-none bg-surface-app text-content-primary text-sm"
+                    type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                    className="w-full border border-line-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-glow outline-none bg-surface-app text-content-primary text-sm cursor-pointer"
                     value={newDay}
                     onChange={(e) => setNewDay(e.target.value)}
                     required
