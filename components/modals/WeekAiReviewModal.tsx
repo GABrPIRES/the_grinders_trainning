@@ -223,7 +223,7 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                                         step="0.5"
                                         value={getDisplayLoad(treino.treino_id, sec)}
                                         onChange={(e) => setOverride(treino.treino_id, sec.section_id, e.target.value)}
-                                        className="w-20 border border-neutral-300 rounded-lg p-1 text-center text-xs focus:ring-2 focus:ring-red-500 outline-none mx-auto block"
+                                        className="w-20 border border-line-input rounded-lg p-1 text-center text-xs focus:ring-2 focus:ring-brand-glow outline-none mx-auto block bg-surface-app text-content-primary"
                                       />
                                     </td>
                                     <td className="py-2 text-center">

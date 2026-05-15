@@ -151,7 +151,7 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                                   onChange={(e) =>
                                     setOverrides((prev) => ({ ...prev, [sec.section_id]: e.target.value }))
                                   }
-                                  className="w-20 border border-neutral-300 rounded-lg p-1.5 text-center text-sm focus:ring-2 focus:ring-red-500 outline-none mx-auto block"
+                                  className="w-20 border border-line-input rounded-lg p-1.5 text-center text-sm focus:ring-2 focus:ring-brand-glow outline-none mx-auto block bg-surface-app text-content-primary"
                                 />
                               ) : (
                                 <span className="text-neutral-400 text-xs">—</span>
