@@ -549,27 +549,23 @@ export default function AlunoTreinoDetalhesPage() {
                     </div>
                   )}
 
-                  {/* Column headers — desktop only */}
-                  <div
-                    className={`hidden md:flex items-center gap-3 text-[10px] font-bold text-content-muted uppercase tracking-wide px-4 py-2 border-t border-line`}
-                  >
-                    <div className={`flex-1 grid gap-2 text-center ${isEditable ? 'grid-cols-6' : 'grid-cols-5'}`}>
+                  {/* Column headers — desktop only (prescrição apenas) */}
+                  <div className="hidden md:flex items-center gap-3 text-[10px] font-bold text-content-muted uppercase tracking-wide px-4 py-2 border-t border-line">
+                    <div className="flex-1 grid grid-cols-5 gap-2 text-center">
                       <span>Carga</span>
-                      {isEditable && <span>Real</span>}
                       <span>Séries</span>
                       <span>Reps</span>
                       <span>Equip</span>
                       <span>RPE{isActive ? ' prev.' : ''}</span>
-                      {!isEditable && <span>PR Est.</span>}
-                      {isEditable && <span>RPE Real</span>}
                     </div>
                   </div>
 
-                  {/* 3+4. Sections (prescrição + execução real por série) */}
+                  {/* 3+4. Sections (prescrição + card "Executado" embaixo) */}
                   <div className="divide-y divide-line">
                     {ex.sections.map((sec) => {
                       const log = sectionLogs[sec.id] ?? { actual_load: '', actual_rpe: '', feito: false };
                       const estimatedPR = computePR(sec, log);
+                      const showExecutedCard = isEditable || isCompleted;
 
                       return (
                         <div
@@ -578,8 +574,8 @@ export default function AlunoTreinoDetalhesPage() {
                             log.feito ? 'bg-semantic-success-bg/40' : isEditable ? 'hover:bg-surface-subtle' : ''
                           }`}
                         >
-                          <div className="min-w-0">
-                            {/* Mobile layout */}
+                          <div className="min-w-0 space-y-3">
+                            {/* Mobile: prescrição em 4 cols + equip */}
                             <div className="md:hidden space-y-2">
                               <div className="grid grid-cols-4 gap-2 text-center">
                                 <div>
@@ -608,122 +604,59 @@ export default function AlunoTreinoDetalhesPage() {
                                   <Info size={10} /> {sec.equip}
                                 </p>
                               )}
-
-                              {isEditable && (
-                                <div className="flex gap-3">
-                                  <div className="flex-1 space-y-1">
-                                    <label className="text-[10px] font-bold text-content-muted uppercase block">Carga Real</label>
-                                    <input
-                                      type="number" step="0.5"
-                                      placeholder={sec.carga != null ? String(sec.carga) : '—'}
-                                      value={log.actual_load}
-                                      onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
-                                      className={`${sectionInputClass} p-2`}
-                                    />
-                                  </div>
-                                  <div className="flex-1 space-y-1">
-                                    <label className="text-[10px] font-bold text-content-muted uppercase block">RPE Real</label>
-                                    <input
-                                      type="number" step="0.5" min="5" max="10"
-                                      placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
-                                      value={log.actual_rpe}
-                                      onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
-                                      className={`${sectionInputClass} p-2`}
-                                    />
-                                  </div>
-                                  {estimatedPR != null && (
-                                    <div className="flex-1 space-y-1">
-                                      <label className="text-[10px] font-bold text-content-muted uppercase block">PR Est.</label>
-                                      <p className="text-center font-bold text-brand text-sm pt-2">{estimatedPR}kg</p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {isCompleted && !isEditable && (
-                                <div className="border-t border-line pt-2 mt-1">
-                                  <p className="text-[10px] font-bold text-content-muted uppercase mb-2">Executado</p>
-                                  <div className="grid grid-cols-3 gap-2 text-center">
-                                    <div>
-                                      <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga Real</p>
-                                      <p className="font-bold text-content-primary text-sm">
-                                        {log.actual_load || '—'}
-                                        {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE Real</p>
-                                      <p className="font-bold text-content-primary text-sm">{log.actual_rpe || '—'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-[10px] font-bold text-content-muted uppercase mb-1">PR Est.</p>
-                                      <p className="font-bold text-brand text-sm">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
                             </div>
 
-                            {/* Desktop layout */}
-                            <div
-                              className={`hidden md:grid items-center gap-2 text-center ${
-                                isEditable ? 'grid-cols-6' : 'grid-cols-5'
-                              }`}
-                            >
+                            {/* Desktop: prescrição em 5 cols, alinhada com header */}
+                            <div className="hidden md:grid grid-cols-5 items-center gap-2 text-center">
                               <div>
                                 <span className="font-bold text-content-primary">{sec.carga ?? '—'}</span>
                                 <span className="text-xs text-content-muted ml-1">{sec.load_unit || 'kg'}</span>
                               </div>
-
-                              {isEditable && (
-                                <input
-                                  type="number" step="0.5"
-                                  placeholder={sec.carga != null ? String(sec.carga) : '—'}
-                                  value={log.actual_load}
-                                  onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
-                                  className={sectionInputClass}
-                                />
-                              )}
-
                               <span className="text-sm text-content-primary">{sec.series ?? '—'}</span>
                               <span className="text-sm text-content-primary">{sec.reps ?? '—'}</span>
                               <span className="text-xs text-content-tertiary">{sec.equip || '—'}</span>
                               <span className="text-sm text-content-primary">{sec.rpe ?? '—'}</span>
-
-                              {isEditable ? (
-                                <input
-                                  type="number" step="0.5" min="5" max="10"
-                                  placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
-                                  value={log.actual_rpe}
-                                  onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
-                                  className={sectionInputClass}
-                                />
-                              ) : (
-                                <span className="text-sm font-bold text-brand">
-                                  {estimatedPR ? `${estimatedPR}kg` : '—'}
-                                </span>
-                              )}
                             </div>
 
-                            {/* Desktop — valores reais (treino finalizado e formulário respondido) */}
-                            {isCompleted && !isEditable && (
-                              <div className="hidden md:block border-t border-line/50 pt-3 mt-2">
+                            {/* Card "Executado" — responsivo, único para mobile e desktop */}
+                            {showExecutedCard && (
+                              <div className="border-t border-line/50 pt-3">
                                 <p className="text-[10px] font-bold text-content-muted uppercase mb-2">Executado</p>
-                                <div className="grid grid-cols-3 gap-4 text-center max-w-xs">
-                                  <div>
-                                    <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Carga Real</p>
-                                    <p className="font-bold text-content-primary text-sm">
-                                      {log.actual_load || '—'}
-                                      {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
-                                    </p>
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-content-muted uppercase block">Carga Real</label>
+                                    {isEditable ? (
+                                      <input
+                                        type="number" step="0.5"
+                                        placeholder={sec.carga != null ? String(sec.carga) : '—'}
+                                        value={log.actual_load}
+                                        onChange={(e) => handleSectionChange(sec.id, 'actual_load', e.target.value)}
+                                        className={sectionInputClass}
+                                      />
+                                    ) : (
+                                      <p className="text-center font-bold text-content-primary text-sm pt-1">
+                                        {log.actual_load || '—'}
+                                        {log.actual_load && <span className="text-[10px] font-medium text-content-muted ml-0.5">{sec.load_unit || 'kg'}</span>}
+                                      </p>
+                                    )}
                                   </div>
-                                  <div>
-                                    <p className="text-[10px] font-bold text-content-muted uppercase mb-1">RPE Real</p>
-                                    <p className="font-bold text-content-primary text-sm">{log.actual_rpe || '—'}</p>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-content-muted uppercase block">RPE Real</label>
+                                    {isEditable ? (
+                                      <input
+                                        type="number" step="0.5" min="5" max="10"
+                                        placeholder={sec.rpe != null ? String(sec.rpe) : '—'}
+                                        value={log.actual_rpe}
+                                        onChange={(e) => handleSectionChange(sec.id, 'actual_rpe', e.target.value)}
+                                        className={sectionInputClass}
+                                      />
+                                    ) : (
+                                      <p className="text-center font-bold text-content-primary text-sm pt-1">{log.actual_rpe || '—'}</p>
+                                    )}
                                   </div>
-                                  <div>
-                                    <p className="text-[10px] font-bold text-content-muted uppercase mb-1">PR Est.</p>
-                                    <p className="font-bold text-brand text-sm">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-content-muted uppercase block">PR Est.</label>
+                                    <p className="text-center font-bold text-brand text-sm pt-1">{estimatedPR ? `${estimatedPR}kg` : '—'}</p>
                                   </div>
                                 </div>
                               </div>
