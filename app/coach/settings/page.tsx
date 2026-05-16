@@ -5,6 +5,7 @@ import { fetchWithAuth } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
 import { useConfirm } from "@/hooks/useConfirm";
 import { coachService } from "@/services/coachService";
+import PasswordField from '@/components/PasswordField';
 import {
   Bell, Shield, Check, Loader2,
   UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle, Smartphone, Sparkles,
@@ -309,16 +310,16 @@ export default function CoachSettingsPage() {
             <form onSubmit={handlePasswordSubmit} className="max-w-md space-y-4">
               <div>
                 <label className="block text-xs font-bold text-content-muted uppercase mb-1">Senha Atual</label>
-                <input type="password" name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
+                <PasswordField name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-content-muted uppercase mb-1">Nova Senha</label>
-                  <input type="password" name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required />
+                  <PasswordField name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-content-muted uppercase mb-1">Confirmar Senha</label>
-                  <input type="password" name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required />
+                  <PasswordField name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required />
                 </div>
               </div>
               <button

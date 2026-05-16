@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { login } from "@/services/authService";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Cookies from "js-cookie";
 import DarkModeToggle from "@/components/layout/DarkModeToggle";
+import PasswordField from "@/components/PasswordField";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [erro, setErro] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -98,26 +98,16 @@ export default function LoginPage() {
               className="w-full px-4 py-3 rounded-lg bg-surface-elevated border border-line-input text-content-primary placeholder:text-content-muted focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all"
             />
 
-            <div className="relative">
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                required
-                value={form.password}
-                onChange={handleChange}
-                placeholder="Senha"
-                className="w-full px-4 py-3 rounded-lg bg-surface-elevated border border-line-input text-content-primary placeholder:text-content-muted focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-content-muted hover:text-content-secondary transition-colors"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
+            <PasswordField
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              required
+              value={form.password}
+              onChange={handleChange}
+              placeholder="Senha"
+              className="w-full px-4 py-3 rounded-lg bg-surface-elevated border border-line-input text-content-primary placeholder:text-content-muted focus:ring-2 focus:ring-brand-glow focus:border-brand-glow outline-none transition-all"
+            />
 
             {erro && (
               <div className="text-sm text-semantic-error-text bg-semantic-error-bg px-3 py-2 rounded border border-semantic-error-border">

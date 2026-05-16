@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
 import { ArrowLeft, User, Mail, Lock, Save, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
+import PasswordField from '@/components/PasswordField';
 
 export default function CreateCoachPage() {
   const { showToast, ToastEl } = useToast();
@@ -83,7 +84,7 @@ export default function CreateCoachPage() {
             <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Senha Inicial</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
-              <input type="password" name="password" value={coach.password} onChange={handleChange} className={inputClass} placeholder="Mínimo 6 caracteres" required />
+              <PasswordField name="password" value={coach.password} onChange={handleChange} className={inputClass} placeholder="Mínimo 6 caracteres" required />
             </div>
             <p className="text-xs text-content-muted mt-1">O coach poderá alterar essa senha depois.</p>
           </div>

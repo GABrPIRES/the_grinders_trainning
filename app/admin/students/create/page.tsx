@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
+import PasswordField from '@/components/PasswordField';
 import {
   ArrowLeft, User, Mail, Lock, Phone,
   Save, Loader2, GraduationCap, Shield, ChevronDown, AlertCircle,
@@ -140,7 +141,7 @@ export default function CreateStudentPage() {
             <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Senha Inicial</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
-              <input type="password" name="password" value={student.password} onChange={handleChange} className={inputClass} placeholder="Mínimo 6 caracteres" required />
+              <PasswordField name="password" value={student.password} onChange={handleChange} className={inputClass} placeholder="Mínimo 6 caracteres" required />
             </div>
             <p className="text-xs text-content-muted mt-1">O aluno poderá alterar essa senha no primeiro acesso.</p>
           </div>

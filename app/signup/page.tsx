@@ -6,7 +6,8 @@ import { signup } from "@/services/authService";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Loader2, Eye, EyeOff, User, Mail, Lock, Phone, Key, CheckCircle } from "lucide-react";
+import { Loader2, User, Mail, Lock, Phone, Key, CheckCircle } from "lucide-react";
+import PasswordField from "@/components/PasswordField";
 import DarkModeToggle from "@/components/layout/DarkModeToggle";
 
 function SignupFormContent() {
@@ -21,7 +22,6 @@ function SignupFormContent() {
     password_confirmation: "",
     coach_code: initialCode,
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [success, setSuccess] = useState(false);
@@ -155,35 +155,26 @@ function SignupFormContent() {
         </div>
 
         <div className="relative">
-          <Lock className="absolute left-3 top-3.5 text-content-muted" size={20} />
-          <input
+          <Lock className="absolute left-3 top-3.5 text-content-muted z-10" size={20} />
+          <PasswordField
             name="password"
-            type={showPassword ? "text" : "password"}
             required
             placeholder="Senha"
             value={form.password}
             onChange={handleChange}
-            className={`${inputClass} pl-10 pr-12`}
+            className={`${inputClass} pl-10`}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-content-muted hover:text-content-secondary transition-colors"
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
         </div>
 
         <div className="relative">
-          <Lock className="absolute left-3 top-3.5 text-content-muted" size={20} />
-          <input
+          <Lock className="absolute left-3 top-3.5 text-content-muted z-10" size={20} />
+          <PasswordField
             name="password_confirmation"
-            type={showPassword ? "text" : "password"}
             required
             placeholder="Confirmar Senha"
             value={form.password_confirmation}
             onChange={handleChange}
-            className={`${inputClass} pl-10 pr-4`}
+            className={`${inputClass} pl-10`}
           />
         </div>
 

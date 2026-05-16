@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { Shield, Loader2, Check, AlertTriangle, Mail, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import PasswordField from '@/components/PasswordField';
 
 export default function AdminSettingsPage() {
   const { showToast, ToastEl } = useToast();
@@ -112,16 +113,16 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Senha Atual</label>
-              <input type="password" name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
+              <PasswordField name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Nova Senha</label>
-                <input type="password" name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required placeholder="Mínimo 8 caracteres" />
+                <PasswordField name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required placeholder="Mínimo 8 caracteres" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Confirmar Senha</label>
-                <input type="password" name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required placeholder="Repita a senha" />
+                <PasswordField name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required placeholder="Repita a senha" />
               </div>
             </div>
             <div className="pt-2 flex justify-end">
