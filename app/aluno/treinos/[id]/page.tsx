@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { fetchWithAuth } from '@/lib/api';
 import { treinoService } from '@/services/treinoService';
 import { calculatePR } from '@/lib/calculatePR';
+import { toEmbedUrl } from '@/lib/youtube';
 import WeeklyFeedbackModal from '@/components/modals/WeeklyFeedbackModal';
 import {
   ArrowLeft,
@@ -20,21 +21,6 @@ import {
   Check,
   MessageSquare,
 } from 'lucide-react';
-
-function toEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    let videoId: string | null = null;
-    if (u.hostname === 'youtu.be') {
-      videoId = u.pathname.slice(1).split('?')[0];
-    } else if (u.pathname.startsWith('/shorts/')) {
-      videoId = u.pathname.split('/shorts/')[1]?.split('?')[0] ?? null;
-    } else {
-      videoId = u.searchParams.get('v');
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1` : null;
-  } catch { return null; }
-}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
