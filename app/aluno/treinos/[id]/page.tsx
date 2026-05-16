@@ -270,11 +270,37 @@ export default function AlunoTreinoDetalhesPage() {
     }
   };
 
+  // Garante que todas as observações do aluno (campo textarea com debounce de
+  // 1.5s) sejam persistidas ANTES de transicionar o status do treino. Sem isso,
+  // clicar "Finalizar" ou "Cancelar" antes do debounce disparar fazia o aluno
+  // perder o que tinha digitado.
+  const flushPendingObservations = async () => {
+    const pendingExIds = Object.keys(saveTimers.current)
+      .filter((key) => key.startsWith('obs_'))
+      .map((key) => key.replace('obs_', ''));
+
+    if (pendingExIds.length === 0) return;
+
+    pendingExIds.forEach((exId) => {
+      clearTimeout(saveTimers.current[`obs_${exId}`]);
+      delete saveTimers.current[`obs_${exId}`];
+    });
+
+    await Promise.all(
+      pendingExIds.map((exId) =>
+        treinoService.logExercicio(exId, observations[exId] ?? '').catch(() => {
+          /* silencioso — não bloqueia a transição se o save falhar */
+        })
+      )
+    );
+  };
+
   const handleFinish = async () => {
     if (!treino) return;
     setFinishing(true);
     setError('');
     try {
+      await flushPendingObservations();
       const result = await treinoService.finish(treino.id);
       await fetchTreino();
       if (result?.feedback_form_available && result?.week_id) {
@@ -293,6 +319,7 @@ export default function AlunoTreinoDetalhesPage() {
     setError('');
     setShowPauseConfirm(false);
     try {
+      await flushPendingObservations();
       await treinoService.pause(treino.id, force);
       await fetchTreino();
     } catch (err: any) {
