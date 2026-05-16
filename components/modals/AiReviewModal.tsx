@@ -55,7 +55,9 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
   const getDisplayLoad = (sec: SectionDiff) => {
     const override = overrides[sec.section_id];
     if (override !== undefined) return override;
-    return sec.suggested_load != null ? String(sec.suggested_load) : '';
+    if (sec.suggested_load != null) return String(sec.suggested_load);
+    if (sec.prescribed_load != null) return String(sec.prescribed_load);
+    return '';
   };
 
   const delta = (sec: SectionDiff) => {
@@ -105,8 +107,8 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                 </div>
               )}
 
-              {/* Section diffs — só mostra se houver sugestões */}
-              {hasPendingSuggestions && review.exercicios.map((ex) => (
+              {/* Section diffs — sempre renderiza todos os exercícios para permitir ajuste rápido */}
+              {review.exercicios.map((ex) => (
                 <div key={ex.exercicio_id} className="border border-neutral-200 rounded-xl overflow-hidden">
                   <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100">
                     <h4 className="font-bold text-sm text-neutral-800">{ex.exercicio_name}</h4>
@@ -143,19 +145,15 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                               <span className="text-xs text-neutral-400 ml-1">{sec.load_unit || 'kg'}</span>
                             </td>
                             <td className="py-2.5 px-3 text-center">
-                              {sec.suggestion_status === 'pending' ? (
-                                <input
-                                  type="number"
-                                  step="0.5"
-                                  value={getDisplayLoad(sec)}
-                                  onChange={(e) =>
-                                    setOverrides((prev) => ({ ...prev, [sec.section_id]: e.target.value }))
-                                  }
-                                  className="w-20 border border-line-input rounded-lg p-1.5 text-center text-sm focus:ring-2 focus:ring-brand-glow outline-none mx-auto block bg-surface-app text-content-primary"
-                                />
-                              ) : (
-                                <span className="text-neutral-400 text-xs">—</span>
-                              )}
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={getDisplayLoad(sec)}
+                                onChange={(e) =>
+                                  setOverrides((prev) => ({ ...prev, [sec.section_id]: e.target.value }))
+                                }
+                                className="w-20 border border-line-input rounded-lg p-1.5 text-center text-sm focus:ring-2 focus:ring-brand-glow outline-none mx-auto block bg-surface-app text-content-primary"
+                              />
                             </td>
                             <td className="py-2.5 px-3 text-center">
                               {pct != null ? (
@@ -186,7 +184,7 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
           <div className="p-4 border-t border-neutral-100 bg-neutral-50 flex-shrink-0">
             {!hasPendingSuggestions && (
               <p className="text-xs text-center text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-3">
-                A IA analisou este treino e manteve as cargas prescritas. Revise a observação acima e publique.
+                A IA manteve as cargas prescritas. Ajuste o que quiser e publique.
               </p>
             )}
             {error && (
@@ -200,7 +198,7 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
               {approving ? (
                 <><Loader2 size={18} className="animate-spin" /> Publicando...</>
               ) : (
-                <><CheckCircle2 size={18} /> {hasPendingSuggestions ? 'Aprovar e Publicar Treino' : 'Publicar Treino'}</>
+                <><CheckCircle2 size={18} /> Aprovar e Publicar Treino</>
               )}
             </button>
           </div>

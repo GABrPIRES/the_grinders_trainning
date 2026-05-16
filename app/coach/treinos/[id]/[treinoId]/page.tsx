@@ -668,6 +668,7 @@ export default function EditWorkoutPage() {
             name: ex.name,
             coach_comment: ex.coach_comment || '',
             video_link: ex.video_link || '',
+            observation: ex.observation || '',
             isNew: false,
             deleted: false,
             sections: ex.sections.map((sec: any) => ({
