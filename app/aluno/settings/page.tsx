@@ -5,6 +5,7 @@ import { fetchWithAuth } from "@/lib/api";
 import { Shield, Loader2, Check, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import PushNotificationToggle from "@/components/settings/PushNotificationToggle";
+import PasswordField from '@/components/PasswordField';
 
 export default function StudentSettingsPage() {
   const { showToast, ToastEl } = useToast();
@@ -65,16 +66,16 @@ export default function StudentSettingsPage() {
              <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <div>
                    <label className="block text-sm font-medium mb-1 text-content-secondary">Senha Atual</label>
-                   <input type="password" name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
+                   <PasswordField name="current_password" value={passForm.current_password} onChange={handlePassChange} className={inputClass} required />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                        <label className="block text-sm font-medium mb-1 text-content-secondary">Nova Senha</label>
-                       <input type="password" name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required />
+                       <PasswordField name="password" value={passForm.password} onChange={handlePassChange} className={inputClass} required />
                     </div>
                     <div>
                        <label className="block text-sm font-medium mb-1 text-content-secondary">Confirmar Senha</label>
-                       <input type="password" name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required />
+                       <PasswordField name="password_confirmation" value={passForm.password_confirmation} onChange={handlePassChange} className={inputClass} required />
                     </div>
                 </div>
                 <button type="submit" disabled={savingPassword} className="mt-2 bg-brand text-content-on-brand font-bold py-2.5 px-6 rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-70 w-full md:w-auto justify-center">

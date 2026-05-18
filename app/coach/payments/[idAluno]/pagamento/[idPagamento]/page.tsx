@@ -193,10 +193,10 @@ export default function EditPaymentPage() {
             <div>
               <label className="block text-xs font-bold text-content-muted uppercase mb-1">Data de Vencimento</label>
               <input
-                type="date" required
+                type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} required
                 value={formData.due_date}
                 onChange={e => setFormData({ ...formData, due_date: e.target.value })}
-                className={inputClass}
+                className={`${inputClass} cursor-pointer`}
               />
             </div>
             <button type="submit" disabled={saving} className="w-full bg-brand text-content-on-brand py-2.5 rounded-xl font-bold hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
@@ -211,10 +211,10 @@ export default function EditPaymentPage() {
             <div>
               <label className="block text-xs font-bold text-content-muted uppercase mb-1">Data do Pagamento</label>
               <input
-                type="date"
+                type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
                 value={paymentDate}
                 onChange={e => setPaymentDate(e.target.value)}
-                className={inputClass}
+                className={`${inputClass} cursor-pointer`}
               />
             </div>
             <label className="flex items-center gap-3 text-sm text-content-secondary cursor-pointer">

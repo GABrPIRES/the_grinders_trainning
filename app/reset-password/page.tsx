@@ -4,7 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Loader2, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import PasswordField from "@/components/PasswordField";
 import { resetPassword } from "@/services/authService";
 import DarkModeToggle from "@/components/layout/DarkModeToggle";
 
@@ -14,8 +15,6 @@ function ResetPasswordForm() {
   const token = searchParams.get("token") ?? "";
 
   const [form, setForm] = useState({ password: "", passwordConfirmation: "" });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState(false);
@@ -123,47 +122,27 @@ function ResetPasswordForm() {
               </div>
 
               <form className="space-y-5" onSubmit={handleSubmit}>
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    value={form.password}
-                    onChange={handleChange}
-                    placeholder="Nova senha"
-                    className={inputClass}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-content-muted hover:text-content-secondary transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
+                <PasswordField
+                  id="password"
+                  name="password"
+                  autoComplete="new-password"
+                  required
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="Nova senha"
+                  className={inputClass}
+                />
 
-                <div className="relative">
-                  <input
-                    id="passwordConfirmation"
-                    name="passwordConfirmation"
-                    type={showConfirm ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    value={form.passwordConfirmation}
-                    onChange={handleChange}
-                    placeholder="Confirmar nova senha"
-                    className={inputClass}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-content-muted hover:text-content-secondary transition-colors"
-                  >
-                    {showConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
+                <PasswordField
+                  id="passwordConfirmation"
+                  name="passwordConfirmation"
+                  autoComplete="new-password"
+                  required
+                  value={form.passwordConfirmation}
+                  onChange={handleChange}
+                  placeholder="Confirmar nova senha"
+                  className={inputClass}
+                />
 
                 {erro && (
                   <div className="text-sm text-semantic-error-text bg-semantic-error-bg px-3 py-2 rounded border border-semantic-error-border">

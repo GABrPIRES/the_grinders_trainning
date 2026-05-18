@@ -103,7 +103,11 @@ export default function MeusTreinosPage() {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/D";
-    return format(parseISO(dateString), 'dd/MM', { locale: ptBR });
+    // Backend envia day como "YYYY-MM-DDT00:00:00.000Z" (meia-noite UTC). Se
+    // parsearmos com timezone local (SP, UTC-3), a data cai no dia anterior.
+    // Extraímos só YYYY-MM-DD e construímos como data local para preservar o dia.
+    const [y, m, d] = dateString.split('T')[0].split('-').map(Number);
+    return format(new Date(y, m - 1, d), 'dd/MM', { locale: ptBR });
   };
 
   const isCurrentDate = (start: string, end: string) => {

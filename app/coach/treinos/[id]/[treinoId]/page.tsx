@@ -7,28 +7,13 @@ import { useConfirm } from "@/hooks/useConfirm";
 import { v4 as uuid } from "uuid";
 import { calculatePR } from "@/lib/calculatePR";
 import { fetchWithAuth } from "@/lib/api";
+import { toEmbedUrl } from "@/lib/youtube";
+import VideoPreviewModal from "@/components/modals/VideoPreviewModal";
 import {
   ArrowLeft, Save, Loader2, Dumbbell, Calendar,
   Trash2, Plus, AlertCircle, X, FileText, Lock, CheckCircle2,
-  Bookmark, FolderOpen, Eye, Pencil, MessageSquare, ChevronDown, Check, Search,
+  Bookmark, FolderOpen, Eye, Pencil, MessageSquare, ChevronDown, Check, Search, Video,
 } from "lucide-react";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function toEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    let videoId: string | null = null;
-    if (u.hostname === 'youtu.be') {
-      videoId = u.pathname.slice(1).split('?')[0];
-    } else if (u.pathname.startsWith('/shorts/')) {
-      videoId = u.pathname.split('/shorts/')[1]?.split('?')[0] ?? null;
-    } else {
-      videoId = u.searchParams.get('v');
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1` : null;
-  } catch { return null; }
-}
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -54,6 +39,7 @@ interface Exercise {
   name: string;
   coach_comment?: string;
   video_link?: string;
+  observation?: string;
   sections: Section[];
   isNew?: boolean;
   deleted?: boolean;
@@ -101,6 +87,8 @@ function EditTreinoSkeleton() {
 
 function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; showStudentData: boolean }) {
   const visibleSections = exercise.sections.filter(s => !s.deleted);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
   return (
     <div className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
       <div className="px-5 pt-4 pb-3 border-b border-line flex items-center gap-3">
@@ -214,6 +202,62 @@ function ReadOnlyExercise({ exercise, showStudentData }: { exercise: Exercise; s
           </div>
         ))}
       </div>
+
+      {/* Observação do coach (instruções pro aluno) */}
+      {exercise.coach_comment && (
+        <div className="px-5 py-3 border-t border-line flex gap-2.5 items-start bg-surface-subtle/40">
+          <MessageSquare size={14} className="mt-0.5 text-content-muted flex-shrink-0" />
+          <div>
+            <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Observação do coach</p>
+            <p className="text-sm text-content-secondary leading-relaxed">{exercise.coach_comment}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Vídeo: link + botão Preview */}
+      {exercise.video_link && (
+        <div className="px-5 py-3 border-t border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-surface-subtle/40">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <Video size={14} className="mt-0.5 text-content-muted flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-content-muted uppercase mb-1">Vídeo do exercício</p>
+              <a
+                href={exercise.video_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-brand hover:underline truncate block"
+              >
+                {exercise.video_link}
+              </a>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowVideoModal(true)}
+            className="text-xs font-bold bg-brand hover:bg-brand-hover text-content-on-brand px-3 py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+          >
+            <Eye size={13} /> Preview
+          </button>
+        </div>
+      )}
+
+      {/* Observação do aluno (escrita durante o treino) */}
+      {exercise.observation && (
+        <div className="px-5 py-3 border-t border-line flex gap-2.5 items-start bg-semantic-info-bg/30">
+          <MessageSquare size={14} className="mt-0.5 text-semantic-info-text flex-shrink-0" />
+          <div>
+            <p className="text-[10px] font-bold text-semantic-info-text uppercase mb-1">Observação do aluno</p>
+            <p className="text-sm text-content-secondary leading-relaxed">{exercise.observation}</p>
+          </div>
+        </div>
+      )}
+
+      {showVideoModal && exercise.video_link && (
+        <VideoPreviewModal
+          videoUrl={exercise.video_link}
+          exercicioName={exercise.name}
+          onClose={() => setShowVideoModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -624,6 +668,7 @@ export default function EditWorkoutPage() {
             name: ex.name,
             coach_comment: ex.coach_comment || '',
             video_link: ex.video_link || '',
+            observation: ex.observation || '',
             isNew: false,
             deleted: false,
             sections: ex.sections.map((sec: any) => ({
@@ -1028,8 +1073,8 @@ export default function EditWorkoutPage() {
                 <Calendar size={15} /> Data
               </label>
               <input
-                type="date"
-                className="w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow outline-none transition-all bg-surface-app text-content-primary text-sm"
+                type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="w-full px-4 py-2.5 border border-line-input rounded-lg focus:ring-2 focus:ring-brand-glow outline-none transition-all bg-surface-app text-content-primary text-sm cursor-pointer"
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 required

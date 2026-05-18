@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import PasswordField from '@/components/PasswordField';
 import {
   ArrowLeft, User, Mail, Phone, Lock,
   CreditCard, Save, Loader2, GraduationCap, AlertCircle,
@@ -158,9 +159,8 @@ export default function AddStudentPage() {
             <label htmlFor="password" className={labelClass}>Senha de Acesso</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
-              <input
+              <PasswordField
                 id="password"
-                type="password"
                 name="password"
                 value={student.password}
                 onChange={handleChange}

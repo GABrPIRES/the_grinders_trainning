@@ -8,6 +8,7 @@ import {
   Users,
   GraduationCap,
   Settings,
+  Sparkles,
   LogOut,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,11 +16,12 @@ import { logout } from '@/services/authService';
 import Image from 'next/image';
 
 const navItems = [
-  { label: 'Home',          href: '/admin',          icon: <Home size={18} /> },
-  { label: 'Perfil',        href: '/admin/profile',  icon: <User size={18} /> },
-  { label: 'Coaches',       href: '/admin/coaches',  icon: <Users size={18} /> },
-  { label: 'Alunos',        href: '/admin/students', icon: <GraduationCap size={18} /> },
-  { label: 'Configurações', href: '/admin/settings', icon: <Settings size={18} /> },
+  { label: 'Home',            href: '/admin',                 icon: <Home size={18} /> },
+  { label: 'Perfil',          href: '/admin/profile',         icon: <User size={18} /> },
+  { label: 'Coaches',         href: '/admin/coaches',         icon: <Users size={18} /> },
+  { label: 'Alunos',          href: '/admin/students',        icon: <GraduationCap size={18} /> },
+  { label: 'Permissões IA',   href: '/admin/ai-permissions',  icon: <Sparkles size={18} /> },
+  { label: 'Configurações',   href: '/admin/settings',        icon: <Settings size={18} /> },
 ];
 
 export default function AdminSidebar() {

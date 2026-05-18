@@ -71,6 +71,11 @@ export default function WeeklyFeedbackModal({ weekId, dateRangeLabel, incomplete
         payload.body_weight = parseFloat(bodyWeight);
       }
       await weeklyFeedbackService.create(payload);
+      // Notifica componentes globais (banner do layout, dashboard, etc.) que o
+      // formulário foi enviado para que sumam sem precisar de reload.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('weekly-feedback-submitted', { detail: { weekId } }));
+      }
       onSubmitted();
     } catch (err: any) {
       setError(err.message || 'Erro ao enviar. Tente novamente.');

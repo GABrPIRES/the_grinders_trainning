@@ -462,19 +462,19 @@ export default function BlockDetailsPage() {
               <div>
                 <label className="text-xs font-bold text-content-muted uppercase block mb-1">Data de Início</label>
                 <input
-                  type="date"
+                  type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
                   value={editStartDate}
                   onChange={(e) => setEditStartDate(e.target.value)}
-                  className={modalInputClass}
+                  className={`${modalInputClass} cursor-pointer`}
                 />
               </div>
               <div>
                 <label className="text-xs font-bold text-content-muted uppercase block mb-1">Data de Fim</label>
                 <input
-                  type="date"
+                  type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
                   value={editEndDate}
                   onChange={(e) => setEditEndDate(e.target.value)}
-                  className={modalInputClass}
+                  className={`${modalInputClass} cursor-pointer`}
                 />
               </div>
             </div>

@@ -202,7 +202,7 @@ export default function StudentProfilePage() {
                   <label htmlFor="birth_date" className="text-sm font-medium text-content-secondary flex items-center gap-1.5">
                     <Calendar size={14} /> Nascimento
                   </label>
-                  <input id="birth_date" type="date" name="birth_date" value={form.birth_date} onChange={handleChange} className={inputClass} />
+                  <input id="birth_date" type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} name="birth_date" value={form.birth_date} onChange={handleChange} className={`${inputClass} cursor-pointer`} />
                 </div>
               </div>
             </section>

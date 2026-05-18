@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
+import PasswordField from '@/components/PasswordField';
 import {
   ArrowLeft, Save, Loader2, Lock, User,
   Mail, Phone, CreditCard, AlertCircle,
@@ -234,9 +235,8 @@ export default function EditStudentAccountPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="password" className={labelClass}>Nova Senha</label>
-              <input
+              <PasswordField
                 id="password"
-                type="password"
                 name="password"
                 value={form.password}
                 onChange={handleChange}
@@ -246,9 +246,8 @@ export default function EditStudentAccountPage() {
             </div>
             <div>
               <label htmlFor="password_confirmation" className={labelClass}>Confirmar Senha</label>
-              <input
+              <PasswordField
                 id="password_confirmation"
-                type="password"
                 name="password_confirmation"
                 value={form.password_confirmation}
                 onChange={handleChange}

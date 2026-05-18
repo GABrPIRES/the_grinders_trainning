@@ -20,6 +20,14 @@ export default function FeedbackAlertBanner() {
       .catch(() => {});
   }, [pathname]);
 
+  // Escuta o evento global despachado quando qualquer instância do modal
+  // submete o formulário com sucesso, para sumir sem precisar reload.
+  useEffect(() => {
+    const handler = () => setPending({ pending: false });
+    window.addEventListener('weekly-feedback-submitted', handler);
+    return () => window.removeEventListener('weekly-feedback-submitted', handler);
+  }, []);
+
   if (!pending?.pending || dismissed) return null;
 
   return (

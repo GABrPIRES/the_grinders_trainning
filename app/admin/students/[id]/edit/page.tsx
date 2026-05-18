@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { fetchWithAuth } from "@/lib/api";
 import { ArrowLeft, User, Mail, Lock, Save, Loader2, ToggleLeft, GraduationCap, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import PasswordField from '@/components/PasswordField';
 
 function EditStudentSkeleton() {
   return (
@@ -136,7 +137,7 @@ export default function EditStudentPage() {
               <label className="block text-xs font-bold text-content-muted uppercase mb-1.5">Resetar Senha</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" size={16} />
-                <input type="password" name="password" value={student.password} onChange={handleChange} className={inputClass} placeholder="Deixe vazio para manter" />
+                <PasswordField name="password" value={student.password} onChange={handleChange} className={inputClass} placeholder="Deixe vazio para manter" />
               </div>
             </div>
           </div>

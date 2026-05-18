@@ -183,11 +183,11 @@ export default function CreateBlockPage() {
             <div>
               <label className={labelClass}>Data de Início</label>
               <input
-                type="date"
+                type="date" onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
                 name="start_date"
                 value={form.start_date}
                 onChange={handleChange}
-                className={inputClass}
+                className={`${inputClass} cursor-pointer`}
                 required
               />
             </div>

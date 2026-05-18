@@ -102,6 +102,14 @@ export default function AlunoDashboardPage() {
     fetchData();
   }, []);
 
+  // Escuta o evento global despachado quando o formulário é submetido em
+  // qualquer lugar (banner do layout ou card abaixo) para o card local sumir.
+  useEffect(() => {
+    const handler = () => setPendingFeedback({ pending: false });
+    window.addEventListener('weekly-feedback-submitted', handler);
+    return () => window.removeEventListener('weekly-feedback-submitted', handler);
+  }, []);
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "Data não def.";
     return new Date(dateString).toLocaleDateString('pt-BR', {
