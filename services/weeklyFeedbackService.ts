@@ -10,8 +10,18 @@ export interface WeeklyFeedbackPayload {
   general_evaluation?: string;
 }
 
+export interface PendingFeedback {
+  pending: boolean;
+  week_id?: string;
+  deadline_at?: string;
+  incomplete_treinos?: string[];
+  start_date?: string;
+  end_date?: string;
+  date_range_label?: string;
+}
+
 export const weeklyFeedbackService = {
-  async pending() {
+  async pending(): Promise<PendingFeedback> {
     return await fetchWithAuth('weekly_feedbacks/pending');
   },
 

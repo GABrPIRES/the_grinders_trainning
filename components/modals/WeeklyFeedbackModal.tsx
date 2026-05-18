@@ -6,6 +6,7 @@ import { weeklyFeedbackService, WeeklyFeedbackPayload } from '@/services/weeklyF
 
 interface WeeklyFeedbackModalProps {
   weekId: string;
+  dateRangeLabel?: string;
   incompleteTreinos?: string[];
   onClose: () => void;
   onSubmitted: () => void;
@@ -43,7 +44,7 @@ function SliderField({ label, value, onChange, lowLabel = 'Baixo', highLabel = '
   );
 }
 
-export default function WeeklyFeedbackModal({ weekId, incompleteTreinos = [], onClose, onSubmitted }: WeeklyFeedbackModalProps) {
+export default function WeeklyFeedbackModal({ weekId, dateRangeLabel, incompleteTreinos = [], onClose, onSubmitted }: WeeklyFeedbackModalProps) {
   const [sleepLevel, setSleepLevel] = useState(5);
   const [stressLevel, setStressLevel] = useState(5);
   const [dietLevel, setDietLevel] = useState(5);
@@ -98,6 +99,9 @@ export default function WeeklyFeedbackModal({ weekId, incompleteTreinos = [], on
         <div className="bg-neutral-900 text-white p-5 flex justify-between items-start flex-shrink-0">
           <div>
             <h3 className="font-bold text-lg">Avaliação Semanal</h3>
+            {dateRangeLabel && (
+              <p className="text-xs text-neutral-300 mt-1">Semana de <span className="font-semibold">{dateRangeLabel}</span></p>
+            )}
             <p className="text-xs text-neutral-400 mt-0.5">Como foi sua semana? Leva menos de 1 minuto.</p>
           </div>
           <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors mt-0.5">
