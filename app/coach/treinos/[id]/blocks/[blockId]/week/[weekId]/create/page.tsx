@@ -37,14 +37,20 @@ export default function CreateWorkoutPage() {
     setError("");
     setLoading(true);
     try {
-      // Cria o treino vazio (em rascunho) e redireciona pra tela de edição completa,
-      // que tem todo o redesign: preview, modelos, observações, vídeo, etc.
+      // 1) Cria o treino. O default da coluna `status` no banco é `published`,
+      //    então o registro nasce publicado.
       const treino = await fetchWithAuth(`weeks/${weekId}/treinos`, {
         method: "POST",
-        body: JSON.stringify({
-          treino: { name: title, day: date },
-        }),
+        body: JSON.stringify({ treino: { name: title, day: date } }),
       });
+
+      // 2) Toggle para rascunho. A regra de negócio é: coach cria → edita → publica.
+      //    O endpoint `coach/treinos/:id/publish` faz toggle e converte
+      //    `published → draft` (controller já trata esse caso).
+      await fetchWithAuth(`coach/treinos/${treino.id}/publish`, { method: "POST" });
+
+      // 3) Redireciona para a tela de edição completa (preview, modelos,
+      //    observações, vídeo, etc).
       router.push(`/coach/treinos/${alunoId}/${treino.id}`);
     } catch (err: any) {
       setError(err.message || "Erro ao criar o treino.");
