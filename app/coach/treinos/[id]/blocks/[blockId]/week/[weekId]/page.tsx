@@ -395,7 +395,7 @@ export default function WeekDetailsPage() {
           <div className="mb-5 flex flex-wrap gap-2">
             {draftWithAI.length > 0 && (
               <span className="flex items-center gap-1.5 bg-semantic-warning-bg border border-semantic-warning-border text-semantic-warning-text text-xs font-bold px-3 py-1.5 rounded-full">
-                <Bot size={12} /> {draftWithAI.length} revisão{draftWithAI.length > 1 ? 'ões' : ''} de IA pendente{draftWithAI.length > 1 ? 's' : ''}
+                <Bot size={12} /> {draftWithAI.length} {draftWithAI.length > 1 ? 'revisões' : 'revisão'} de IA pendente{draftWithAI.length > 1 ? 's' : ''}
               </span>
             )}
             {draftWithoutAI.length > 0 && (
