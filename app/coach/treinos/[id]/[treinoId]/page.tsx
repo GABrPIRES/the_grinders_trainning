@@ -12,7 +12,7 @@ import VideoPreviewModal from "@/components/modals/VideoPreviewModal";
 import {
   ArrowLeft, Save, Loader2, Dumbbell, Calendar,
   Trash2, Plus, AlertCircle, X, FileText, Lock, CheckCircle2,
-  Bookmark, FolderOpen, Eye, Pencil, MessageSquare, ChevronDown, Check, Search, Video,
+  Bookmark, FolderOpen, Eye, Pencil, MessageSquare, ChevronDown, ChevronUp, Check, Search, Video,
 } from "lucide-react";
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -752,6 +752,43 @@ export default function EditWorkoutPage() {
     setExercises(prev => prev.map((ex, i) => i === index ? { ...ex, [field]: value } : ex));
   };
 
+  // Reordenação via setinhas. Reorder local primeiro (feedback imediato),
+  // depois persiste via PATCH. Exercícios isNew (ainda não salvos) só
+  // reordenam localmente — backend não conhece esses IDs.
+  const handleMoveUp = async (index: number) => {
+    if (index === 0) return;
+    const ex = exercises[index];
+    setExercises(prev => {
+      const next = [...prev];
+      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      return next;
+    });
+    if (!ex.isNew) {
+      try {
+        await fetchWithAuth(`coach/exercicios/${ex.id}/move_up`, { method: 'PATCH' });
+      } catch (err) {
+        console.error('Falha ao mover exercício para cima:', err);
+      }
+    }
+  };
+
+  const handleMoveDown = async (index: number) => {
+    if (index >= exercises.length - 1) return;
+    const ex = exercises[index];
+    setExercises(prev => {
+      const next = [...prev];
+      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      return next;
+    });
+    if (!ex.isNew) {
+      try {
+        await fetchWithAuth(`coach/exercicios/${ex.id}/move_down`, { method: 'PATCH' });
+      } catch (err) {
+        console.error('Falha ao mover exercício para baixo:', err);
+      }
+    }
+  };
+
   const handleSectionChange = (exerciseIndex: number, sectionIndex: number, field: string, value: any) => {
     setExercises(currentExercises => {
       const updated = [...currentExercises];
@@ -1103,6 +1140,36 @@ export default function EditWorkoutPage() {
                       />
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      <div className="flex flex-col mr-1">
+                        <button
+                          type="button"
+                          title="Mover para cima"
+                          aria-label="Mover exercício para cima"
+                          disabled={exIndex === 0}
+                          onClick={() => handleMoveUp(exIndex)}
+                          className={`p-0.5 rounded transition-colors ${
+                            exIndex === 0
+                              ? 'opacity-40 cursor-not-allowed text-content-muted'
+                              : 'text-content-secondary hover:text-brand hover:bg-surface-subtle cursor-pointer'
+                          }`}
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Mover para baixo"
+                          aria-label="Mover exercício para baixo"
+                          disabled={exIndex === exercises.filter(e => !e.deleted).length - 1}
+                          onClick={() => handleMoveDown(exIndex)}
+                          className={`p-0.5 rounded transition-colors ${
+                            exIndex === exercises.filter(e => !e.deleted).length - 1
+                              ? 'opacity-40 cursor-not-allowed text-content-muted'
+                              : 'text-content-secondary hover:text-brand hover:bg-surface-subtle cursor-pointer'
+                          }`}
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
                       <button
                         type="button"
                         title="Importar modelo"
