@@ -26,6 +26,8 @@ interface DashboardData {
   total_students_count:         number;
   overdue_payments_count:       number;
   pending_ai_reviews_count:     number;
+  ai_processing_count:          number;
+  ai_failed_count:              number;
   revenue_chart_data:           { date: string; total: number }[];
 }
 
@@ -160,6 +162,60 @@ function KpiCard({
       </div>
       {trend && trendLabel && (
         <div className={`flex items-center gap-1 text-xs font-medium ${trendColor}`}>{trendIcon}<span>{trendLabel}</span></div>
+      )}
+    </div>
+  );
+}
+
+// ─── AI Status KPI (sprint 011) ───────────────────────────────────────────────
+
+function AiStatusKpi({
+  processing, pendingReviews, failed,
+}: {
+  processing:     number;
+  pendingReviews: number;
+  failed:         number;
+}) {
+  const hasAny = processing > 0 || pendingReviews > 0 || failed > 0;
+  const borderClass = failed > 0
+    ? "border-semantic-error-border bg-semantic-error-bg"
+    : processing > 0 || pendingReviews > 0
+      ? "border-semantic-warning-border bg-semantic-warning-bg"
+      : "border-line";
+  const titleClass = failed > 0
+    ? "text-semantic-error-text"
+    : processing > 0 || pendingReviews > 0
+      ? "text-semantic-warning-text"
+      : "text-content-muted";
+
+  return (
+    <div className={`bg-surface-elevated border rounded-2xl p-5 flex flex-col gap-3 shadow-sm ${borderClass}`}>
+      <div className="flex items-start justify-between">
+        <p className={`text-xs font-bold uppercase tracking-wide ${titleClass}`}>Revisões IA</p>
+        <div className={`p-2 rounded-xl ${hasAny ? "bg-white/30" : "bg-surface-subtle"}`}>
+          <Cpu size={18} className={hasAny ? titleClass : "text-content-muted"} />
+        </div>
+      </div>
+      {hasAny ? (
+        <div className="flex flex-col gap-1.5 text-xs font-bold">
+          {processing > 0 && (
+            <span className="flex items-center gap-1.5 text-semantic-warning-text">
+              <Cpu size={13} className="animate-pulse" /> {processing} rodando
+            </span>
+          )}
+          {pendingReviews > 0 && (
+            <span className="flex items-center gap-1.5 text-semantic-success-text">
+              <CheckCircle2 size={13} /> {pendingReviews} {pendingReviews > 1 ? 'prontas' : 'pronta'}
+            </span>
+          )}
+          {failed > 0 && (
+            <span className="flex items-center gap-1.5 text-semantic-error-text">
+              <AlertCircle size={13} /> {failed} com erro
+            </span>
+          )}
+        </div>
+      ) : (
+        <p className="text-2xl font-bold text-content-muted">0<span className="text-xs font-normal ml-2 text-content-tertiary">nenhuma pendente</span></p>
       )}
     </div>
   );
@@ -332,11 +388,10 @@ export default function CoachDashboardPage() {
           urgency={data?.overdue_payments_count ? "error" : undefined}
           subtitle={data?.overdue_payments_count ? "requerem atenção" : "tudo em dia"}
         />
-        <KpiCard
-          title="Revisões IA" value={data?.pending_ai_reviews_count ?? 0}
-          icon={<Cpu size={18} className={data?.pending_ai_reviews_count ? "text-semantic-warning-text" : "text-content-muted"} />}
-          urgency={data?.pending_ai_reviews_count ? "warning" : undefined}
-          subtitle={data?.pending_ai_reviews_count ? "sugestões pendentes" : "nenhuma pendente"}
+        <AiStatusKpi
+          processing={data?.ai_processing_count ?? 0}
+          pendingReviews={data?.pending_ai_reviews_count ?? 0}
+          failed={data?.ai_failed_count ?? 0}
         />
       </div>
 

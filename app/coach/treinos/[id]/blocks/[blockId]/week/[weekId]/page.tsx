@@ -9,6 +9,7 @@ import {
   ArrowLeft, Calendar, Plus, Dumbbell,
   MoreVertical, Edit, Trash2, Copy, X, Loader2,
   User, Layers, Bot, Eye, EyeOff, CheckCircle2, AlertTriangle, ClipboardCheck, ChevronRight,
+  Cpu, AlertCircle,
 } from "lucide-react";
 import AiReviewModal from "@/components/modals/AiReviewModal";
 import WeeklyFeedbackViewerModal from "@/components/modals/WeeklyFeedbackViewerModal";
@@ -37,6 +38,11 @@ interface Week {
   end_date: string;
   periodization_goal: PeriodizationGoal | null;
   treinos: Treino[];
+  previous_week_feedback?: {
+    id: string;
+    ai_status: 'pending' | 'processing' | 'completed' | 'failed';
+    ai_error_message: string | null;
+  } | null;
 }
 interface DropdownOption { id: string; label: string; }
 
@@ -78,6 +84,7 @@ export default function WeekDetailsPage() {
   const [savingGoal, setSavingGoal] = useState(false);
   const [feedback, setFeedback] = useState<WeeklyFeedbackResponse | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [retryingAi, setRetryingAi] = useState(false);
 
   const handlePublishToggle = async (treino: Treino, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -145,18 +152,35 @@ export default function WeekDetailsPage() {
   const [loadingWeeks, setLoadingWeeks] = useState(false);
 
   useEffect(() => {
-    async function loadWeek() {
-      try {
-        const data = await fetchWithAuth(`weeks/${currentWeekId}`);
-        setWeek(data);
-      } catch (error) {
-        console.error("Erro ao carregar semana:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadWeek();
+    refetchWeek();
   }, [currentWeekId]);
+
+  async function refetchWeek() {
+    if (!currentWeekId) return;
+    try {
+      const data = await fetchWithAuth(`weeks/${currentWeekId}`);
+      setWeek(data);
+    } catch (error) {
+      console.error("Erro ao carregar semana:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRetryAi() {
+    const prev = week?.previous_week_feedback;
+    if (!prev || prev.ai_status !== 'failed') return;
+    setRetryingAi(true);
+    try {
+      await fetchWithAuth(`coach/weekly_feedbacks/${prev.id}/retry_ai`, { method: 'POST' });
+      await refetchWeek();
+      showToast("Re-execução da IA agendada.");
+    } catch (error: any) {
+      showToast(error?.message || "Não foi possível re-executar a IA.", "error");
+    } finally {
+      setRetryingAi(false);
+    }
+  }
 
   // Busca o feedback respondido pelo aluno desta semana (se houver).
   useEffect(() => {
@@ -379,6 +403,33 @@ export default function WeekDetailsPage() {
           </div>
           <ChevronRight size={18} className="text-content-tertiary shrink-0" />
         </button>
+      )}
+
+      {/* Banner de status da IA — sprint 011 (lê do feedback da semana anterior) */}
+      {week.previous_week_feedback?.ai_status === 'processing' && (
+        <div className="mb-5 flex items-center gap-2 bg-semantic-warning-bg border border-semantic-warning-border rounded-xl px-4 py-3 text-sm text-semantic-warning-text font-bold">
+          <Cpu size={16} className="animate-pulse" /> IA Rodando… as sugestões aparecerão em breve.
+        </div>
+      )}
+      {week.previous_week_feedback?.ai_status === 'failed' && (
+        <div className="mb-5 flex flex-wrap items-center gap-3 bg-semantic-error-bg border border-semantic-error-border rounded-xl px-4 py-3 text-sm text-semantic-error-text">
+          <div className="flex items-center gap-2 font-bold">
+            <AlertCircle size={16} /> IA falhou
+          </div>
+          {week.previous_week_feedback.ai_error_message && (
+            <span className="text-xs opacity-80 truncate max-w-xs sm:max-w-md" title={week.previous_week_feedback.ai_error_message}>
+              {week.previous_week_feedback.ai_error_message}
+            </span>
+          )}
+          <button
+            type="button"
+            disabled={retryingAi}
+            onClick={handleRetryAi}
+            className="ml-auto bg-semantic-error-text text-white font-bold text-xs px-3 py-1.5 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
+          >
+            {retryingAi ? "Tentando…" : "Tentar novamente"}
+          </button>
+        </div>
       )}
 
       {/* Banner de status */}
