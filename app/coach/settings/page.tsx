@@ -62,11 +62,17 @@ export default function CoachSettingsPage() {
   });
   const [savingPrefs, setSavingPrefs] = useState(false);
 
-  const [aiPrefs, setAiPrefs] = useState({
+  const [aiPrefs, setAiPrefs] = useState<{
+    ai_enabled_by_admin: boolean;
+    ai_enabled: boolean;
+    ai_duplication_mode: 'preserve' | 'destructive';
+  }>({
     ai_enabled_by_admin: false,
     ai_enabled: true,
+    ai_duplication_mode: 'preserve',
   });
   const [savingAi, setSavingAi] = useState(false);
+  const [savingDuplicationMode, setSavingDuplicationMode] = useState(false);
 
   useEffect(() => {
     loadInviteData();
@@ -81,6 +87,7 @@ export default function CoachSettingsPage() {
       setAiPrefs({
         ai_enabled_by_admin: data.ai_enabled_by_admin,
         ai_enabled: data.ai_enabled,
+        ai_duplication_mode: data.ai_duplication_mode || 'preserve',
       });
     } catch (e) {
       console.error(e);
@@ -101,6 +108,23 @@ export default function CoachSettingsPage() {
       showToast("Erro ao atualizar preferência.", "error");
     } finally {
       setSavingAi(false);
+    }
+  };
+
+  const handleDuplicationModeChange = async (mode: 'preserve' | 'destructive') => {
+    if (mode === aiPrefs.ai_duplication_mode) return;
+    setSavingDuplicationMode(true);
+    try {
+      await fetchWithAuth("coach/settings/ai_duplication_mode", {
+        method: "PATCH",
+        body: JSON.stringify({ ai_duplication_mode: mode }),
+      });
+      setAiPrefs((p) => ({ ...p, ai_duplication_mode: mode }));
+      showToast(`Modo de duplicação ajustado.`);
+    } catch {
+      showToast("Erro ao atualizar modo de duplicação.", "error");
+    } finally {
+      setSavingDuplicationMode(false);
     }
   };
 
@@ -367,6 +391,60 @@ export default function CoachSettingsPage() {
                 />
               </button>
             </div>
+
+            {/* Modo de duplicação — só aparece se a IA está ativa (sprint 011) */}
+            {aiPrefs.ai_enabled && (
+              <div className="px-6 pb-6 pt-2 border-t border-line">
+                <p className="text-xs font-bold uppercase text-content-muted tracking-wide mt-4 mb-3">
+                  Como a IA duplica a semana
+                </p>
+                <div className="flex flex-col gap-3">
+                  <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-colors ${
+                    aiPrefs.ai_duplication_mode === 'preserve'
+                      ? 'border-brand bg-brand/5'
+                      : 'border-line hover:bg-surface-subtle'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="ai_duplication_mode"
+                      value="preserve"
+                      checked={aiPrefs.ai_duplication_mode === 'preserve'}
+                      onChange={() => handleDuplicationModeChange('preserve')}
+                      disabled={savingDuplicationMode}
+                      className="mt-1 accent-brand"
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm text-content-primary">Preservar treinos existentes</p>
+                      <p className="text-xs text-content-tertiary mt-0.5">
+                        A IA duplica a semana anterior <strong>sem mexer</strong> em treinos que você criou manualmente na próxima semana.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className={`flex items-start gap-3 cursor-pointer p-3 rounded-lg border transition-colors ${
+                    aiPrefs.ai_duplication_mode === 'destructive'
+                      ? 'border-brand bg-brand/5'
+                      : 'border-line hover:bg-surface-subtle'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="ai_duplication_mode"
+                      value="destructive"
+                      checked={aiPrefs.ai_duplication_mode === 'destructive'}
+                      onChange={() => handleDuplicationModeChange('destructive')}
+                      disabled={savingDuplicationMode}
+                      className="mt-1 accent-brand"
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm text-content-primary">Apagar e duplicar do zero</p>
+                      <p className="text-xs text-content-tertiary mt-0.5">
+                        A IA <strong>apaga todos os treinos</strong> da próxima semana antes de duplicar. Use se você sempre prefere começar limpo.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
