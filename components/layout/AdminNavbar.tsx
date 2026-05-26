@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Settings,
   Sparkles,
+  Sliders,
   LogOut,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,7 @@ const navItems = [
   { label: 'Coaches',         href: '/admin/coaches',         icon: <Users size={18} /> },
   { label: 'Alunos',          href: '/admin/students',        icon: <GraduationCap size={18} /> },
   { label: 'Permissões IA',   href: '/admin/ai-permissions',  icon: <Sparkles size={18} /> },
+  { label: 'Config IA',       href: '/admin/ai-config',       icon: <Sliders size={18} /> },
   { label: 'Configurações',   href: '/admin/settings',        icon: <Settings size={18} /> },
 ];
 
