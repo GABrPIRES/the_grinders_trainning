@@ -74,11 +74,43 @@ export default function CoachSettingsPage() {
   const [savingAi, setSavingAi] = useState(false);
   const [savingDuplicationMode, setSavingDuplicationMode] = useState(false);
 
+  // Sprint 012 — personalização da IA (prompt + 4 parâmetros)
+  type AiConfigData = {
+    defaults: {
+      ai_system_prompt: string;
+      ai_max_load_increase_pct: number;
+      ai_critical_delta_pct: number;
+      ai_sleep_threshold: number;
+      ai_stress_threshold: number;
+    };
+    current: {
+      ai_system_prompt: string | null;
+      ai_max_load_increase_pct: number | string | null;
+      ai_critical_delta_pct: number | string | null;
+      ai_sleep_threshold: number | string | null;
+      ai_stress_threshold: number | string | null;
+    };
+    is_using_default: boolean;
+    ranges: Record<string, { min: number; max: number }>;
+  };
+  const [aiConfig, setAiConfig] = useState<AiConfigData | null>(null);
+  const [editingAiConfig, setEditingAiConfig] = useState(false);
+  const [aiConfigForm, setAiConfigForm] = useState({
+    ai_system_prompt: "",
+    ai_max_load_increase_pct: "",
+    ai_critical_delta_pct: "",
+    ai_sleep_threshold: "",
+    ai_stress_threshold: "",
+  });
+  const [savingAiConfig, setSavingAiConfig] = useState(false);
+  const [resettingAiConfig, setResettingAiConfig] = useState(false);
+
   useEffect(() => {
     loadInviteData();
     loadPendingStudents();
     loadNotifPrefs();
     loadAiPrefs();
+    loadAiConfig();
   }, []);
 
   const loadAiPrefs = async () => {
@@ -108,6 +140,60 @@ export default function CoachSettingsPage() {
       showToast("Erro ao atualizar preferência.", "error");
     } finally {
       setSavingAi(false);
+    }
+  };
+
+  const loadAiConfig = async () => {
+    try {
+      const d: AiConfigData = await fetchWithAuth("coach/ai_config");
+      setAiConfig(d);
+      setAiConfigForm({
+        ai_system_prompt: d.current.ai_system_prompt || "",
+        ai_max_load_increase_pct: d.current.ai_max_load_increase_pct?.toString() || "",
+        ai_critical_delta_pct: d.current.ai_critical_delta_pct?.toString() || "",
+        ai_sleep_threshold: d.current.ai_sleep_threshold?.toString() || "",
+        ai_stress_threshold: d.current.ai_stress_threshold?.toString() || "",
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveAiConfig = async () => {
+    const payload: Record<string, any> = {};
+    payload.ai_system_prompt = aiConfigForm.ai_system_prompt.trim() || null;
+    (['ai_max_load_increase_pct', 'ai_critical_delta_pct', 'ai_sleep_threshold', 'ai_stress_threshold'] as const).forEach((k) => {
+      const v = aiConfigForm[k].trim();
+      payload[k] = v === "" ? null : Number(v);
+    });
+
+    setSavingAiConfig(true);
+    try {
+      await fetchWithAuth("coach/ai_config", {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      await loadAiConfig();
+      setEditingAiConfig(false);
+      showToast("Personalização da IA salva.");
+    } catch (e: any) {
+      showToast(e?.message || "Erro ao salvar personalização.", "error");
+    } finally {
+      setSavingAiConfig(false);
+    }
+  };
+
+  const handleResetAiConfig = async () => {
+    setResettingAiConfig(true);
+    try {
+      await fetchWithAuth("coach/ai_config/reset_to_default", { method: "POST" });
+      await loadAiConfig();
+      setEditingAiConfig(false);
+      showToast("Voltou para a configuração padrão.");
+    } catch {
+      showToast("Erro ao voltar para padrão.", "error");
+    } finally {
+      setResettingAiConfig(false);
     }
   };
 
@@ -445,6 +531,116 @@ export default function CoachSettingsPage() {
                 </div>
               </div>
             )}
+          </section>
+        )}
+
+        {/* Personalização da IA — sprint 012 */}
+        {aiPrefs.ai_enabled_by_admin && aiPrefs.ai_enabled && aiConfig && (
+          <section className="bg-surface-elevated border border-line rounded-xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-line bg-surface-page flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold flex items-center gap-2 text-content-primary">
+                  <Sparkles size={17} className="text-brand" /> Personalização da IA
+                </h2>
+                <p className="text-sm text-content-tertiary mt-0.5">
+                  {aiConfig.is_using_default
+                    ? "Usando a configuração padrão definida pelo administrador."
+                    : "Você está com prompt/parâmetros personalizados para seus alunos."}
+                </p>
+              </div>
+              {!aiConfig.is_using_default && !editingAiConfig && (
+                <button
+                  type="button"
+                  onClick={handleResetAiConfig}
+                  disabled={resettingAiConfig}
+                  className="text-xs font-medium text-content-secondary underline disabled:opacity-50 shrink-0"
+                >
+                  {resettingAiConfig ? "Resetando…" : "Voltar ao padrão"}
+                </button>
+              )}
+            </div>
+
+            <div className="p-6 space-y-4">
+              {!editingAiConfig ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingAiConfig(true)}
+                  className="bg-brand text-content-on-brand font-bold text-sm px-4 py-2 rounded-lg hover:bg-brand-hover transition-colors"
+                >
+                  Personalizar
+                </button>
+              ) : (
+                <>
+                  {/* Prompt */}
+                  <div>
+                    <label className="text-xs font-bold text-content-secondary uppercase tracking-wide block mb-1">
+                      System Prompt
+                      <span className="font-normal normal-case text-content-muted ml-1">(vazio = usar padrão)</span>
+                    </label>
+                    <textarea
+                      rows={10}
+                      value={aiConfigForm.ai_system_prompt}
+                      placeholder={aiConfig.defaults.ai_system_prompt.slice(0, 300) + "…"}
+                      onChange={(e) => setAiConfigForm({ ...aiConfigForm, ai_system_prompt: e.target.value })}
+                      className="w-full text-xs font-mono border border-line-input rounded-lg p-3 bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none placeholder:text-content-tertiary"
+                    />
+                  </div>
+
+                  {/* 4 parâmetros */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(['ai_max_load_increase_pct', 'ai_critical_delta_pct', 'ai_sleep_threshold', 'ai_stress_threshold'] as const).map((k) => {
+                      const range = aiConfig.ranges[k];
+                      const dft = aiConfig.defaults[k];
+                      const labels: Record<string, string> = {
+                        ai_max_load_increase_pct: "Aumento máximo (%)",
+                        ai_critical_delta_pct: "Delta crítico (%)",
+                        ai_sleep_threshold: "Threshold de sono",
+                        ai_stress_threshold: "Threshold de estresse",
+                      };
+                      return (
+                        <div key={k}>
+                          <label className="text-xs font-bold text-content-secondary uppercase tracking-wide">
+                            {labels[k]}{" "}
+                            <span className="font-normal normal-case text-content-muted">
+                              ({range.min}-{range.max}, default {dft})
+                            </span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min={range.min}
+                            max={range.max}
+                            value={aiConfigForm[k]}
+                            placeholder={String(dft)}
+                            onChange={(e) => setAiConfigForm({ ...aiConfigForm, [k]: e.target.value })}
+                            className="w-full mt-1 text-sm border border-line-input rounded-lg px-3 py-2 bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none placeholder:text-content-tertiary"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveAiConfig}
+                      disabled={savingAiConfig}
+                      className="bg-brand text-content-on-brand font-bold py-2 px-4 rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 text-sm"
+                    >
+                      {savingAiConfig ? <Loader2 className="animate-spin" size={14} /> : null}
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAiConfig(false)}
+                      className="border border-line text-content-secondary font-medium py-2 px-4 rounded-lg hover:bg-surface-subtle transition-colors text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </section>
         )}
 
