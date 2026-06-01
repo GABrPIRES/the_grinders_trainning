@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { fetchWithAuth } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +20,13 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface AiKpiItem {
+  aluno_id:       string;
+  aluno_name:     string;
+  block_id:       string;
+  target_week_id: string;
+}
+
 interface DashboardData {
   total_revenue_current_month:  number;
   total_revenue_previous_month: number;
@@ -26,8 +34,11 @@ interface DashboardData {
   total_students_count:         number;
   overdue_payments_count:       number;
   pending_ai_reviews_count:     number;
+  pending_ai_reviews_items:     AiKpiItem[];
   ai_processing_count:          number;
+  ai_processing_items:          AiKpiItem[];
   ai_failed_count:              number;
+  ai_failed_items:              AiKpiItem[];
   revenue_chart_data:           { date: string; total: number }[];
 }
 
@@ -167,14 +178,64 @@ function KpiCard({
   );
 }
 
-// ─── AI Status KPI (sprint 011) ───────────────────────────────────────────────
+// ─── AI Status KPI (sprint 011 + dashboard items: ajuste pós-MVP) ──────────────
+
+interface AiKpiItemLocal {
+  aluno_id: string;
+  aluno_name: string;
+  block_id: string;
+  target_week_id: string;
+}
+
+function aiBadgeHref(items: AiKpiItemLocal[]): string | null {
+  if (items.length !== 1) return null;
+  const it = items[0];
+  return `/coach/treinos/${it.aluno_id}/blocks/${it.block_id}/week/${it.target_week_id}`;
+}
+
+function aiBadgeTooltip(items: AiKpiItemLocal[]): string {
+  if (items.length === 0) return "";
+  return items.map(i => `• ${i.aluno_name}`).join("\n");
+}
+
+function AiSubBadge({
+  items, count, colorClass, icon, label,
+}: {
+  items: AiKpiItemLocal[];
+  count: number;
+  colorClass: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  if (count === 0) return null;
+  const href = aiBadgeHref(items);
+  const tooltip = aiBadgeTooltip(items);
+  const isClickable = href || items.length > 1;
+
+  const inner = (
+    <span
+      className={`flex items-center gap-1.5 ${colorClass} ${isClickable ? "hover:underline cursor-pointer" : ""}`}
+      title={items.length > 1 ? tooltip : undefined}
+    >
+      {icon} {count} {label}
+    </span>
+  );
+
+  if (href) return <Link href={href}>{inner}</Link>;
+  return inner;
+}
 
 function AiStatusKpi({
-  processing, pendingReviews, failed,
+  processing, processingItems,
+  pendingReviews, pendingReviewsItems,
+  failed, failedItems,
 }: {
-  processing:     number;
-  pendingReviews: number;
-  failed:         number;
+  processing:           number;
+  processingItems:      AiKpiItemLocal[];
+  pendingReviews:       number;
+  pendingReviewsItems:  AiKpiItemLocal[];
+  failed:               number;
+  failedItems:          AiKpiItemLocal[];
 }) {
   const hasAny = processing > 0 || pendingReviews > 0 || failed > 0;
   const borderClass = failed > 0
@@ -198,21 +259,24 @@ function AiStatusKpi({
       </div>
       {hasAny ? (
         <div className="flex flex-col gap-1.5 text-xs font-bold">
-          {processing > 0 && (
-            <span className="flex items-center gap-1.5 text-semantic-warning-text">
-              <Cpu size={13} className="animate-pulse" /> {processing} rodando
-            </span>
-          )}
-          {pendingReviews > 0 && (
-            <span className="flex items-center gap-1.5 text-semantic-success-text">
-              <CheckCircle2 size={13} /> {pendingReviews} {pendingReviews > 1 ? 'prontas' : 'pronta'}
-            </span>
-          )}
-          {failed > 0 && (
-            <span className="flex items-center gap-1.5 text-semantic-error-text">
-              <AlertCircle size={13} /> {failed} com erro
-            </span>
-          )}
+          <AiSubBadge
+            items={processingItems} count={processing}
+            colorClass="text-semantic-warning-text"
+            icon={<Cpu size={13} className="animate-pulse" />}
+            label="rodando"
+          />
+          <AiSubBadge
+            items={pendingReviewsItems} count={pendingReviews}
+            colorClass="text-semantic-success-text"
+            icon={<CheckCircle2 size={13} />}
+            label={pendingReviews > 1 ? "prontas" : "pronta"}
+          />
+          <AiSubBadge
+            items={failedItems} count={failed}
+            colorClass="text-semantic-error-text"
+            icon={<AlertCircle size={13} />}
+            label="com erro"
+          />
         </div>
       ) : (
         <p className="text-2xl font-bold text-content-muted">0<span className="text-xs font-normal ml-2 text-content-tertiary">nenhuma pendente</span></p>
@@ -390,8 +454,11 @@ export default function CoachDashboardPage() {
         />
         <AiStatusKpi
           processing={data?.ai_processing_count ?? 0}
+          processingItems={data?.ai_processing_items ?? []}
           pendingReviews={data?.pending_ai_reviews_count ?? 0}
+          pendingReviewsItems={data?.pending_ai_reviews_items ?? []}
           failed={data?.ai_failed_count ?? 0}
+          failedItems={data?.ai_failed_items ?? []}
         />
       </div>
 
