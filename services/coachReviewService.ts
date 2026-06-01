@@ -10,12 +10,11 @@ export interface SectionDiff {
   suggestion_id: string | null;
   suggestion_status: string | null;
   critical: boolean;
-  // Contexto da semana anterior (o que o aluno fez)
+  // Contexto da semana anterior (carga/RPE que o aluno preencheu nesta série)
   previous_prescribed_load: number | null;
   previous_prescribed_rpe: number | null;
   previous_actual_load: number | null;
   previous_actual_rpe: number | null;
-  previous_feito: boolean | null;
 }
 
 export interface ExercicioDiff {
@@ -23,6 +22,8 @@ export interface ExercicioDiff {
   exercicio_name: string;
   // Observação do aluno na semana anterior
   previous_observation: string | null;
+  // Status de feito (clique do botão "feito" no exercicio inteiro)
+  previous_feito: boolean | null;
   sections: SectionDiff[];
 }
 

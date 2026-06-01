@@ -13,12 +13,11 @@ interface SectionDiff {
   suggested_load: number | null;
   suggestion_status: string | null;
   critical: boolean;
-  // Contexto da semana anterior (o que o aluno fez de verdade)
+  // Contexto da semana anterior (carga/RPE preenchidos pelo aluno nesta série)
   previous_prescribed_load: number | null;
   previous_prescribed_rpe: number | null;
   previous_actual_load: number | null;
   previous_actual_rpe: number | null;
-  previous_feito: boolean | null;
 }
 
 interface ExercicioDiff {
@@ -26,6 +25,8 @@ interface ExercicioDiff {
   exercicio_name: string;
   // Observação do aluno na semana anterior (sobre este exercicio)
   previous_observation: string | null;
+  // Status de feito do exercicio inteiro (botão único do aluno)
+  previous_feito: boolean | null;
   sections: SectionDiff[];
 }
 
@@ -202,7 +203,20 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
 
                       return (
                         <div key={ex.exercicio_id}>
-                          <p className="text-xs font-bold text-neutral-500 uppercase mb-2">{ex.exercicio_name}</p>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-bold text-neutral-500 uppercase">{ex.exercicio_name}</p>
+                            {/* Status de feito do exercicio inteiro */}
+                            {ex.previous_feito === true && (
+                              <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                <CheckCircle2 size={10} /> feito
+                              </span>
+                            )}
+                            {ex.previous_feito === false && (
+                              <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                <X size={10} /> não feito
+                              </span>
+                            )}
+                          </div>
 
                           {/* Observação do aluno na semana anterior — só aparece se houver */}
                           {ex.previous_observation && (
@@ -239,12 +253,8 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                                       <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
                                     </td>
                                     <td className="py-2 text-center text-xs">
-                                      {sec.previous_feito === false ? (
-                                        <span className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
-                                          não feito
-                                        </span>
-                                      ) : hasActual ? (
-                                        <div className="flex flex-col leading-tight">
+                                      {hasActual ? (
+                                        <div className="flex flex-col leading-tight items-center">
                                           <span className="font-bold text-neutral-700">
                                             {sec.previous_actual_load != null ? sec.previous_actual_load : '—'}
                                             <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
@@ -254,7 +264,7 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                                           )}
                                         </div>
                                       ) : (
-                                        <span className="text-neutral-300">—</span>
+                                        <span className="text-[11px] text-neutral-500 italic">não preencheu</span>
                                       )}
                                     </td>
                                     <td className="py-2 text-center">

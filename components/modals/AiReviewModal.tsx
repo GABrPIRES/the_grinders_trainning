@@ -110,8 +110,19 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
               {/* Section diffs — sempre renderiza todos os exercícios para permitir ajuste rápido */}
               {review.exercicios.map((ex) => (
                 <div key={ex.exercicio_id} className="border border-neutral-200 rounded-xl overflow-hidden">
-                  <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100">
+                  <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100 flex items-center justify-between gap-2">
                     <h4 className="font-bold text-sm text-neutral-800">{ex.exercicio_name}</h4>
+                    {/* Status de feito do exercicio inteiro */}
+                    {ex.previous_feito === true && (
+                      <span className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <CheckCircle2 size={10} /> feito
+                      </span>
+                    )}
+                    {ex.previous_feito === false && (
+                      <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <X size={10} /> não feito
+                      </span>
+                    )}
                   </div>
 
                   {/* Observação do aluno na semana anterior (se houver) */}
@@ -157,12 +168,8 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                               <span className="text-xs text-neutral-400 ml-1">{sec.load_unit || 'kg'}</span>
                             </td>
                             <td className="py-2.5 px-3 text-center text-xs">
-                              {sec.previous_feito === false ? (
-                                <span className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
-                                  não feito
-                                </span>
-                              ) : hasActual ? (
-                                <div className="flex flex-col leading-tight">
+                              {hasActual ? (
+                                <div className="flex flex-col leading-tight items-center">
                                   <span className="font-bold text-neutral-700">
                                     {sec.previous_actual_load != null ? sec.previous_actual_load : '—'}
                                     <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
@@ -172,7 +179,7 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-neutral-300">—</span>
+                                <span className="text-[11px] text-neutral-500 italic">não preencheu</span>
                               )}
                             </td>
                             <td className="py-2.5 px-3 text-center">
