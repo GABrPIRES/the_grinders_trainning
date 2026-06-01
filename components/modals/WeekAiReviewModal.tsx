@@ -239,7 +239,11 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                                       <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
                                     </td>
                                     <td className="py-2 text-center text-xs">
-                                      {hasActual ? (
+                                      {sec.previous_feito === false ? (
+                                        <span className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                                          não feito
+                                        </span>
+                                      ) : hasActual ? (
                                         <div className="flex flex-col leading-tight">
                                           <span className="font-bold text-neutral-700">
                                             {sec.previous_actual_load != null ? sec.previous_actual_load : '—'}
@@ -247,9 +251,6 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                                           </span>
                                           {sec.previous_actual_rpe != null && (
                                             <span className="text-[10px] text-neutral-500">RPE {sec.previous_actual_rpe}</span>
-                                          )}
-                                          {sec.previous_feito === false && (
-                                            <span className="text-[10px] text-red-500 font-bold">não feito</span>
                                           )}
                                         </div>
                                       ) : (
