@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
 import { useConfirm } from "@/hooks/useConfirm";
-import { Sliders, Loader2, RotateCcw, Save, Info } from "lucide-react";
+import { Sliders, Loader2, RotateCcw, Save } from "lucide-react";
+import AiPromptHelp from "@/components/ai/AiPromptHelp";
 
 interface AiConfigValues {
   ai_system_prompt: string | null;
@@ -171,6 +172,7 @@ export default function AdminAiConfigPage() {
           </p>
         </div>
         <div className="p-6 space-y-3">
+          <AiPromptHelp />
           <textarea
             rows={14}
             value={form.ai_system_prompt}
@@ -178,16 +180,6 @@ export default function AdminAiConfigPage() {
             onChange={(e) => setForm({ ...form, ai_system_prompt: e.target.value })}
             className="w-full text-xs font-mono border border-line-input rounded-lg p-3 bg-surface-app text-content-primary focus:ring-2 focus:ring-brand-glow outline-none placeholder:text-content-tertiary"
           />
-          <div className="flex items-start gap-2 text-xs text-content-tertiary">
-            <Info size={14} className="text-content-muted shrink-0 mt-0.5" />
-            <p>
-              Placeholders disponíveis (substituídos antes de enviar ao Gemini):{" "}
-              <code className="font-mono text-content-secondary">{"{{max_load_increase_pct}}"}</code>,{" "}
-              <code className="font-mono text-content-secondary">{"{{critical_delta_pct}}"}</code>,{" "}
-              <code className="font-mono text-content-secondary">{"{{sleep_threshold}}"}</code>,{" "}
-              <code className="font-mono text-content-secondary">{"{{stress_threshold}}"}</code>.
-            </p>
-          </div>
         </div>
       </section>
 

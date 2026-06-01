@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/useToast";
 import { useConfirm } from "@/hooks/useConfirm";
 import { coachService } from "@/services/coachService";
 import PasswordField from '@/components/PasswordField';
+import AiPromptHelp from '@/components/ai/AiPromptHelp';
 import {
   Bell, Shield, Check, Loader2,
   UserPlus, Copy, Users, Share2, Mail, CheckCircle2, AlertCircle, Smartphone, Sparkles,
@@ -572,11 +573,12 @@ export default function CoachSettingsPage() {
               ) : (
                 <>
                   {/* Prompt */}
-                  <div>
-                    <label className="text-xs font-bold text-content-secondary uppercase tracking-wide block mb-1">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-content-secondary uppercase tracking-wide block">
                       System Prompt
                       <span className="font-normal normal-case text-content-muted ml-1">(vazio = usar padrão)</span>
                     </label>
+                    <AiPromptHelp />
                     <textarea
                       rows={10}
                       value={aiConfigForm.ai_system_prompt}
