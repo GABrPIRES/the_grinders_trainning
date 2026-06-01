@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Bot, CheckCircle2, AlertTriangle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Bot, CheckCircle2, AlertTriangle, Loader2, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 
 interface SectionDiff {
@@ -13,11 +13,19 @@ interface SectionDiff {
   suggested_load: number | null;
   suggestion_status: string | null;
   critical: boolean;
+  // Contexto da semana anterior (o que o aluno fez de verdade)
+  previous_prescribed_load: number | null;
+  previous_prescribed_rpe: number | null;
+  previous_actual_load: number | null;
+  previous_actual_rpe: number | null;
+  previous_feito: boolean | null;
 }
 
 interface ExercicioDiff {
   exercicio_id: string;
   exercicio_name: string;
+  // Observação do aluno na semana anterior (sobre este exercicio)
+  previous_observation: string | null;
   sections: SectionDiff[];
 }
 
@@ -195,11 +203,23 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                       return (
                         <div key={ex.exercicio_id}>
                           <p className="text-xs font-bold text-neutral-500 uppercase mb-2">{ex.exercicio_name}</p>
+
+                          {/* Observação do aluno na semana anterior — só aparece se houver */}
+                          {ex.previous_observation && (
+                            <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-2 flex gap-2">
+                              <MessageSquare size={13} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                              <p className="text-[11px] text-amber-900 leading-snug">
+                                <span className="font-bold">Aluno observou:</span> {ex.previous_observation}
+                              </p>
+                            </div>
+                          )}
+
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="text-[10px] font-bold text-neutral-400 uppercase text-center border-b border-neutral-100">
                                 <th className="pb-1.5 text-left">Séries</th>
                                 <th className="pb-1.5">Prescrita</th>
+                                <th className="pb-1.5">Aluno fez</th>
                                 <th className="pb-1.5">Sugerida</th>
                                 <th className="pb-1.5">Δ%</th>
                               </tr>
@@ -207,6 +227,7 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                             <tbody className="divide-y divide-neutral-50">
                               {pendingSections.map((sec) => {
                                 const pct = delta(treino.treino_id, sec);
+                                const hasActual = sec.previous_actual_load != null || sec.previous_actual_rpe != null;
                                 return (
                                   <tr key={sec.section_id} className={sec.critical ? 'bg-yellow-50' : ''}>
                                     <td className="py-2 text-neutral-600 text-xs">
@@ -216,6 +237,24 @@ export default function WeekAiReviewModal({ weekId, weekNumber, onClose, onAppro
                                     <td className="py-2 text-center text-xs font-medium text-neutral-700">
                                       {sec.prescribed_load ?? '—'}
                                       <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
+                                    </td>
+                                    <td className="py-2 text-center text-xs">
+                                      {hasActual ? (
+                                        <div className="flex flex-col leading-tight">
+                                          <span className="font-bold text-neutral-700">
+                                            {sec.previous_actual_load != null ? sec.previous_actual_load : '—'}
+                                            <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
+                                          </span>
+                                          {sec.previous_actual_rpe != null && (
+                                            <span className="text-[10px] text-neutral-500">RPE {sec.previous_actual_rpe}</span>
+                                          )}
+                                          {sec.previous_feito === false && (
+                                            <span className="text-[10px] text-red-500 font-bold">não feito</span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="text-neutral-300">—</span>
+                                      )}
                                     </td>
                                     <td className="py-2 text-center">
                                       <input

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Bot, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Bot, CheckCircle2, AlertTriangle, Loader2, MessageSquare } from 'lucide-react';
 import {
   coachReviewService,
   TreinoReview,
@@ -114,11 +114,22 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                     <h4 className="font-bold text-sm text-neutral-800">{ex.exercicio_name}</h4>
                   </div>
 
+                  {/* Observação do aluno na semana anterior (se houver) */}
+                  {ex.previous_observation && (
+                    <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex gap-2">
+                      <MessageSquare size={14} className="text-amber-700 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-900 leading-snug">
+                        <span className="font-bold">Aluno observou:</span> {ex.previous_observation}
+                      </p>
+                    </div>
+                  )}
+
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-[10px] font-bold text-neutral-400 uppercase text-center border-b border-neutral-100">
                         <th className="py-2 px-3 text-left">Séries</th>
                         <th className="py-2 px-3">Atual</th>
+                        <th className="py-2 px-3">Aluno fez</th>
                         <th className="py-2 px-3">Sugerida</th>
                         <th className="py-2 px-3">Δ%</th>
                       </tr>
@@ -128,6 +139,7 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                         const pct = delta(sec);
                         const isCritical = sec.critical;
                         const hasChange = sec.suggested_load !== sec.prescribed_load;
+                        const hasActual = sec.previous_actual_load != null || sec.previous_actual_rpe != null;
 
                         return (
                           <tr
@@ -143,6 +155,24 @@ export default function AiReviewModal({ treinoId, treinoName, onClose, onApprove
                             <td className="py-2.5 px-3 text-center font-medium text-neutral-700">
                               {sec.prescribed_load ?? '—'}
                               <span className="text-xs text-neutral-400 ml-1">{sec.load_unit || 'kg'}</span>
+                            </td>
+                            <td className="py-2.5 px-3 text-center text-xs">
+                              {hasActual ? (
+                                <div className="flex flex-col leading-tight">
+                                  <span className="font-bold text-neutral-700">
+                                    {sec.previous_actual_load != null ? sec.previous_actual_load : '—'}
+                                    <span className="text-neutral-400 ml-0.5">{sec.load_unit || 'kg'}</span>
+                                  </span>
+                                  {sec.previous_actual_rpe != null && (
+                                    <span className="text-[10px] text-neutral-500">RPE {sec.previous_actual_rpe}</span>
+                                  )}
+                                  {sec.previous_feito === false && (
+                                    <span className="text-[10px] text-red-500 font-bold">não feito</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-neutral-300">—</span>
+                              )}
                             </td>
                             <td className="py-2.5 px-3 text-center">
                               <input
