@@ -142,8 +142,8 @@ export default function AdminAiConfigPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 pb-24 space-y-6">
-      <ToastEl />
-      <ConfirmEl />
+      {ToastEl}
+      {ConfirmEl}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
